@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rs-void: #080808;
+  --rs-deep: #0a0a0a;
+  --rs-panel: #101010;
+  --rs-violet: #7c3aed;
+  --rs-cyan: #00d9ff;
+  --rs-orange: #ff7a00;
+  --rs-chrome: #e5e7eb;
+  --rs-radius: 16px;
+  --rs-radius-xl: 24px;
+  --rs-grid: 72px;
+}
+
+html,
+body {
+  background: var(--rs-void);
+  color: #fff;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124, 58, 237, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(0, 217, 255, 0.08), transparent 50%),
+    linear-gradient(180deg, #080808 0%, #0a0a0a 100%);
+  background-attachment: fixed;
+}
+
+.display {
+  font-family: var(--font-montserrat), Inter, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+}
+
+.noise::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.live-dot {
+  animation: pulse-live 1.6s ease-in-out infinite;
+}
+
+@keyframes forge-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.forge-in {
+  animation: forge-in 0.5s ease-out both;
+}
+
+@keyframes progress-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #7c3aed, #00d9ff, #7c3aed);
+  background-size: 200% 100%;
+  animation: progress-shimmer 2s linear infinite;
+}

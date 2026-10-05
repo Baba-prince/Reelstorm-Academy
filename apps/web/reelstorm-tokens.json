@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "name": "REELSTORM ACADEMY",
+    "kit": "Brand Kit 01",
+    "version": "1.0.0",
+    "tagline": "YOUR STORY. YOUR STUDIO. YOUR EMPIRE.",
+    "product": "STORM OS — Production OS Factory"
+  },
+  "colors": {
+    "deepBlack": { "hex": "#0A0A0A", "usage": "Primary canvas • Factory floor" },
+    "voidBlack": { "hex": "#080808", "usage": "App shell background" },
+    "panel": { "hex": "#101010", "usage": "Panels / chrome surfaces" },
+    "elevated": { "hex": "#151515", "usage": "Elevated hover surfaces" },
+    "stormViolet": { "hex": "#7C3AED", "usage": "Signal • STORM OS core" },
+    "violetSoft": { "hex": "#C4B5FD", "usage": "Soft violet text / accents" },
+    "electricCyan": { "hex": "#00D9FF", "usage": "Live engine • Active state" },
+    "signalOrange": { "hex": "#FF7A00", "usage": "CTA • Action • Archive" },
+    "orangeSoft": { "hex": "#FFB86A", "usage": "Orange gradient end" },
+    "silverChrome": { "hex": "#E5E7EB", "usage": "Metal • Secondary UI" },
+    "pureWhite": { "hex": "#FFFFFF", "usage": "Type • Contrast • Paper" },
+    "danger": { "hex": "#FF3B30", "usage": "Errors / don'ts" }
+  },
+  "gradients": {
+    "signature": "linear-gradient(90deg, #0A0A0A 0%, #7C3AED 50%, #00D9FF 100%)",
+    "storm": "linear-gradient(135deg, #7C3AED 0%, #00D9FF 100%)",
+    "empire": "linear-gradient(90deg, #FF7A00 0%, #FFB86A 100%)"
+  },
+  "typography": {
+    "display": {
+      "family": "Montserrat",
+      "weight": 800,
+      "tracking": "-0.04em",
+      "transform": "uppercase",
+      "fallback": "Inter Black, system-ui, sans-serif"
+    },
+    "body": {
+      "family": "Inter",
+      "size": "15px",
+      "lineHeight": 1.6,
+      "weight": 400
+    },
+    "mono": {
+      "family": "ui-monospace, SFMono-Regular, Menlo, monospace",
+      "tracking": "0.12em"
+    }
+  },
+  "radius": {
+    "sm": "8px",
+    "md": "12px",
+    "lg": "16px",
+    "xl": "24px",
+    "xxl": "32px"
+  },
+  "grid": {
+    "base": "72px",
+    "gutter": "24px"
+  },
+  "logo": {
+    "monogram": "RS",
+    "wordmark": "REELSTORM",
+    "lockup": "REELSTORM ACADEMY"
+  },
+  "pipeline": [
+    "SCRIPT",
+    "WORLD BUILDER",
+    "STORYBOARD",
+    "STORM ENGINE",
+    "ARCHIVE VAULT",
+    "MERGE STUDIO"
+  ]
+}

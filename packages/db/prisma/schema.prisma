@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ProjectStatus {
+  DRAFT
+  WORLD_BUILDING
+  STORYBOARD
+  GENERATING
+  ARCHIVED
+  MERGED
+  FAILED
+}
+
+enum UploadStatus {
+  PENDING
+  UPLOADED
+  ANALYZING
+  EXTRACTING
+  READY
+  FAILED
+}
+
+enum BlockStatus {
+  PENDING
+  RENDERING
+  QC
+  ARCHIVED
+  FAILED
+}
+
+enum JobStatus {
+  QUEUED
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects  Project[]
+  teamMembers TeamMember[]
+  apiKeys   ApiKey[]
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  members   TeamMember[]
+  projects  Project[]
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  role   String @default("producer")
+  userId String
+  teamId String
+  user   User   @relation(fields: [userId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  logline     String?
+  script      String?
+  status      ProjectStatus @default(DRAFT)
+  ownerId     String
+  teamId      String?
+  templateId  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  owner       User          @relation(fields: [ownerId], references: [id])
+  team        Team?         @relation(fields: [teamId], references: [id])
+  template    VideoTemplate? @relation(fields: [templateId], references: [id])
+  uploads     VideoUpload[]
+  blocks      Block[]
+  assets      Asset[]
+  soulIds     SoulIdentity[]
+  rooms       RoomPlate[]
+  storyboards StoryboardFrame[]
+  masters     MasterCut[]
+}
+
+model VideoUpload {
+  id           String       @id @default(cuid())
+  projectId    String?
+  uploaderId   String?
+  filename     String
+  mimeType     String
+  bytes        BigInt
+  s3Key        String
+  s3Url        String?
+  durationSec  Float?
+  width        Int?
+  height       Int?
+  fps          Float?
+  status       UploadStatus @default(PENDING)
+  progressPct  Int          @default(0)
+  progressMsg  String?
+  error        String?
+  analysisJson Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  project      Project?     @relation(fields: [projectId], references: [id])
+  templates    VideoTemplate[]
+  blocks       Block[]
+}
+
+model VideoTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  stylePreset   String
+  sourceUploadId String
+  durationSec   Float
+  fps           Float    @default(24)
+  aspectRatio   String   @default("16:9")
+  lut           String?
+  templateJson  Json
+  s3Key         String?
+  thumbnailUrl  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sourceUpload  VideoUpload @relation(fields: [sourceUploadId], references: [id])
+  projects      Project[]
+}
+
+model Block {
+  id           String      @id @default(cuid())
+  projectId    String
+  uploadId     String?
+  index        Int
+  title        String
+  durationSec  Float       @default(300)
+  status       BlockStatus @default(PENDING)
+  videoS3Key   String?
+  jsonS3Key    String?
+  archive5Json Json?
+  templateId   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  project      Project     @relation(fields: [projectId], references: [id])
+  upload       VideoUpload? @relation(fields: [uploadId], references: [id])
+
+  @@unique([projectId, index])
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  projectId String?
+  type      String
+  key       String
+  url       String?
+  mimeType  String?
+  bytes     BigInt?
+  checksum  String?
+  labels    String[] @default([])
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+  project   Project? @relation(fields: [projectId], references: [id])
+}
+
+model SoulIdentity {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  faceHash  String
+  frontKey  String?
+  leftKey   String?
+  rightKey  String?
+  threeQKey String?
+  loraRef   String?
+  locked    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+}
+
+model RoomPlate {
+  id            String   @id @default(cuid())
+  projectId     String
+  name          String
+  wideKey       String?
+  mediumKey     String?
+  oshKey        String?
+  closeKey      String?
+  lightingLocked Boolean @default(true)
+  lut           String?
+  createdAt     DateTime @default(now())
+  project       Project  @relation(fields: [projectId], references: [id])
+}
+
+model StoryboardFrame {
+  id        String   @id @default(cuid())
+  projectId String
+  shotIndex Int
+  prompt    String?
+  imageKey  String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+}
+
+model MasterCut {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  blockIds  String[]
+  s3Key     String?
+  durationSec Float?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String
+  provider  String   // dashscope | elevenlabs | openai | ollama
+  label     String
+  keyEnc    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider, label])
+}
+
+model JobRecord {
+  id        String    @id @default(cuid())
+  queue     String
+  jobId     String    @unique
+  status    JobStatus @default(QUEUED)
+  payload   Json
+  result    Json?
+  error     String?
+  progress  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}

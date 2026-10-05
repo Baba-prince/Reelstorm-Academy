@@ -1,0 +1,29 @@
+{
+  "name": "reelstorm-academy-os",
+  "version": "1.1.0",
+  "private": true,
+  "description": "REELSTORM ACADEMY OS — Production OS Factory (STORM OS)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api,worker -c magenta,cyan,orange \"npm run dev -w @reelstorm/web\" \"npm run dev -w @reelstorm/api\" \"npm run dev -w @reelstorm/worker\"",
+    "dev:web": "npm run dev -w @reelstorm/web",
+    "dev:api": "npm run dev -w @reelstorm/api",
+    "dev:worker": "npm run dev -w @reelstorm/worker",
+    "build": "npm run build -w @reelstorm/domain -w @reelstorm/db -w @reelstorm/media -w @reelstorm/providers -w @reelstorm/pipeline && npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web",
+    "db:generate": "npm run generate -w @reelstorm/db",
+    "db:push": "npm run push -w @reelstorm/db",
+    "db:migrate": "npm run migrate -w @reelstorm/db",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

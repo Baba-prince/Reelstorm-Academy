@@ -1,0 +1,32 @@
+{
+  "name": "@reelstorm/api",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/websocket": "^11.0.2",
+    "@reelstorm/db": "*",
+    "@reelstorm/domain": "*",
+    "@reelstorm/media": "*",
+    "@reelstorm/pipeline": "*",
+    "@reelstorm/providers": "*",
+    "bullmq": "^5.40.2",
+    "dotenv": "^18.0.5",
+    "fastify": "^5.2.1",
+    "ioredis": "^5.4.2",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
