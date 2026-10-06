@@ -7,6 +7,7 @@ import {
   TIER_FEATURES,
   TIER_MONTHLY_RTC,
   blocksFromRtc,
+  stripePriceForTier,
 } from "@reelstorm/domain";
 import {
   debitArchive5,
@@ -297,9 +298,7 @@ export async function billingRoutes(app: FastifyInstance) {
       features: TIER_FEATURES[id],
       visaAlias: id === "storm" ? "Journey" : id === "storm_pro" ? "Journey Pro" : id === "free" ? "Free" : "Enterprise",
       stripePriceId:
-        id === "storm" || id === "storm_pro"
-          ? (await import("@reelstorm/domain")).stripePriceForTier(id)
-          : null,
+        id === "storm" || id === "storm_pro" ? stripePriceForTier(id) : null,
     }));
     return {
       currency: "RTC",

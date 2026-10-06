@@ -12,10 +12,12 @@ RS_API_PORT="${RS_API_PORT:-4017}"
 CANDIDATES=(reelstorm.uk www.reelstorm.uk app.reelstorm.uk api.reelstorm.uk)
 
 ssh_cmd() {
+  local opts=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=30)
   if [[ -n "${SSHPASS:-}" ]] && command -v sshpass >/dev/null; then
-    sshpass -e ssh -o StrictHostKeyChecking=accept-new "$@"
+    opts+=(-o PreferredAuthentications=password -o PubkeyAuthentication=no)
+    sshpass -e ssh "${opts[@]}" "$@"
   else
-    ssh -o StrictHostKeyChecking=accept-new "$@"
+    ssh "${opts[@]}" "$@"
   fi
 }
 

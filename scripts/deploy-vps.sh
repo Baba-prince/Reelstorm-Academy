@@ -27,18 +27,23 @@ RS_PM2_WORKER="${RS_PM2_WORKER:-reelstorm-worker}"
 RS_PM2_WEB="${RS_PM2_WEB:-reelstorm-web}"
 
 ssh_cmd() {
+  local opts=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=30)
   if [[ -n "${SSHPASS:-}" ]] && command -v sshpass >/dev/null; then
-    sshpass -e ssh -o StrictHostKeyChecking=accept-new "$@"
+    # Password path: don't attempt keys first (IONOS often rejects mixed auth)
+    opts+=(-o PreferredAuthentications=password -o PubkeyAuthentication=no)
+    sshpass -e ssh "${opts[@]}" "$@"
   else
-    ssh -o StrictHostKeyChecking=accept-new "$@"
+    ssh "${opts[@]}" "$@"
   fi
 }
 
 scp_cmd() {
+  local opts=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=30)
   if [[ -n "${SSHPASS:-}" ]] && command -v sshpass >/dev/null; then
-    sshpass -e scp -o StrictHostKeyChecking=accept-new "$@"
+    opts+=(-o PreferredAuthentications=password -o PubkeyAuthentication=no)
+    sshpass -e scp "${opts[@]}" "$@"
   else
-    scp -o StrictHostKeyChecking=accept-new "$@"
+    scp "${opts[@]}" "$@"
   fi
 }
 
