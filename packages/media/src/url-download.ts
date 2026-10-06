@@ -18,8 +18,10 @@ async function exists(p: string) {
 
 export function resolveYtDlp(): Promise<string> {
   return (async () => {
+    if (process.env.YTDLP_PATH && (await exists(process.env.YTDLP_PATH))) return process.env.YTDLP_PATH;
     if (await exists(BIN_YTDLP)) return BIN_YTDLP;
     if (await exists("/usr/local/bin/yt-dlp")) return "/usr/local/bin/yt-dlp";
+    if (await exists("/usr/bin/yt-dlp")) return "/usr/bin/yt-dlp";
     if (await exists("/opt/homebrew/bin/yt-dlp")) return "/opt/homebrew/bin/yt-dlp";
     return "yt-dlp";
   })();

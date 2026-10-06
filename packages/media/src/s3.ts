@@ -34,30 +34,38 @@ export function bucket() {
   return process.env.S3_BUCKET || "reelstorm";
 }
 
-/** Readiness probe — production R2/S3 vs local MinIO */
+/** Readiness probe — production R2/S3 or VPS MinIO staging */
 export async function probeObjectStorage(): Promise<{
   status: "pass" | "partial" | "fail";
   detail: string;
 }> {
   const endpoint = process.env.S3_ENDPOINT || "";
-  if (!isProductionObjectStorage()) {
+  const localOk = process.env.S3_LOCAL_OK === "1";
+  const configured =
+    isProductionObjectStorage() ||
+    (localOk && Boolean(process.env.S3_ACCESS_KEY_ID) && Boolean(process.env.S3_SECRET_ACCESS_KEY));
+
+  if (!configured && !isProductionObjectStorage()) {
     return {
       status: "fail",
       detail: endpoint
-        ? `Local/dev storage (${endpoint}) — set Cloudflare R2 or AWS S3 for ~1000 users`
+        ? `Local/dev storage (${endpoint}) — set Cloudflare R2 or S3_LOCAL_OK=1 with MinIO`
         : "S3_* not configured for production",
     };
   }
   try {
     await client().send(new HeadBucketCommand({ Bucket: bucket() }));
+    const local = Boolean(endpoint && /127\.0\.0\.1|localhost/i.test(endpoint));
     return {
-      status: "pass",
-      detail: `Reachable bucket=${bucket()} endpoint=${endpoint || "aws"}`,
+      status: local ? "partial" : "pass",
+      detail: local
+        ? `VPS MinIO reachable bucket=${bucket()} (staging — migrate to R2)`
+        : `Reachable bucket=${bucket()} endpoint=${endpoint || "aws"}`,
     };
   } catch (e) {
     return {
-      status: "partial",
-      detail: `Configured but HeadBucket failed: ${(e as Error).message}`,
+      status: "fail",
+      detail: `Storage configured but HeadBucket failed: ${(e as Error).message}`,
     };
   }
 }

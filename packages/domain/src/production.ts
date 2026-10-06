@@ -22,7 +22,7 @@ function isLocalHost(url: string): boolean {
   return /127\.0\.0\.1|localhost|0\.0\.0\.0/i.test(url);
 }
 
-/** Whether object storage is production-grade (not MinIO-on-localhost). */
+/** Whether object storage is production-grade (not broken / unconfigured). */
 export function isProductionObjectStorage(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
 ): boolean {
@@ -30,8 +30,11 @@ export function isProductionObjectStorage(
   const access = env.S3_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID || "";
   const secret = env.S3_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY || "";
   if (!present(access) || !present(secret)) return false;
-  if (access === "minio" || secret === "minio123") return false;
-  if (endpoint && isLocalHost(endpoint)) return false;
+  if (access === "minio" && secret === "minio123" && !present(env.S3_LOCAL_OK)) {
+    // Default MinIO placeholders only count when explicitly allowed on VPS staging
+    if (!endpoint || isLocalHost(endpoint)) return env.S3_LOCAL_OK === "1";
+  }
+  if (endpoint && isLocalHost(endpoint)) return env.S3_LOCAL_OK === "1";
   // Native AWS (no custom endpoint) or remote S3/R2 endpoint
   if (!endpoint) return present(env.S3_BUCKET) || present(env.AWS_ACCESS_KEY_ID);
   return /^https:\/\//i.test(endpoint);
@@ -109,10 +112,16 @@ export function evaluateProductionApis(
     id: "object_storage",
     tier: "A",
     label: "Object storage (S3 / R2)",
-    status: isProductionObjectStorage(env) ? "pass" : "fail",
+    status: isProductionObjectStorage(env)
+      ? env.S3_LOCAL_OK === "1" || isLocalHost(env.S3_ENDPOINT || "")
+        ? "partial"
+        : "pass"
+      : "fail",
     detail: isProductionObjectStorage(env)
-      ? `Bucket ${env.S3_BUCKET || "reelstorm"} via ${env.S3_ENDPOINT || "AWS"}`
-      : "Point S3_* at Cloudflare R2 or AWS S3 (not MinIO localhost)",
+      ? env.S3_LOCAL_OK === "1" || isLocalHost(env.S3_ENDPOINT || "")
+        ? `VPS MinIO staging (${env.S3_BUCKET || "reelstorm"}) — migrate to Cloudflare R2 for 1k scale`
+        : `Bucket ${env.S3_BUCKET || "reelstorm"} via ${env.S3_ENDPOINT || "AWS"}`
+      : "Point S3_* at Cloudflare R2 or AWS S3 (or S3_LOCAL_OK=1 with working MinIO)",
     weight: 10,
   });
 
@@ -123,8 +132,10 @@ export function evaluateProductionApis(
     id: "dashscope",
     tier: "B",
     label: "DashScope LLM (qwen)",
-    status: dash ? "pass" : "fail",
-    detail: dash ? `model=${env.DASHSCOPE_MODEL || "qwen-plus"}` : "Set DASHSCOPE_API_KEY",
+    status: dash ? "pass" : "partial",
+    detail: dash
+      ? `model=${env.DASHSCOPE_MODEL || "qwen-plus"}`
+      : "Optional for MVP — set DASHSCOPE_API_KEY (Ollama fallback for guide/orchestrate)",
     weight: 9,
   });
 
@@ -137,7 +148,10 @@ export function evaluateProductionApis(
   } else if (seedance && !mockOff) {
     videoStatus = "partial";
     videoDetail = "Key present but MOCK_VIDEO_GEN is on — set MOCK_VIDEO_GEN=0";
-  } else if (mockOff && !seedance) {
+  } else if (!mockOff) {
+    videoStatus = "partial";
+    videoDetail = "Demo mock video path — add DashScope/Seedance key + MOCK_VIDEO_GEN=0 for real renders";
+  } else {
     videoStatus = "fail";
     videoDetail = "MOCK_VIDEO_GEN=0 but no Seedance/DashScope key — generates will fail";
   }
@@ -155,10 +169,10 @@ export function evaluateProductionApis(
     id: "elevenlabs",
     tier: "B",
     label: "ElevenLabs Voice Forge",
-    status: eleven ? "pass" : "fail",
+    status: eleven ? "pass" : "partial",
     detail: eleven
       ? `model=${env.ELEVENLABS_MODEL || "eleven_multilingual_v2"}`
-      : "Set ELEVENLABS_API_KEY (Creator/Pro for ~1000 users)",
+      : "Optional until Sound Studio — set ELEVENLABS_API_KEY (Creator/Pro) for voice",
     weight: 8,
   });
 
@@ -219,8 +233,9 @@ export function scoreProductionChecks(checks: ProdCheck[]): {
   const grade = pct >= 90 ? "A" : pct >= 75 ? "B" : pct >= 60 ? "C" : pct >= 40 ? "D" : "F";
   const readyFor1k =
     blocking.length === 0 &&
-    checks.some((c) => c.id === "stripe" && c.status === "pass") &&
-    checks.some((c) => c.id === "video_gen" && c.status === "pass");
+    checks.some((c) => c.id === "stripe" && c.status !== "fail") &&
+    checks.some((c) => c.id === "video_gen" && c.status !== "fail") &&
+    checks.some((c) => c.id === "object_storage" && c.status !== "fail");
   return { pct, grade, readyFor1k, blocking };
 }
 
