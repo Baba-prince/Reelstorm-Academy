@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Enqueue fetchTemplateIntros (Pexels → Pixabay → R2).
+ * Enqueue fetchTemplateIntros (Pixabay primary → R2).
  * Requires API running: POST /api/templates/intros/fetch
  *
  *   npm run worker:fetch-intros
@@ -16,7 +16,7 @@ const res = await fetch(`${base}/api/templates/intros/fetch`, {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     perCategoryTarget: Number(process.env.INTROS_PER_CATEGORY || 20),
-    perQuery: Number(process.env.INTROS_PER_QUERY || 7),
+    perQuery: Number(process.env.INTROS_PER_QUERY || 4),
   }),
 });
 

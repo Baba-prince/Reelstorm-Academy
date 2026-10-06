@@ -6,7 +6,7 @@ import { enqueue } from "../lib/queue.js";
 export async function templateRoutes(app: FastifyInstance) {
   /**
    * GET /api/templates
-   * ?type=intro&category=nollywood — cached stock intros from R2 (not live Pexels/Pixabay)
+   * ?type=intro&category=nollywood — cached stock intros from R2 (not live Pixabay API)
    * default — VideoTemplate DNA extracts
    */
   app.get("/api/templates", async (req) => {
@@ -50,7 +50,7 @@ export async function templateRoutes(app: FastifyInstance) {
     return { templates };
   });
 
-  /** POST /api/templates/intros/fetch — enqueue Pexels→Pixabay→R2 fill job */
+  /** POST /api/templates/intros/fetch — enqueue Pixabay→R2 fill job (Pexels paused) */
   app.post("/api/templates/intros/fetch", async (req, reply) => {
     const body = (req.body || {}) as {
       categories?: string[];
@@ -64,7 +64,7 @@ export async function templateRoutes(app: FastifyInstance) {
     });
     return reply.code(202).send({
       jobId: job.id,
-      message: "fetchTemplateIntros queued — Pexels primary, Pixabay backup → R2",
+      message: "fetchTemplateIntros queued — Pixabay primary → R2",
     });
   });
 

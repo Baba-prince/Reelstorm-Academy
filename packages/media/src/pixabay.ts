@@ -1,10 +1,13 @@
 /**
- * Pixabay Video API — Template Room intro BACKUP
- * Rate limit with key: ~5,000 req/hour. Key optional for limited public probes.
- * License: free commercial use, no attribution required (Pixabay Content License).
+ * Pixabay Video API — Template Room intro PRIMARY
+ * Rate limit with key: 100 req / 60 sec (~6,000/hour).
+ * License: free commercial use, no attribution (Pixabay Content License).
+ *
+ * NEVER hardcode keys — use PIXABAY_API_KEY from env.
  */
 
-const PIXABAY_ENDPOINT = "https://pixabay.com/api/videos/";
+const PIXABAY_VIDEO_ENDPOINT = "https://pixabay.com/api/videos/";
+const PIXABAY_IMAGE_ENDPOINT = "https://pixabay.com/api/";
 
 export type PixabayVideoSize = {
   url: string;
@@ -33,6 +36,10 @@ export type PixabayVideo = {
   picture_id?: string;
 };
 
+function apiKey(): string {
+  return (process.env.PIXABAY_API_KEY || "").trim();
+}
+
 export function bestPixabayVideoUrl(video: PixabayVideo): string | null {
   return (
     video.videos.large?.url ||
@@ -56,12 +63,21 @@ export function pixabayThumbnailUrl(video: PixabayVideo): string | null {
   );
 }
 
+async function sleep(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Fetch popular videos for Template Room intros.
+ * Retries once after 2s on HTTP 429.
+ */
 export async function fetchPixabayVideos(
   query: string,
   perPage = 20,
   page = 1,
+  attempt = 0,
 ): Promise<PixabayVideo[]> {
-  const key = (process.env.PIXABAY_API_KEY || "").trim();
+  const key = apiKey();
   const params = new URLSearchParams({
     q: query,
     per_page: String(Math.min(perPage, 200)),
@@ -72,27 +88,72 @@ export async function fetchPixabayVideos(
   });
   if (key) params.set("key", key);
 
-  const url = `${PIXABAY_ENDPOINT}?${params.toString()}`;
+  const url = `${PIXABAY_VIDEO_ENDPOINT}?${params.toString()}`;
   const res = await fetch(url, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(15_000),
   });
 
   if (res.status === 429) {
-    console.warn("[pixabay] rate limit hit");
+    if (attempt < 2) {
+      console.warn(`[pixabay] 429 — retry in 2s (attempt ${attempt + 1})`);
+      await sleep(2000);
+      return fetchPixabayVideos(query, perPage, page, attempt + 1);
+    }
+    console.warn("[pixabay] rate limit exhausted after retries");
     return [];
   }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    // Without a key Pixabay often returns 400 — treat as empty backup, not crash
     if (!key && (res.status === 400 || res.status === 401 || res.status === 403)) {
-      console.warn(`[pixabay] no-key probe failed HTTP ${res.status} — set PIXABAY_API_KEY`);
+      console.warn(`[pixabay] missing PIXABAY_API_KEY — HTTP ${res.status}`);
       return [];
     }
     throw new Error(`Pixabay HTTP ${res.status}: ${body.slice(0, 200)}`);
   }
 
   const data = (await res.json()) as { hits?: PixabayVideo[] };
+  return data.hits || [];
+}
+
+/** Smoke: pull 3 hits for intro logo reveal */
+export async function testPixabayConnection(): Promise<{
+  ok: boolean;
+  count: number;
+  sampleUrl: string | null;
+  error?: string;
+}> {
+  try {
+    const hits = await fetchPixabayVideos("intro logo reveal", 3);
+    return {
+      ok: hits.length > 0,
+      count: hits.length,
+      sampleUrl: hits[0] ? bestPixabayVideoUrl(hits[0]) : null,
+    };
+  } catch (e) {
+    return { ok: false, count: 0, sampleUrl: null, error: (e as Error).message };
+  }
+}
+
+/** Optional image search (same key) */
+export async function fetchPixabayImages(query: string, perPage = 20, page = 1) {
+  const key = apiKey();
+  if (!key) return [];
+  const params = new URLSearchParams({
+    key,
+    q: query,
+    per_page: String(Math.min(perPage, 200)),
+    page: String(page),
+    safesearch: "true",
+    order: "popular",
+    image_type: "photo",
+  });
+  const res = await fetch(`${PIXABAY_IMAGE_ENDPOINT}?${params}`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { hits?: unknown[] };
   return data.hits || [];
 }

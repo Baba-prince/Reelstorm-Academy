@@ -30,6 +30,11 @@ set_kv MOCK_VIDEO_GEN 0
 set_kv WORKER_CONCURRENCY 8
 set_kv VIDEO_PROVIDER auto
 set_kv S3_FORCE_PATH_STYLE true
+# Template Room stock intros — Pixabay PRIMARY (Pexels paused). Key must be set separately.
+set_kv INTRO_STOCK_PRIMARY pixabay
+if [[ -n "${PIXABAY_API_KEY:-}" ]]; then
+  set_kv PIXABAY_API_KEY "$PIXABAY_API_KEY"
+fi
 
 # If still on local MinIO, leave endpoint but warn — operator must replace with R2
 if grep -qE '^S3_ENDPOINT=http://(127\.0\.0\.1|localhost)' "$ENV_FILE"; then

@@ -1,6 +1,6 @@
 /**
  * BullMQ job: fetchTemplateIntros
- * Pexels primary → Pixabay backup → cache MP4 + cover to R2 → IntroTemplate rows
+ * Pixabay PRIMARY (Pexels paused) → cache MP4 + cover to R2 → IntroTemplate rows
  */
 
 import { prisma } from "@reelstorm/db";
@@ -97,7 +97,8 @@ export async function fetchTemplateIntrosJob(job: Job<FetchTemplateIntrosData>) 
               coverUrl: cached.coverUrl || video.thumbnailUrl,
               durationSec: video.durationSec,
               tags: video.tags.length ? video.tags : query.split(/\s+/),
-              license: "free-commercial",
+              license:
+                video.source === "pixabay" ? "pixabay-free-commercial" : "free-commercial",
               query,
               bytes: BigInt(cached.bytes),
               meta: {
@@ -105,6 +106,7 @@ export async function fetchTemplateIntrosJob(job: Job<FetchTemplateIntrosData>) 
                 user: video.user,
                 commercial: true,
                 attribution: false,
+                attributionRequired: false,
                 licenseNote: `${video.source}-free-commercial`,
               },
             },

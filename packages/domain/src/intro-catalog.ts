@@ -1,5 +1,6 @@
 /**
- * Stock intro catalog — queries for Pexels / Pixabay Template Room fill.
+ * Stock intro catalog — queries for Pixabay (primary) Template Room fill.
+ * Target: ~20 cached intros per category → ~100 total.
  */
 
 export const INTRO_STOCK_CATEGORIES = [
@@ -23,18 +24,45 @@ export const TEMPLATE_ROOM_TO_INTRO_STOCK: Record<string, IntroStockCategory> = 
   social: "intros",
 };
 
+/** 5 queries × 4 clips ≈ 20 per category */
 export const INTRO_STOCK_QUERIES: Record<IntroStockCategory, string[]> = {
   nollywood: [
     "nollywood gold particles intro",
     "lagos drone cinematic opener",
-    "african light leak logo",
+    "african light leak logo reveal",
+    "gold dust particles logo",
+    "nigerian film burn intro",
   ],
-  asia: ["tokyo neon intro", "k-drama soft logo reveal", "bollywood color particles"],
-  drama: ["a24 cinematic intro", "smoke logo reveal", "lens flare opener"],
-  product: ["minimal white logo reveal", "glitch product intro", "rotation 3d logo"],
-  intros: ["logo reveal particles", "lower third animated", "countdown cinematic"],
+  asia: [
+    "tokyo neon intro logo",
+    "k-drama soft light logo reveal",
+    "bollywood color particles intro",
+    "japanese sakura petals logo",
+    "asian city skyline opener",
+  ],
+  drama: [
+    "a24 cinematic intro smoke",
+    "lens flare logo reveal",
+    "film burn cinematic opener",
+    "dark moody particles intro",
+    "epic light rays logo",
+  ],
+  product: [
+    "minimal white logo reveal",
+    "glitch product intro",
+    "3d rotation logo reveal",
+    "clean corporate opener",
+    "luxury gold logo reveal",
+  ],
+  intros: [
+    "logo reveal particles",
+    "lower third animated",
+    "countdown cinematic opener",
+    "abstract light streaks intro",
+    "energy particles logo",
+  ],
 };
 
-/** Target ~20 cached intros per category (3 queries × ~7 clips) */
 export const INTROS_PER_CATEGORY_TARGET = 20;
-export const INTROS_PER_QUERY = 7;
+/** Clips saved per query (5 queries × 4 = 20) */
+export const INTROS_PER_QUERY = 4;

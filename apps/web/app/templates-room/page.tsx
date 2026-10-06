@@ -209,7 +209,7 @@ export default function TemplatesRoomPage() {
       {introStatus && (
         <div className="rounded-rs border border-cyan/20 bg-cyan/5 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="mono text-[9px] text-cyan">STOCK INTROS · PEXELS → PIXABAY → R2</div>
+            <div className="mono text-[9px] text-cyan">STOCK INTROS · PIXABAY → R2</div>
             <div className="text-[13px] text-white/70 mt-1">
               {introStatus.total} / {introStatus.target} cached · {introStatus.pct}% · $0 vs Seedance
             </div>

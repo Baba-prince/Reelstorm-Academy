@@ -1,5 +1,5 @@
 /**
- * Template Room intro fetcher — Pexels primary, Pixabay backup.
+ * Template Room intro fetcher — Pixabay PRIMARY (Pexels paused).
  * Downloads best MP4 + thumbnail into R2 (or local staging).
  */
 
@@ -76,27 +76,56 @@ function normalizePixabay(v: PixabayVideo): NormalizedIntroVideo | null {
   };
 }
 
-/** PRIMARY Pexels → BACKUP Pixabay on 429 / empty / missing key */
+function primarySource(): "pixabay" | "pexels" {
+  const v = (process.env.INTRO_STOCK_PRIMARY || "pixabay").trim().toLowerCase();
+  return v === "pexels" ? "pexels" : "pixabay";
+}
+
+/** Fetch intros — Pixabay primary by default (Pexels paused). */
+export async function fetchIntroVideos(
+  query: string,
+  opts?: { perPage?: number },
+): Promise<IntroFetchResult> {
+  return fetchIntroWithFallback(query, opts);
+}
+
+/**
+ * PRIMARY Pixabay → optional Pexels backup if INTRO_STOCK_PRIMARY=pexels
+ * or Pixabay empty / error.
+ */
 export async function fetchIntroWithFallback(
   query: string,
   opts?: { perPage?: number },
 ): Promise<IntroFetchResult> {
   const perPage = opts?.perPage ?? 12;
+  const primary = primarySource();
 
+  if (primary === "pixabay") {
+    try {
+      const pixabay = await fetchPixabayVideos(query, perPage);
+      const videos = pixabay.map(normalizePixabay).filter(Boolean) as NormalizedIntroVideo[];
+      if (videos.length > 0) return { source: "pixabay", videos };
+      console.warn(`[intros] Pixabay empty for "${query}" — trying Pexels backup`);
+    } catch (err) {
+      console.warn(`[intros] Pixabay error: ${(err as Error).message} — Pexels backup`);
+    }
+
+    try {
+      const pexels = await fetchPexelsVideos(query, perPage);
+      const videos = pexels.map(normalizePexels).filter(Boolean) as NormalizedIntroVideo[];
+      return { source: "pexels", videos };
+    } catch {
+      return { source: "pixabay", videos: [] };
+    }
+  }
+
+  // Legacy path: Pexels first
   try {
     const pexels = await fetchPexelsVideos(query, perPage);
     const videos = pexels.map(normalizePexels).filter(Boolean) as NormalizedIntroVideo[];
     if (videos.length > 0) return { source: "pexels", videos };
-    console.warn(`[intros] Pexels empty for "${query}" — trying Pixabay`);
   } catch (err) {
-    const status = (err as { status?: number }).status;
-    if (status === 429) {
-      console.warn("[intros] Pexels 429 (200/hour) — falling back to Pixabay");
-    } else if (status === 401) {
-      console.warn("[intros] PEXELS_API_KEY missing — Pixabay backup");
-    } else {
-      console.warn(`[intros] Pexels error: ${(err as Error).message} — Pixabay backup`);
-    }
+    console.warn(`[intros] Pexels error: ${(err as Error).message} — Pixabay`);
   }
 
   const pixabay = await fetchPixabayVideos(query, perPage);
@@ -161,4 +190,14 @@ export async function downloadAndCacheIntro(
   }
 
   return { r2Key, r2Url, coverKey, coverUrl, bytes: buf.length };
+}
+
+/** Alias matching agent prompt naming */
+export async function downloadAndCacheToR2(
+  video: PixabayVideo,
+  category: string,
+): Promise<CachedIntroMedia> {
+  const normalized = normalizePixabay(video);
+  if (!normalized) throw new Error("Pixabay video has no playable URL");
+  return downloadAndCacheIntro(normalized, category);
 }
