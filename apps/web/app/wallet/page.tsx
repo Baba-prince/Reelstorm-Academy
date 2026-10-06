@@ -37,6 +37,7 @@ function WalletInner() {
   } | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [voucherCode, setVoucherCode] = useState("");
 
   const load = useCallback(async () => {
     const headers: Record<string, string> = {};
@@ -140,6 +141,57 @@ function WalletInner() {
         </div>
         <div className="mono text-[18px] text-orange font-bold">−{nextSqueeze} RTC</div>
       </div>
+
+      <form
+        className="rounded-rs border border-white/[0.08] bg-panel p-4 space-y-3"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!token) {
+            window.location.href = `/login?next=${encodeURIComponent("/wallet")}`;
+            return;
+          }
+          const code = voucherCode.trim().toUpperCase();
+          if (!code) return;
+          setBusy(true);
+          setMsg("Redeeming voucher…");
+          try {
+            const res = await fetch(`${getApiBase()}/api/billing/redeem-voucher`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ code }),
+            });
+            const j = (await res.json()) as { error?: string; grantedRtc?: number; balanceRtc?: number };
+            if (!res.ok) throw new Error(j.error || "Redeem failed");
+            setMsg(`Voucher redeemed — +${j.grantedRtc} RTC (balance ${j.balanceRtc})`);
+            setVoucherCode("");
+            await load();
+          } catch (ex) {
+            setMsg((ex as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <div className="mono text-[9px] text-white/40">GIFT VOUCHER</div>
+        <div className="flex gap-2">
+          <input
+            className="flex-1 h-10 px-3 rounded-rs bg-void border border-white/10 text-sm mono"
+            placeholder="RS-XXXX-XXXX"
+            value={voucherCode}
+            onChange={(e) => setVoucherCode(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={busy || !voucherCode.trim()}
+            className="h-10 px-4 rounded-rs bg-cyan text-black text-sm font-bold disabled:opacity-50"
+          >
+            Redeem
+          </button>
+        </div>
+      </form>
 
       <div className="space-y-2">
         <div className="mono text-[9px] text-white/40">UPGRADE · SELL SETS</div>

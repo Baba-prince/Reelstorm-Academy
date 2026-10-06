@@ -402,7 +402,7 @@ model RtcWallet {
 model RtcLedger {
   id          String   @id @default(cuid())
   walletId    String
-  type        String   // GRANT | PURCHASE | DEBIT_ARCHIVE5 | DEBIT_GENERATE | ADJUST | REFUND
+  type        String   // GRANT | PURCHASE | DEBIT_ARCHIVE5 | DEBIT_GENERATE | ADJUST | REFUND | GIFT | VOUCHER
   amountRtc   Int      // signed: +credit / -debit
   balanceAfter Int
   refType     String?
@@ -412,4 +412,19 @@ model RtcLedger {
   wallet      RtcWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([walletId, createdAt])
+}
+
+/// Admin-issued gift credit voucher (redeem once by any registered user)
+model GiftVoucher {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  amountRtc   Int
+  note        String?
+  createdBy   String
+  redeemedBy  String?
+  redeemedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([redeemedAt])
 }

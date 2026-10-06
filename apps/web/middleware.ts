@@ -36,6 +36,7 @@ const APP_ONLY_PREFIXES = [
   "/brand",
   "/wallet",
   "/scorecard",
+  "/admin",
   "/projects",
 ];
 

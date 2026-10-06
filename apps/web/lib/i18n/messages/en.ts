@@ -41,6 +41,7 @@ export const en: MessageTree = {
     brand: "Brand",
     wallet: "RTC Wallet",
     scorecard: "Scorecard",
+    admin: "Admin",
   },
   marketing: {
     heroLine: "Not a course. A production OS that turns scripts and reference reels into ARCHIVE5 blocks — then merges them into bankable masters.",

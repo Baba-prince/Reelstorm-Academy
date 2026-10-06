@@ -29,6 +29,7 @@ import { guideRoutes } from "./routes/guide.js";
 import { i18nRoutes } from "./routes/i18n.js";
 import { blueprintRoutes } from "./routes/blueprint.js";
 import { aiHealthRoutes } from "./routes/ai-health.js";
+import { adminRoutes } from "./routes/admin.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";
@@ -90,6 +91,7 @@ async function main() {
   await readinessRoutes(app);
   await whiteLabelRoutes(app);
   await billingRoutes(app);
+  await adminRoutes(app);
   await soundRoutes(app);
   await guideRoutes(app);
   await i18nRoutes(app);

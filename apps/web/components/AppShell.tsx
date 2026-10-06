@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { GuideBot } from "@/components/guide/GuideBot";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import { AuthProvider } from "@/lib/auth";
 
 const MARKETING_EXACT = new Set([
   "/",
@@ -30,8 +31,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <I18nProvider>
-      {isMarketing ? children : <Shell>{children}</Shell>}
-      <GuideBot />
+      <AuthProvider>
+        {isMarketing ? children : <Shell>{children}</Shell>}
+        <GuideBot />
+      </AuthProvider>
     </I18nProvider>
   );
 }

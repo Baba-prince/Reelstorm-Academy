@@ -352,6 +352,10 @@ export async function billingRoutes(app: FastifyInstance) {
   });
 
   app.post("/api/billing/grant-monthly", async (req, reply) => {
+    const { requireAdmin } = await import("../lib/admin.js");
+    const gate = await requireAdmin(req.headers.authorization);
+    if (!gate.ok) return reply.code(gate.status).send({ error: gate.error });
+
     const body = (req.body || {}) as { email?: string; tier?: string };
     const email = body.email || "producer@reelstorm.academy";
     const tier = (body.tier || "storm") as "free" | "storm" | "storm_pro" | "premium_pro" | "network";
@@ -367,7 +371,7 @@ export async function billingRoutes(app: FastifyInstance) {
       walletId: wallet.id,
       amount,
       type: "GRANT",
-      note: `Monthly grant ${tier}`,
+      note: `Monthly grant ${tier} by ${gate.user.email}`,
     });
     return { user, wallet, grantedRtc: amount };
   });

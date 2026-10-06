@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { useAuth } from "@/lib/auth";
+import { isAdminEmail } from "@reelstorm/domain";
 
 const NAV = [
   { href: "/wizard", key: "nav.wizard" },
@@ -27,6 +29,8 @@ const NAV = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const t = useT();
+  const { user } = useAuth();
+  const showAdmin = isAdminEmail(user?.email);
 
   return (
     <div className="min-h-screen flex">
@@ -58,6 +62,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {showAdmin ? (
+            <Link
+              href="/admin"
+              className={clsx(
+                "block px-3 py-2.5 rounded-rs text-[13px] font-medium transition-colors mt-2",
+                pathname === "/admin" || pathname.startsWith("/admin/")
+                  ? "bg-orange/20 text-orange border border-orange/40"
+                  : "text-orange/80 hover:text-orange hover:bg-orange/10",
+              )}
+            >
+              {t("nav.admin")}
+            </Link>
+          ) : null}
         </nav>
         <div className="p-4 border-t border-white/[0.06] space-y-2">
           <div className="flex items-center gap-2 mono text-[9px] text-cyan">
@@ -88,7 +105,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               Account
             </Link>
             <span className="mono text-[9px] px-2 py-1 rounded-full bg-orange text-black font-bold">
-              STORM OS v1.1
+              STORM OS v1.2
             </span>
           </div>
         </header>
