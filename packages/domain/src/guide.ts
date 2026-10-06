@@ -1,6 +1,7 @@
 /**
  * STORM Guide — system knowledge + workflow improvement options
  * Used by API (LLM grounding) and web (instant page tips).
+ * Keep in sync with shipped OS: YT-OS v2, Viral Clone Factory, Pixabay PRIMARY, Account.
  */
 
 export type GuideOption = {
@@ -21,68 +22,77 @@ export type GuideLayer = {
   options: GuideOption[];
 };
 
-export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS.
+export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.2 / YT-OS v2.
 
 Mission:
-- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, STORM pipeline, BOT Director Wizard).
+- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, STORM pipeline, BOT Director Wizard, YT-OS 11 skills, Viral Clone Factory).
 - Improve the operator's workflow with concrete next actions.
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer factory order: BOT Director Wizard or Template Forge → World Builder → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
-- Sound Studio is the voice OS (sync · extract · mux · library). Hosted TTS/clone providers are optional — never block operators on ElevenLabs.
-- Soft launch: Ollama may power the guide LLM; Stripe test + mock video are OK until live DashScope/Seedance/sk_live keys are stamped.
-- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. Tiers: Free Test $0 · Basic $49 (3 sets, 720p) · Premium $99 (5 sets, 1080p hero) · Premium Pro $199 (10 sets).
+- Prefer factory order: BOT Director Wizard (or /yt-os / /tools/clone) → Templates Room / Template Forge → World Builder → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Sound Studio is the voice OS (sync · extract · mux · library · TTS). Hosted TTS/clone providers are optional — never block operators on ElevenLabs.
+- Template Room stock intros: Pixabay is PRIMARY (Pexels paused). Cached to R2/local — GET /api/templates?type=intro — $0 Seedance cost for intros.
+- Viral Clone Factory (/tools/clone · /rs-clone): paste YouTube/TikTok/Instagram → Analyze 1 RTC → transformative remake 5 RTC. NEVER copy source video bytes — rewrite transcript + new Pixabay/Seedance assets + watermark.
+- YT-OS v2 (/yt-os): 11 slash skills /rs-viral · /rs-script (21 hooks) · /rs-package · /rs-video · /rs-voice · /rs-thumb · /rs-comments · /rs-plan · /rs-publish · /rs-analytics · /rs-clone — all inside REELSTORM (not external Claude).
+- Account menu (header avatar): Account settings · Change password · Billing · RTC Wallet · Log out. Captain Admin only for locked admin email.
+- Free demo: 1 RTC from SystemBank (4600 RTC pool ≈ 920 × 5-min sets). Free users can analyze/demo; reproduce/vault needs paid RTC.
+- Soft launch: Ollama may power the guide LLM; Stripe test + mock video OK until live DashScope/Seedance/sk_live keys are stamped.
+- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. Tiers: Free Test $0 (1 RTC demo) · Storm / Storm Pro / Premium Pro via /billing + /wallet. Clone: 1 RTC analyze + 5 RTC reproduce.
 
-Tone: sharp producer, not corporate. Brand colors mentally: violet / cyan / orange on void black.`;
+Tone: sharp producer, not corporate. Brand colors mentally: violet / cyan / orange on void black.
+Compliance: Clone Factory is transformative fair-use remake for inspiration — original assets only.`;
 
 export const GUIDE_LAYERS: GuideLayer[] = [
   {
     path: "/",
     layer: "marketing",
     title: "Landing",
-    blurb: "Brand-first entry to the production OS factory.",
+    blurb: "Brand-first entry to the production OS factory + YT-OS.",
     tips: [
       "REELSTORM is not a course player — it is a factory that vaults ARCHIVE5 IP.",
-      "Start in Template Forge or flip the Training Manual first.",
+      "New: YT-OS (/yt-os) runs 11 YouTube skills inside the OS; Clone Factory remakes viral links transformatively.",
+      "Start with BOT Director Wizard, YT-OS, or Template Forge.",
     ],
     options: [
       { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual path.", href: "/training", kind: "goto" },
-      { id: "factory", label: "See factory map", prompt: "Explain the six STORM stages simply.", href: "/how-it-works", kind: "learn" },
+      { id: "ytos", label: "Open YT-OS", prompt: "What are the 11 /rs-* skills and which should I try first?", href: "/yt-os", kind: "goto" },
+      { id: "clone", label: "Viral Clone Factory", prompt: "How does link-to-video clone work and what does it cost?", href: "/tools/clone", kind: "goto" },
       { id: "forge", label: "Open Template Forge", prompt: "What should I do first in Template Forge?", href: "/template-forge", kind: "do" },
-      { id: "pricing", label: "RTC pricing", prompt: "Explain RTC and Journey tiers for my use case.", href: "/pricing", kind: "learn" },
+      { id: "pricing", label: "RTC pricing", prompt: "Explain RTC, free demo SystemBank, and paid tiers.", href: "/pricing", kind: "learn" },
     ],
   },
   {
     path: "/training",
     layer: "marketing",
     title: "Training Manual",
-    blurb: "Flip-over artifact — screen-by-screen operator training (21 pages).",
+    blurb: "Flip-over artifact — screen-by-screen operator training.",
     tips: [
       "Use arrow keys or Flip to advance; Index jumps to any chapter.",
       "Match each system image to the live OS screen before moving on.",
-      "New chapters: BOT Director Wizard + Sound Studio as voice OS.",
+      "Also learn live: YT-OS, Viral Clone, Account menu, Pixabay intros in Templates Room.",
     ],
     options: [
       { id: "rules", label: "System rules first", prompt: "Summarize Section A system rules I must not break.", kind: "learn" },
       { id: "wizard", label: "BOT Director path", prompt: "How does BOT Director Wizard fit before Template Forge?", href: "/wizard", kind: "goto" },
-      { id: "ops", label: "Operator path", prompt: "Give me the fastest operator path Wizard→Merge.", kind: "improve" },
-      { id: "sound", label: "Sound Studio chapter", prompt: "How do I use Sound Studio after reading the guide?", href: "/sound-studio", kind: "goto" },
+      { id: "ytos", label: "YT-OS chapter", prompt: "Explain YT-OS v2 eleven skills for a new YouTuber.", href: "/yt-os", kind: "goto" },
+      { id: "ops", label: "Operator path", prompt: "Give me the fastest operator path Wizard→Merge including Clone optional.", kind: "improve" },
     ],
   },
   {
     path: "/how-it-works",
     layer: "marketing",
     title: "Factory Map",
-    blurb: "Seven stages · zero timeline scrubbing.",
+    blurb: "STORM stages · YT-OS · Clone · zero timeline scrubbing.",
     tips: [
-      "Lock intent before pixels — Story Contract + optional reference URL (or run BOT Director Wizard).",
+      "Lock intent before pixels — Story Contract, Wizard, or paste a viral link into Clone Factory.",
       "Soul ID + room plates before STORM render.",
       "Sound Studio owns voice after Studio QC — before or alongside vault.",
     ],
     options: [
-      { id: "stages", label: "Explain 7 stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
-      { id: "wizard", label: "Start with Wizard", prompt: "Should I use BOT Director Wizard or Template Forge first?", href: "/wizard", kind: "improve" },
+      { id: "stages", label: "Explain STORM stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
+      { id: "ytos", label: "Where YT-OS fits", prompt: "How do YT-OS skills feed the factory?", href: "/yt-os", kind: "learn" },
+      { id: "wizard", label: "Start with Wizard", prompt: "Should I use BOT Director Wizard, YT-OS, or Template Forge first?", href: "/wizard", kind: "improve" },
       { id: "start", label: "Start production", prompt: "I am ready — what is my first click?", href: "/template-forge", kind: "do" },
     ],
   },
@@ -90,15 +100,17 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/pricing",
     layer: "marketing",
     title: "RTC Pricing",
-    blurb: "Sell sets. Meter minutes.",
+    blurb: "Sell sets. Meter minutes. Free demo from SystemBank.",
     tips: [
-      "1 RTC = 1 min master · 1 set = 5 RTC.",
-      "Basic $49 locks 720p; Premium $99 unlocks 1080p (YouTuber hero).",
-      "Overage packs: 10 / 25 / 50 RTC when a month goes viral.",
+      "1 RTC = 1 min master · 1 ARCHIVE5 set = 5 RTC.",
+      "Free Test: 1 RTC demo granted from SystemBank (4600 RTC pool).",
+      "Clone Factory: 1 RTC analyze + 5 RTC reproduce. Stock Pixabay intros are $0 Seedance.",
+      "Upgrade via /billing · /wallet · Stripe checkout.",
     ],
     options: [
-      { id: "pick", label: "Which tier?", prompt: "Help me pick Basic vs Premium for 4 videos/month.", kind: "improve" },
-      { id: "wallet", label: "Open wallet", prompt: "How do I check balance and see −5 RTC on squeeze?", href: "/wallet", kind: "goto" },
+      { id: "pick", label: "Which tier?", prompt: "Help me pick a tier for 4 videos/month including Shorts.", kind: "improve" },
+      { id: "demo", label: "Free demo?", prompt: "How does the 1 RTC free demo and SystemBank work?", href: "/billing", kind: "learn" },
+      { id: "wallet", label: "Open wallet", prompt: "How do I check balance and top up?", href: "/wallet", kind: "goto" },
       { id: "wl", label: "White-label packs", prompt: "How do academies buy RTC for their brand?", href: "/white-label", kind: "learn" },
     ],
   },
@@ -120,11 +132,15 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/developers",
     layer: "marketing",
     title: "API",
-    blurb: "Health → generate → vault with RTC debit.",
-    tips: ["Authorization: Bearer rs_live_…", "Same ledger rules as the console."],
+    blurb: "Health → generate → vault · clone · yt-os skills.",
+    tips: [
+      "Authorization: Bearer rs_live_… or Supabase access token.",
+      "Clone: POST /api/clone/analyze · /api/clone/reproduce.",
+      "YT-OS: GET /api/yt-os/skills · POST /api/yt-os/skill/:id.",
+    ],
     options: [
-      { id: "smoke", label: "Smoke path", prompt: "Give curl examples for health, generate, from-url.", kind: "learn" },
-      { id: "sound-api", label: "Sound API?", prompt: "Which Sound Studio endpoints can academies call?", kind: "learn" },
+      { id: "smoke", label: "Smoke path", prompt: "Give curl examples for health, clone analyze, yt-os skills.", kind: "learn" },
+      { id: "clone-api", label: "Clone API", prompt: "Document transformative clone endpoints and RTC costs.", href: "/tools/clone", kind: "learn" },
     ],
   },
   {
@@ -132,9 +148,13 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     layer: "marketing",
     title: "Producers",
     blurb: "For YouTubers, artists, advert outlets.",
-    tips: ["Volume without slop — vault blocks, then merge masters."],
+    tips: [
+      "Volume without slop — vault blocks, then merge masters.",
+      "YouTubers: start at /yt-os then Clone Factory for viral DNA remakes.",
+    ],
     options: [
-      { id: "workflow", label: "Producer workflow", prompt: "Design a weekly producer workflow on ReelStorm.", kind: "improve" },
+      { id: "workflow", label: "Producer workflow", prompt: "Design a weekly producer workflow with YT-OS + factory.", kind: "improve" },
+      { id: "ytos", label: "Open YT-OS", prompt: "Take me to the 11 skills dashboard.", href: "/yt-os", kind: "goto" },
       { id: "enter", label: "Enter factory", prompt: "Take me into production.", href: "/dashboard", kind: "goto" },
     ],
   },
@@ -142,16 +162,16 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/dashboard",
     layer: "os",
     title: "Dashboard",
-    blurb: "Command center — welcome by name, jobs, RTC, shortcuts.",
+    blurb: "Command center — jobs, RTC, Wizard / YT-OS / Clone shortcuts.",
     tips: [
       "Check LIVE ENGINE + RTC before queuing Studio.",
-      "Open jobs should clear before Merge.",
-      "Prefer BOT Director Wizard for a guided first project.",
+      "Header avatar → Account · Billing · Wallet · Log out.",
+      "Prefer BOT Director Wizard or YT-OS for a guided first project.",
     ],
     options: [
       { id: "next", label: "What next?", prompt: "Based on a fresh project, what should I do next?", kind: "improve" },
-      { id: "wizard", label: "Open Wizard", prompt: "Walk me through BOT Director Wizard stages 1–7.", href: "/wizard", kind: "do" },
-      { id: "forge", label: "Start Forge", prompt: "Open Template Forge and tell me the first 3 clicks.", href: "/template-forge", kind: "do" },
+      { id: "wizard", label: "Open Wizard", prompt: "Walk me through BOT Director Wizard stages.", href: "/wizard", kind: "do" },
+      { id: "ytos", label: "YT-OS skills", prompt: "Which YT-OS skill should I run first?", href: "/yt-os", kind: "goto" },
       { id: "rtc", label: "Check RTC", prompt: "How do I know if I have enough RTC for 2 ARCHIVE5 blocks?", href: "/wallet", kind: "goto" },
     ],
   },
@@ -159,33 +179,86 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/wizard",
     layer: "os",
     title: "BOT Director Wizard",
-    blurb: "Seven-stage blueprint → Live Engine → factory handoff.",
+    blurb: "Seven-stage blueprint · Idea or Clone Viral Link tab.",
     tips: [
-      "Stages: Brief → Cast → World → Beats → Voice → Render → Ship.",
-      "POST /api/blueprint/generate then watch /ws/blueprint/:id.",
-      "When READY, send from-blueprint into the STORM factory.",
+      "Step 1 tabs: Generate from Idea OR Clone Viral Link (opens /tools/clone).",
+      "Paste YouTube / TikTok / Instagram / social URLs for DNA into LIVE ENGINE.",
+      "Free demo 1 RTC can burn for a 1-min watermarked preview.",
+      "When READY, Feed Factory → from-blueprint into STORM.",
     ],
     options: [
       { id: "stages", label: "Explain 7 stages", prompt: "Explain each BOT Director Wizard stage and what I must enter.", kind: "learn" },
+      { id: "clone-tab", label: "Clone Viral Link", prompt: "How do I use the Clone Viral Link tab vs idea generate?", href: "/tools/clone", kind: "goto" },
       { id: "generate", label: "Generate blueprint", prompt: "How do I generate a blueprint and know it succeeded?", kind: "do" },
-      { id: "handoff", label: "Into factory", prompt: "How do I hand a blueprint off to Template Forge / Studio?", kind: "improve" },
-      { id: "forge", label: "Skip to Forge", prompt: "When should I skip the Wizard and go straight to Template Forge?", href: "/template-forge", kind: "goto" },
+      { id: "handoff", label: "Into factory", prompt: "How do I hand a blueprint off to Studio / Archive?", kind: "improve" },
+    ],
+  },
+  {
+    path: "/yt-os",
+    layer: "os",
+    title: "YT-OS v2",
+    blurb: "Eleven /rs-* skills — Claude-killer YouTube OS inside REELSTORM.",
+    tips: [
+      "Skills: viral · script (21 hooks) · package · video edit · voice · thumb · comments · plan · publish · analytics · clone.",
+      "Connected badge = REELSTORM OS; YouTube OAuth publish is pending connect.",
+      "Costs draw from your RTC wallet / SystemBank — Pixabay intros keep Shorts near $0.",
+      "Slash filter at bottom: type rs-viral, rs-clone…",
+    ],
+    options: [
+      { id: "viral", label: "Run /rs-viral", prompt: "How does Virality Engine find and rebuild niche winners?", kind: "do" },
+      { id: "script", label: "21 hooks", prompt: "Explain hook formulas and write a Shorts script for my niche.", kind: "learn" },
+      { id: "plan", label: "30-day calendar", prompt: "How do I generate a Long/Short calendar?", href: "/yt-os/plan", kind: "goto" },
+      { id: "clone", label: "Open Clone", prompt: "Take me to link-to-video remake.", href: "/tools/clone", kind: "goto" },
+    ],
+  },
+  {
+    path: "/yt-os/plan",
+    layer: "os",
+    title: "Content Calendar",
+    blurb: "/rs-plan — 30-day Long/Short schedule from bank RTC.",
+    tips: [
+      "Long Mon/Wed/Fri (~5 RTC) · Short other days (~1 RTC).",
+      "Lean on Pixabay intros to keep Short cost near zero.",
+      "Generate plan then produce via /rs-script → Studio / Clone.",
+    ],
+    options: [
+      { id: "gen", label: "Generate plan", prompt: "How do I generate and read the 30-day calendar?", kind: "do" },
+      { id: "cost", label: "RTC budget", prompt: "Estimate RTC for 30 Shorts + 12 Longs from SystemBank.", kind: "learn" },
+      { id: "back", label: "Back to skills", prompt: "Return to YT-OS dashboard.", href: "/yt-os", kind: "goto" },
+    ],
+  },
+  {
+    path: "/tools/clone",
+    layer: "os",
+    title: "Viral Clone Factory",
+    blurb: "Paste viral link → analyze structure → transformative remake.",
+    tips: [
+      "Allowed: youtube.com · shorts · tiktok.com · instagram.com only.",
+      "Analyze = 1 RTC (metadata + captions — never downloads source video bytes).",
+      "Reproduce = 5 RTC — rewritten script + Pixabay B-roll + Seedance prompts + watermark.",
+      "Styles: kids · gaming · a24 · original. Fair-use remake — not a copy.",
+    ],
+    options: [
+      { id: "flow", label: "Full flow", prompt: "Walk me through analyze then reproduce with kids style.", kind: "do" },
+      { id: "cost", label: "RTC costs", prompt: "Explain 1+5 RTC and free demo limits for clone.", kind: "learn" },
+      { id: "legal", label: "Compliance", prompt: "What makes a remake transformative vs copyright risk?", kind: "learn" },
+      { id: "ytos", label: "YT-OS viral", prompt: "How does /rs-viral differ from Clone Factory?", href: "/yt-os", kind: "goto" },
     ],
   },
   {
     path: "/templates-room",
     layer: "os",
     title: "Templates Room",
-    blurb: "Nollywood · Nigeria, Asia cinema, drama, thriller, ads, intros — ideals as DNA.",
+    blurb: "Ideals + stock intros — Pixabay PRIMARY → cached, $0 Seedance.",
     tips: [
-      "Start with Nollywood or Asia packs for regional shorts; filter by category.",
-      "Open a card → Use ideal to spawn a project + sample script; customize in Storyboard.",
-      "Extract your own style DNA in Template Forge when ideals aren't enough.",
+      "Stock intros: ~100 cached (20× nollywood/asia/drama/product/intros) from Pixabay (Pexels paused).",
+      "Filter ?type=intro&category=… — served from DB/R2/local, not live API.",
+      "Open a card → Use ideal for DNA; extract custom style in Template Forge when needed.",
     ],
     options: [
-      { id: "nollywood", label: "Nollywood pick", prompt: "Which Nollywood Nigeria template fits a Lagos family drama short?", kind: "improve" },
+      { id: "intros", label: "Stock intros", prompt: "How do Pixabay stock intros work and why $0 Seedance?", kind: "learn" },
+      { id: "nollywood", label: "Nollywood pick", prompt: "Which Nollywood template fits a Lagos family drama short?", kind: "improve" },
       { id: "asia", label: "Asia cinema pick", prompt: "Recommend an Asia template — K-drama, Bollywood, anime, or SEA food.", kind: "improve" },
-      { id: "drama", label: "Drama ideals", prompt: "Which drama template should I start with for an emotional short?", kind: "improve" },
       { id: "forge", label: "Extract my own", prompt: "When should I leave Templates Room for Template Forge?", href: "/template-forge", kind: "goto" },
     ],
   },
@@ -197,7 +270,7 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     tips: [
       "Paste URL or drop MP4 — wait for analysis stages to hit READY.",
       "Apply template to a project before World Builder.",
-      "Or start from curated ideals in Templates Room.",
+      "Or start from curated ideals / Pixabay intros in Templates Room.",
     ],
     options: [
       { id: "url", label: "URL extract tips", prompt: "Best practices for YouTube reference extract.", kind: "improve" },
@@ -248,11 +321,11 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/sound-studio",
     layer: "os",
     title: "Sound Studio",
-    blurb: "Voice OS — sync · extract · mux · library.",
+    blurb: "Voice OS — sync · extract · mux · library · /rs-voice.",
     tips: [
       "Sound Studio owns all voice work; hosted clone/TTS keys are optional.",
+      "YT-OS /rs-voice redirects here for clone + TTS.",
       "Sync needs a Template Forge uploadId + audio file/URL/asset.",
-      "Extract stems from any video uploadId, then mux back onto picture.",
     ],
     options: [
       { id: "sync", label: "Sync workflow", prompt: "Step-by-step external audio sync onto video.", kind: "do" },
@@ -287,11 +360,64 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/wallet",
     layer: "os",
     title: "RTC Wallet",
-    blurb: "Balance · sets left · −5 RTC per squeeze.",
-    tips: ["Top up before Studio if remaining < 2 sets (10 RTC).", "Basic is 720p-only — upgrade Premium for 1080p."],
+    blurb: "Balance · free demo · top-up · vouchers.",
+    tips: [
+      "Free users get 1 RTC demo from SystemBank once.",
+      "Top up before Studio if remaining < 2 sets (10 RTC).",
+      "Clone reproduce needs 5 RTC — analyze alone may use your free demo.",
+    ],
     options: [
       { id: "math", label: "RTC math", prompt: "I have 25 RTC — how many 5-min sets can I vault?", kind: "learn" },
-      { id: "buy", label: "Buy packs", prompt: "Where do I purchase RTC overage packs?", href: "/pricing", kind: "goto" },
+      { id: "billing", label: "Billing page", prompt: "Show SystemBank funnel and my wallet.", href: "/billing", kind: "goto" },
+      { id: "buy", label: "Upgrade / packs", prompt: "Where do I purchase tiers or RTC packs?", href: "/pricing", kind: "goto" },
+    ],
+  },
+  {
+    path: "/billing",
+    layer: "os",
+    title: "Billing",
+    blurb: "SystemBank funnel · wallet · plans.",
+    tips: [
+      "SystemBank = 4600 RTC free-demo pool (920 × 5-min sets).",
+      "Your wallet shows free demo granted/used + balance.",
+      "Account menu also links here — header avatar top-right.",
+    ],
+    options: [
+      { id: "bank", label: "SystemBank?", prompt: "Explain SystemBank remaining and free demo grants.", kind: "learn" },
+      { id: "wallet", label: "Open wallet", prompt: "Take me to top-up and vouchers.", href: "/wallet", kind: "goto" },
+      { id: "account", label: "Account settings", prompt: "Where do I change password and log out?", href: "/account", kind: "goto" },
+    ],
+  },
+  {
+    path: "/account",
+    layer: "os",
+    title: "Account settings",
+    blurb: "Profile · password · billing links · log out.",
+    tips: [
+      "Edit display name; email is locked to your auth identity.",
+      "Change password for email/password accounts (Google users use Google security).",
+      "Log out from this page or the header avatar menu.",
+    ],
+    options: [
+      { id: "pw", label: "Change password", prompt: "How do I change my password safely?", kind: "do" },
+      { id: "bill", label: "Go to billing", prompt: "Open billing and explain my free demo status.", href: "/billing", kind: "goto" },
+      { id: "out", label: "Log out help", prompt: "Where is log out and what happens to my session?", kind: "learn" },
+    ],
+  },
+  {
+    path: "/admin",
+    layer: "os",
+    title: "Captain Admin",
+    blurb: "Locked admin console — gifts, users, SystemBank overview.",
+    tips: [
+      "Only the configured admin email can open this dashboard.",
+      "Admin gifts/vouchers do not drain SystemBank free-demo pool.",
+      "Use for support RTC grants — not for day-to-day production.",
+    ],
+    options: [
+      { id: "gift", label: "Gift RTC", prompt: "How do I gift RTC or issue a voucher without touching SystemBank?", kind: "do" },
+      { id: "bank", label: "Bank status", prompt: "How do I read SystemBank remaining on admin?", kind: "learn" },
+      { id: "back", label: "Back to OS", prompt: "Return to dashboard for production.", href: "/dashboard", kind: "goto" },
     ],
   },
   {
@@ -301,12 +427,12 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     blurb: "DashScope / Ollama LLM · Seedance video · optional Kling/Veo/TTS.",
     tips: [
       "Soft launch minimum: Ollama local LLM (GUIDE_USE_OLLAMA=1) + mock video OK.",
-      "Production upgrade: DASHSCOPE_API_KEY + Seedance + MOCK_VIDEO_GEN=0 + sk_live Stripe.",
-      "Sound Studio does not require ElevenLabs — provider keys are optional.",
+      "Production: DASHSCOPE_API_KEY + Seedance + MOCK_VIDEO_GEN=0 + sk_live Stripe.",
+      "Pixabay API key powers Template Room intros (PRIMARY) — never commit keys to git.",
     ],
     options: [
       { id: "min", label: "Minimum keys", prompt: "What is the minimum key set for soft launch vs full production?", kind: "learn" },
-      { id: "ollama", label: "Ollama only", prompt: "Can I run orchestration with only Ollama?", kind: "improve" },
+      { id: "pixabay", label: "Pixabay intros", prompt: "How does Pixabay PRIMARY wire into Template Room?", href: "/templates-room", kind: "goto" },
       { id: "score", label: "Check scorecard", prompt: "How do I verify Model Center readiness on the scorecard?", href: "/scorecard", kind: "goto" },
     ],
   },
@@ -314,15 +440,15 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/scorecard",
     layer: "os",
     title: "Scorecard",
-    blurb: "Production readiness gates (v1.5 soft-launch).",
+    blurb: "Production readiness gates (v1.2 / soft-launch).",
     tips: [
       "Target grade A on /api/readiness before academy launch.",
       "Soft launch: Ollama LLM, Stripe test, mock video can PASS with SOFT_LAUNCH=1.",
-      "Swap to DashScope + Seedance + sk_live_ before real charges and real renders.",
+      "Confirm Pixabay intros filled + YT-OS/clone routes healthy after deploy.",
     ],
     options: [
       { id: "gaps", label: "Close gaps", prompt: "Typical readiness gaps and how to close them on soft launch.", kind: "improve" },
-      { id: "api", label: "API readiness", prompt: "What does /api/readiness check in v1.5?", kind: "learn" },
+      { id: "api", label: "API readiness", prompt: "What does /api/readiness check now?", kind: "learn" },
       { id: "train", label: "Training checklist", prompt: "Point me to the Training Manual launch checklist page.", href: "/training", kind: "goto" },
     ],
   },
@@ -351,23 +477,32 @@ export const GUIDE_LAYERS: GuideLayer[] = [
 export function resolveGuideLayer(pathname: string): GuideLayer {
   const exact = GUIDE_LAYERS.find((l) => typeof l.path === "string" && l.path === pathname);
   if (exact) return exact;
-  const soft = GUIDE_LAYERS.find(
-    (l) => typeof l.path === "string" && l.path !== "/" && pathname.startsWith(l.path),
-  );
+  // Longer paths first (e.g. /yt-os/plan before /yt-os)
+  const soft = [...GUIDE_LAYERS]
+    .filter((l) => typeof l.path === "string" && l.path !== "/")
+    .sort((a, b) => String(b.path).length - String(a.path).length)
+    .find((l) => typeof l.path === "string" && pathname.startsWith(l.path));
   if (soft) return soft;
   return {
     path: pathname,
-    layer: pathname.startsWith("/") && !["/", "/how-it-works", "/training", "/pricing", "/white-label", "/developers", "/producers"].some((p) => pathname === p || pathname.startsWith("/legal"))
-      ? "os"
-      : "marketing",
+    layer:
+      pathname.startsWith("/") &&
+      !["/", "/how-it-works", "/training", "/pricing", "/white-label", "/developers", "/producers"].some(
+        (p) => pathname === p,
+      ) &&
+      !pathname.startsWith("/legal")
+        ? "os"
+        : "marketing",
     title: "REELSTORM",
-    blurb: "STORM Guide is with you on every layer.",
+    blurb: "STORM Guide is with you on every layer — factory, YT-OS, and Clone.",
     tips: [
       "Ask how to improve your current workflow.",
       "Or say “what should I do next?” for a concrete path.",
+      "Try /yt-os or /tools/clone for YouTube growth loops.",
     ],
     options: [
       { id: "next", label: "What next?", prompt: "What should I do next in ReelStorm?", kind: "improve" },
+      { id: "ytos", label: "YT-OS", prompt: "Show YT-OS eleven skills briefly.", href: "/yt-os", kind: "goto" },
       { id: "map", label: "Factory map", prompt: "Show the factory path briefly.", href: "/how-it-works", kind: "goto" },
       { id: "train", label: "Training", prompt: "Point me to training.", href: "/training", kind: "goto" },
     ],

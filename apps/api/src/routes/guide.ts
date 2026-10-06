@@ -36,21 +36,66 @@ function localCoach(pathname: string, message: string, option?: GuideOption): {
     lower.includes("rtc") ||
     lower.includes("pricing") ||
     lower.includes("wallet") ||
+    lower.includes("billing") ||
     lower.includes("tier") ||
     lower.includes("archive5") ||
+    lower.includes("systembank") ||
+    lower.includes("system bank") ||
+    lower.includes("free demo") ||
     lower.includes("£")
   ) {
     lines.push(
       "• 1 RTC = 1 minute of finished master · 1 set = 5 RTC.",
-      "• Free Test $0 · Basic $49 (3 sets, 720p) · Premium $99 (5 sets, 1080p) · Premium Pro $199.",
-      "• 10 ARCHIVE5/mo ≈ 1000 RTC → Storm (£39) covers 15 blocks; Free only covers 3.",
-      "• Check /wallet before Studio if remaining blocks < 2.",
+      "• Free Test: 1 RTC demo from SystemBank (4600 RTC pool).",
+      "• Clone: 1 RTC analyze + 5 RTC reproduce · Pixabay intros = $0 Seedance.",
+      "• Check /wallet or /billing before Studio if remaining blocks < 2.",
     );
-  } else if (lower.includes("sound") || lower.includes("voice") || lower.includes("clone") || lower.includes("audio")) {
+  } else if (
+    lower.includes("yt-os") ||
+    lower.includes("ytos") ||
+    lower.includes("/rs-") ||
+    lower.includes("virality") ||
+    lower.includes("hook formula")
+  ) {
+    lines.push(
+      "• YT-OS v2: 11 skills at /yt-os — /rs-viral, /rs-script (21 hooks), /rs-package, /rs-video, /rs-voice, /rs-thumb, /rs-comments, /rs-plan, /rs-publish, /rs-analytics, /rs-clone.",
+      "• Calendar: /yt-os/plan · Clone remakes: /tools/clone.",
+      "• Inside REELSTORM — not external Claude.",
+    );
+  } else if (
+    lower.includes("clone factory") ||
+    lower.includes("viral clone") ||
+    lower.includes("reproduce") ||
+    lower.includes("transformative") ||
+    (lower.includes("tiktok") && lower.includes("remake"))
+  ) {
+    lines.push(
+      "• Paste YouTube/TikTok/Instagram only → Analyze (1 RTC) → Reproduce (5 RTC).",
+      "• Never copies source bytes — rewritten script + Pixabay + Seedance + watermark.",
+      "• Free demo may cover analyze; reproduce needs paid RTC.",
+    );
+  } else if (lower.includes("pixabay") || lower.includes("stock intro") || lower.includes("pexels")) {
+    lines.push(
+      "• Pixabay is PRIMARY for Template Room intros (Pexels paused).",
+      "• ~100 intros cached — served from DB/R2, not live API.",
+      "• $0 Seedance cost for stock intros.",
+    );
+  } else if (
+    lower.includes("account") ||
+    lower.includes("password") ||
+    lower.includes("log out") ||
+    lower.includes("logout") ||
+    lower.includes("sign out")
+  ) {
+    lines.push(
+      "• Header avatar → Account settings · Change password · Billing · Wallet · Log out.",
+      "• Full page: /account · Billing: /billing.",
+    );
+  } else if (lower.includes("sound") || lower.includes("voice") || lower.includes("audio")) {
     lines.push(
       "• Sync: Template Forge uploadId + audio file/URL → Sound Studio Sync tab.",
       "• Extract: pull full + voice/music stems from any uploadId.",
-      "• Clone/TTS needs ELEVENLABS_API_KEY in Model Center.",
+      "• /rs-voice redirects to Sound Studio; ElevenLabs key optional.",
     );
   } else if (lower.includes("soul") || lower.includes("world")) {
     lines.push(
@@ -59,7 +104,7 @@ function localCoach(pathname: string, message: string, option?: GuideOption): {
     );
   } else if (lower.includes("next") || lower.includes("workflow") || option?.kind === "improve") {
     lines.push(
-      "• Recommended path: Forge → World → Storyboard → Studio → Sound → Vault → Merge.",
+      "• Path: Wizard or YT-OS/Clone → Forge/Room → World → Storyboard → Studio → Sound → Vault → Merge.",
       "• Improve throughput: parallel blocks, retry only QC fails, vault before merge.",
     );
   } else {
