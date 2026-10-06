@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { API_URL } from "@/lib/api";
+import { getApiBase } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 function WalletInner() {
@@ -21,7 +21,7 @@ function WalletInner() {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     const q = !token ? "?email=producer@reelstorm.academy" : "";
-    const res = await fetch(`${API_URL}/api/billing/wallet${q}`, { headers });
+    const res = await fetch(`${getApiBase()}/api/billing/wallet${q}`, { headers });
     if (res.ok) setData(await res.json());
   }, [token]);
 
@@ -46,7 +46,7 @@ function WalletInner() {
     setBusy(true);
     setMsg("Opening Stripe Checkout…");
     try {
-      const res = await fetch(`${API_URL}/api/billing/checkout`, {
+      const res = await fetch(`${getApiBase()}/api/billing/checkout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

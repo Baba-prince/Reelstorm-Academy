@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { Session, User as SbUser } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { API_URL } from "@/lib/api";
+import { getApiBase } from "@/lib/api";
 
 export type RsUser = {
   id: string;
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.setItem(TOKEN_KEY, accessToken);
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
+      const res = await fetch(`${getApiBase()}/api/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) {

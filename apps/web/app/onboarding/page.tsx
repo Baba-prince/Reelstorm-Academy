@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { API_URL } from "@/lib/api";
+import { getApiBase } from "@/lib/api";
 
 type Step = 0 | 1 | 2 | 3 | 4;
+
+const DRAFT_KEY = "rs_onboarding_draft";
 
 const ROLES = [
   { id: "youtuber", label: "YouTuber", blurb: "Series + shorts at ARCHIVE5 pace", accent: "#7C3AED" },
@@ -29,8 +31,15 @@ const TEMPLATES = [
   { id: "asia-bollywood-item-hook", label: "Bollywood Color Hook", cat: "Asia" },
 ];
 
+type Draft = {
+  role: string;
+  region: string;
+  templateId: string;
+  tierInterest: "free" | "storm" | "storm_pro";
+};
+
 function Wizard() {
-  const { user, token, loading, refreshProfile } = useAuth();
+  const { user, token, loading, refreshProfile, session } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState<Step>(0);
   const [role, setRole] = useState("youtuber");
@@ -41,28 +50,104 @@ function Wizard() {
   const [msg, setMsg] = useState("");
 
   const progress = useMemo(() => ((step + 1) / 5) * 100, [step]);
+  const accessToken = session?.access_token || token;
 
-  async function finish() {
-    if (!token) {
-      router.push("/login?next=/onboarding");
+  function saveDraft(): Draft {
+    const draft: Draft = { role, region, templateId, tierInterest };
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      /* ignore */
+    }
+    return draft;
+  }
+
+  async function persistOnboarding(authToken: string, draft: Draft) {
+    const res = await fetch(`${getApiBase()}/api/auth/onboarding`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(draft),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Save failed (${res.status})`);
+    }
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    await refreshProfile();
+    router.replace("/dashboard");
+  }
+
+  // Restore draft + auto-finish after login/signup return
+  useEffect(() => {
+    if (loading) return;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Draft;
+        if (d.role) setRole(d.role);
+        if (d.region) setRegion(d.region);
+        if (d.templateId) setTemplateId(d.templateId);
+        if (d.tierInterest) setTierInterest(d.tierInterest);
+        setStep(4);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (loading || !accessToken || busy) return;
+    let draft: Draft | null = null;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) draft = JSON.parse(raw) as Draft;
+    } catch {
+      /* ignore */
+    }
+    if (!draft) return;
+    if (user?.onboardingCompleted) {
+      sessionStorage.removeItem(DRAFT_KEY);
+      router.replace("/dashboard");
       return;
     }
     setBusy(true);
+    setMsg("Finishing your storm passport…");
+    persistOnboarding(accessToken, draft).catch((e) => {
+      setMsg((e as Error).message);
+      setBusy(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, accessToken, user?.onboardingCompleted]);
+
+  async function finish() {
+    setMsg("");
+    const draft = saveDraft();
+
+    if (!accessToken) {
+      setMsg("Sign in to seal your passport — choices are saved.");
+      router.push(`/signup?next=${encodeURIComponent("/onboarding")}`);
+      return;
+    }
+
+    setBusy(true);
     setMsg("Saving your storm profile…");
     try {
-      const res = await fetch(`${API_URL}/api/auth/onboarding`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ role, region, templateId, tierInterest }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await refreshProfile();
-      router.replace("/dashboard");
+      await persistOnboarding(accessToken, draft);
     } catch (e) {
-      setMsg((e as Error).message);
+      const err = (e as Error).message || "Failed to save";
+      // Network / DNS leftovers
+      if (/failed to fetch|networkerror|load failed/i.test(err)) {
+        setMsg("Connection issue — retry, or sign in again if you are still a guest.");
+      } else {
+        setMsg(err);
+      }
       setBusy(false);
     }
   }
@@ -113,7 +198,7 @@ function Wizard() {
         </div>
 
         {step === 0 && (
-          <section className="space-y-6 animate-in">
+          <section className="space-y-6">
             <h1 className="display text-[clamp(2.5rem,8vw,4.5rem)] leading-[0.9]">
               Your factory
               <br />
@@ -125,7 +210,7 @@ function Wizard() {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="h-13 px-8 rounded-rs bg-orange text-black font-bold text-[15px] h-12"
+              className="h-12 px-8 rounded-rs bg-orange text-black font-bold text-[15px]"
             >
               Begin onboarding →
             </button>
@@ -236,24 +321,32 @@ function Wizard() {
               ))}
             </div>
             <p className="text-[12px] text-white/40">
-              You can stay on Studio now — upgrade anytime on Pricing. Stripe syncs tier → Supabase/Prisma.
+              Stay on Studio free for now — upgrade anytime.{" "}
+              {!accessToken && (
+                <span className="text-cyan">You’ll sign in next to seal this passport.</span>
+              )}
             </p>
-            {msg && <div className="text-[12px] text-orange">{msg}</div>}
-            <div className="flex gap-3">
+            {msg && <div className="text-[13px] text-orange whitespace-pre-wrap">{msg}</div>}
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => setStep(3)}
-                className="h-12 px-5 rounded-rs border border-white/15 text-sm"
+                disabled={busy}
+                className="h-12 px-5 rounded-rs border border-white/15 text-sm disabled:opacity-50"
               >
                 Back
               </button>
               <button
                 type="button"
                 disabled={busy}
-                onClick={finish}
+                onClick={() => void finish()}
                 className="h-12 px-8 rounded-rs bg-orange text-black font-bold text-[14px] disabled:opacity-50"
               >
-                Enter the factory →
+                {busy
+                  ? "Saving…"
+                  : accessToken
+                    ? "Enter the factory →"
+                    : "Sign up & enter factory →"}
               </button>
             </div>
           </section>

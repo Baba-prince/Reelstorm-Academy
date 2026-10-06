@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { getApiBase } from "@/lib/api";
 
 function CallbackInner() {
   const router = useRouter();
@@ -68,10 +69,9 @@ function CallbackInner() {
       let next = nextParam;
       if (token) {
         try {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/auth/me`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+          const res = await fetch(`${getApiBase()}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
           if (res.ok) {
             const j = (await res.json()) as { user?: { onboardingCompleted?: boolean } };
             if (j.user?.onboardingCompleted) next = "/dashboard";
