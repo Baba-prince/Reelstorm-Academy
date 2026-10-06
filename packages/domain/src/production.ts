@@ -26,19 +26,24 @@ function isLocalHost(url: string): boolean {
 export function isProductionObjectStorage(
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
 ): boolean {
-  const endpoint = env.S3_ENDPOINT || "";
-  const access = env.S3_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID || "";
-  const secret = env.S3_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY || "";
+  const endpoint =
+    env.S3_ENDPOINT ||
+    env.R2_ENDPOINT ||
+    (env.R2_ACCOUNT_ID ? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : "");
+  const access = env.S3_ACCESS_KEY_ID || env.R2_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID || "";
+  const secret =
+    env.S3_SECRET_ACCESS_KEY || env.R2_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY || "";
+  if (env.STORAGE_PROVIDER === "R2" && present(env.R2_ACCESS_KEY_ID) && present(env.R2_SECRET_ACCESS_KEY)) {
+    return true;
+  }
   if (!present(access) || !present(secret)) {
-    // Disk-only staging
     return env.S3_LOCAL_OK === "1";
   }
   if (access === "minio" && secret === "minio123") {
     return env.S3_LOCAL_OK === "1";
   }
   if (endpoint && isLocalHost(endpoint)) return env.S3_LOCAL_OK === "1";
-  // Native AWS (no custom endpoint) or remote S3/R2 endpoint
-  if (!endpoint) return present(env.S3_BUCKET) || present(env.AWS_ACCESS_KEY_ID);
+  if (!endpoint) return present(env.S3_BUCKET) || present(env.R2_BUCKET) || present(env.AWS_ACCESS_KEY_ID);
   return /^https:\/\//i.test(endpoint);
 }
 

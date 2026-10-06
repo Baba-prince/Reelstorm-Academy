@@ -27,6 +27,8 @@ import { whiteLabelRoutes, billingRoutes } from "./routes/whitelabel.js";
 import { soundRoutes } from "./routes/sound.js";
 import { guideRoutes } from "./routes/guide.js";
 import { i18nRoutes } from "./routes/i18n.js";
+import { blueprintRoutes } from "./routes/blueprint.js";
+import { aiHealthRoutes } from "./routes/ai-health.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";
@@ -91,6 +93,8 @@ async function main() {
   await soundRoutes(app);
   await guideRoutes(app);
   await i18nRoutes(app);
+  await blueprintRoutes(app);
+  await aiHealthRoutes(app);
 
   await app.listen({ port: PORT, host: HOST });
   app.log.info(`REELSTORM API on http://${HOST}:${PORT}`);

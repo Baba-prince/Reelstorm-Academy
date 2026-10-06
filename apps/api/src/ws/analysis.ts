@@ -40,6 +40,32 @@ export async function wsRoutes(app: FastifyInstance) {
     });
   });
 
+  /** BOT Director live engine: /ws/blueprint/:blueprintId */
+  app.get("/ws/blueprint/:blueprintId", { websocket: true }, (socket, req) => {
+    const { blueprintId } = req.params as { blueprintId: string };
+    const channel = `blueprint:${blueprintId}`;
+    const sub = redisConnection().duplicate();
+    sub.subscribe(channel).catch((err) => {
+      app.log.error(err);
+      socket.send(JSON.stringify({ stage: "failed", percent: 0, error: "subscribe failed" }));
+    });
+    sub.on("message", (_ch, message) => {
+      socket.send(message);
+    });
+    socket.send(
+      JSON.stringify({
+        blueprintId,
+        stage: "welcome",
+        engine: "SCRIPT",
+        percent: 1,
+        message: "Listening for BOT Director…",
+      }),
+    );
+    socket.on("close", () => {
+      sub.unsubscribe(channel).finally(() => sub.quit());
+    });
+  });
+
   app.get("/api/jobs/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
     const job = await prisma.jobRecord.findUnique({ where: { jobId: id } });

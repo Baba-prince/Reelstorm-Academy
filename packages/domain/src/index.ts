@@ -212,3 +212,4 @@ export * from "./rtc.js";
 export * from "./guide.js";
 export * from "./template-room.js";
 export * from "./production.js";
+export * from "./blueprint.js";

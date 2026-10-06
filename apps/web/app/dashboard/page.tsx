@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 type Project = {
   id: string;
@@ -22,9 +23,31 @@ const PIPELINE = [
   { step: "06", name: "MERGE STUDIO", href: "/merge-studio", color: "text-orange" },
 ];
 
-export default function DashboardPage() {
+function firstNameFrom(user: { name?: string | null; email?: string } | null): string {
+  if (!user) return "Producer";
+  const raw = (user.name || "").trim() || (user.email || "").split("@")[0] || "Producer";
+  const part = raw.split(/[\s._-]+/).filter(Boolean)[0] || raw;
+  return part.charAt(0).toUpperCase() + part.slice(1);
+}
+
+function DashboardInner() {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [creating, setCreating] = useState(false);
+  const [justOnboarded, setJustOnboarded] = useState(false);
+
+  const displayName = useMemo(() => firstNameFrom(user), [user]);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("rs_just_onboarded") === "1") {
+        sessionStorage.removeItem("rs_just_onboarded");
+        setJustOnboarded(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     api<{ projects: Project[] }>("/api/projects")
@@ -51,15 +74,31 @@ export default function DashboardPage() {
         <div>
           <div className="mono text-[11px] text-cyan mb-2">STORM OS // FACTORY FLOOR</div>
           <h1 className="display text-4xl md:text-5xl">
-            Production{" "}
-            <span className="bg-storm bg-clip-text text-transparent">OS</span>
+            {justOnboarded ? (
+              <>
+                Welcome,{" "}
+                <span className="bg-storm bg-clip-text text-transparent">{displayName}</span>
+              </>
+            ) : (
+              <>
+                Welcome back,{" "}
+                <span className="bg-storm bg-clip-text text-transparent">{displayName}</span>
+              </>
+            )}
           </h1>
           <p className="mt-3 text-white/60 max-w-xl text-[15px] leading-relaxed">
-            Not a course. A factory. Upload reference video → extract template → rebuild in that style →
-            ARCHIVE5 → merge to legend.
+            {justOnboarded
+              ? "Onboarding locked. Your factory floor is live — pick a lane and ship your first ARCHIVE5."
+              : "Not a course. A factory. Upload reference video → extract template → rebuild in that style → ARCHIVE5 → merge to legend."}
           </p>
         </div>
         <div className="flex gap-2">
+          <Link
+            href="/wizard"
+            className="h-11 px-5 rounded-rs bg-violet text-white font-bold text-[13px] flex items-center"
+          >
+            BOT Director
+          </Link>
           <Link
             href="/template-forge"
             className="h-11 px-5 rounded-rs bg-orange text-black font-bold text-[13px] flex items-center"
@@ -122,5 +161,13 @@ export default function DashboardPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthProvider>
+      <DashboardInner />
+    </AuthProvider>
   );
 }

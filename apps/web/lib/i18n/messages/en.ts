@@ -27,6 +27,7 @@ export const en: MessageTree = {
     whiteLabel: "White-label",
     api: "API",
     dashboard: "Dashboard",
+    wizard: "BOT Director",
     templatesRoom: "Templates Room",
     templateForge: "Template Forge",
     worldBuilder: "World Builder",

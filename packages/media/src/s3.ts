@@ -11,27 +11,43 @@ import { Readable } from "node:stream";
 import { isProductionObjectStorage } from "@reelstorm/domain";
 
 function client() {
-  const endpoint = process.env.S3_ENDPOINT;
+  // Cloudflare R2 aliases → S3-compatible client
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const r2Endpoint =
+    process.env.R2_ENDPOINT ||
+    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined);
+  const endpoint = process.env.S3_ENDPOINT || r2Endpoint;
   const forcePath =
     process.env.S3_FORCE_PATH_STYLE === "1" ||
     process.env.S3_FORCE_PATH_STYLE === "true" ||
-    Boolean(endpoint); // MinIO + R2 usually need path-style
+    process.env.STORAGE_PROVIDER === "R2" ||
+    Boolean(endpoint);
   return new S3Client({
     region:
       process.env.S3_REGION ||
-      (endpoint?.includes("r2.cloudflarestorage.com") ? "auto" : "us-east-1"),
+      process.env.R2_REGION ||
+      (endpoint?.includes("r2.cloudflarestorage.com") || process.env.STORAGE_PROVIDER === "R2"
+        ? "auto"
+        : "us-east-1"),
     endpoint: endpoint || undefined,
     forcePathStyle: forcePath,
     credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "minio",
+      accessKeyId:
+        process.env.S3_ACCESS_KEY_ID ||
+        process.env.R2_ACCESS_KEY_ID ||
+        process.env.AWS_ACCESS_KEY_ID ||
+        "minio",
       secretAccessKey:
-        process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "minio123",
+        process.env.S3_SECRET_ACCESS_KEY ||
+        process.env.R2_SECRET_ACCESS_KEY ||
+        process.env.AWS_SECRET_ACCESS_KEY ||
+        "minio123",
     },
   });
 }
 
 export function bucket() {
-  return process.env.S3_BUCKET || "reelstorm";
+  return process.env.S3_BUCKET || process.env.R2_BUCKET || "reelstorm";
 }
 
 /** Readiness probe — R2/S3, VPS MinIO, or local-disk staging */
@@ -150,9 +166,9 @@ export async function presignPut(key: string, contentType: string, expiresIn = 3
 }
 
 export function publicUrl(key: string) {
-  const base = process.env.S3_PUBLIC_URL;
+  const base = process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL;
   if (base) return `${base.replace(/\/$/, "")}/${key}`;
-  const endpoint = process.env.S3_ENDPOINT;
+  const endpoint = process.env.S3_ENDPOINT || process.env.R2_ENDPOINT;
   if (endpoint) return `${endpoint.replace(/\/$/, "")}/${bucket()}/${key}`;
   return `s3://${bucket()}/${key}`;
 }

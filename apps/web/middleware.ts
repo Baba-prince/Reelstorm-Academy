@@ -18,6 +18,7 @@ const MARKETING_PATHS = new Set([
 
 const APP_ONLY_PREFIXES = [
   "/dashboard",
+  "/wizard",
   "/login",
   "/signup",
   "/onboarding",

@@ -7,6 +7,7 @@ import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 const NAV = [
+  { href: "/wizard", key: "nav.wizard" },
   { href: "/dashboard", key: "nav.dashboard" },
   { href: "/templates-room", key: "nav.templatesRoom" },
   { href: "/template-forge", key: "nav.templateForge" },
