@@ -29,10 +29,12 @@ export function isProductionObjectStorage(
   const endpoint = env.S3_ENDPOINT || "";
   const access = env.S3_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID || "";
   const secret = env.S3_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY || "";
-  if (!present(access) || !present(secret)) return false;
-  if (access === "minio" && secret === "minio123" && !present(env.S3_LOCAL_OK)) {
-    // Default MinIO placeholders only count when explicitly allowed on VPS staging
-    if (!endpoint || isLocalHost(endpoint)) return env.S3_LOCAL_OK === "1";
+  if (!present(access) || !present(secret)) {
+    // Disk-only staging
+    return env.S3_LOCAL_OK === "1";
+  }
+  if (access === "minio" && secret === "minio123") {
+    return env.S3_LOCAL_OK === "1";
   }
   if (endpoint && isLocalHost(endpoint)) return env.S3_LOCAL_OK === "1";
   // Native AWS (no custom endpoint) or remote S3/R2 endpoint
