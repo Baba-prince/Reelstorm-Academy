@@ -216,3 +216,6 @@ export * from "./blueprint.js";
 export * from "./intro-catalog.js";
 export * from "./cover-art.js";
 export * from "./admin.js";
+export * from "./yt-hooks.js";
+export * from "./yt-os.js";
+export * from "./clone.js";

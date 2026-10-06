@@ -73,6 +73,10 @@ model User {
   wallet               RtcWallet?
   tenantsOwned         Tenant[] @relation("TenantOwner")
   blueprints           Blueprint[]
+  cloneJobs            CloneJob[]
+  ytChannels           YtChannel[]
+  ytScripts            YtScript[]
+  contentCalendar      ContentCalendarEntry[]
 }
 
 model Team {
@@ -444,4 +448,155 @@ model SystemBank {
   costBasis     Float    @default(1.93)
   updatedAt     DateTime @updatedAt
   createdAt     DateTime @default(now())
+}
+
+/// Viral Clone Factory — transformative remake jobs (inspiration URL, never copy bytes)
+model CloneJob {
+  id                   String   @id @default(cuid())
+  userId               String?
+  sourceUrl            String
+  platform             String // youtube | shorts | tiktok | instagram
+  videoId              String?
+  title                String?
+  transcript           String?
+  rewrittenTranscript  String?
+  hook                 String?
+  bodyPoints           Json?
+  cta                  String?
+  durationSec          Int?
+  visualStyle          String?
+  pacing               Json?
+  thumbnailUrl         String?
+  tags                 String[] @default([])
+  status               String   @default("analyzed") // analyzed | reproducing | completed | failed
+  style                String? // original | kids | gaming | a24
+  r2Url                String?
+  r2Key                String?
+  youtubeUrl           String?
+  rtcCostAnalyze       Int      @default(1)
+  rtcCostReproduce     Int      @default(5)
+  watermarkNote        String?  @default("Inspired by original — transformative remake via REELSTORM")
+  error                String?
+  meta                 Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([platform])
+}
+
+model YtChannel {
+  id                String    @id @default(cuid())
+  userId            String
+  youtubeChannelId  String?
+  channelName       String?
+  niche             String?
+  oauthAccessToken  String?
+  oauthRefreshToken String?
+  connectedAt       DateTime?
+  isConnected       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ViralBreakdown {
+  id               String   @id @default(cuid())
+  niche            String
+  sourceVideoId    String?
+  sourceUrl        String?
+  title            String?
+  views            BigInt?
+  hook             String?
+  structure        Json?
+  whyViral         String?
+  rebuiltConcepts  Json?
+  createdAt        DateTime @default(now())
+
+  @@index([niche, createdAt])
+}
+
+model YtScript {
+  id            String   @id @default(cuid())
+  userId        String?
+  hookFormula   Int
+  topic         String
+  niche         String?
+  fullScript    String
+  shortsScript  String?
+  timestamps    Json?
+  rtcCost       Int      @default(1)
+  createdAt     DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id])
+  packages      YtPackage[]
+  calendar      ContentCalendarEntry[]
+
+  @@index([userId, createdAt])
+}
+
+model YtPackage {
+  id                 String   @id @default(cuid())
+  scriptId           String?
+  titles             String[] @default([])
+  description        String?
+  tags               String[] @default([])
+  thumbnails         String[] @default([])
+  selectedTitle      String?
+  selectedThumbnail  String?
+  ctr                Float?
+  createdAt          DateTime @default(now())
+  script             YtScript? @relation(fields: [scriptId], references: [id])
+}
+
+model ThumbnailAb {
+  id            String   @id @default(cuid())
+  videoId       String?
+  variantAUrl   String?
+  variantBUrl   String?
+  variantCUrl   String?
+  impressionsA  Int      @default(0)
+  clicksA       Int      @default(0)
+  impressionsB  Int      @default(0)
+  clicksB       Int      @default(0)
+  impressionsC  Int      @default(0)
+  clicksC       Int      @default(0)
+  ctrA          Float?
+  ctrB          Float?
+  ctrC          Float?
+  winner        String?
+  createdAt     DateTime @default(now())
+}
+
+model CommentReply {
+  id               String   @id @default(cuid())
+  videoId          String?
+  commentId        String?
+  originalComment  String
+  replyText        String
+  autoReplied      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  @@index([videoId, createdAt])
+}
+
+model ContentCalendarEntry {
+  id              String    @id @default(cuid())
+  userId          String?
+  date            DateTime  @db.Date
+  type            String // Long | Short
+  scriptId        String?
+  status          String    @default("planned") // planned | produced | published
+  scheduledAt     DateTime?
+  youtubeVideoId  String?
+  rtcEstimate     Int       @default(1)
+  title           String?
+  createdAt       DateTime  @default(now())
+  user            User?     @relation(fields: [userId], references: [id])
+  script          YtScript? @relation(fields: [scriptId], references: [id])
+
+  @@index([userId, date])
 }

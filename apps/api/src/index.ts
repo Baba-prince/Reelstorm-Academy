@@ -30,6 +30,8 @@ import { i18nRoutes } from "./routes/i18n.js";
 import { blueprintRoutes } from "./routes/blueprint.js";
 import { aiHealthRoutes } from "./routes/ai-health.js";
 import { adminRoutes } from "./routes/admin.js";
+import { cloneRoutes } from "./routes/clone.js";
+import { ytOsRoutes } from "./routes/yt-os.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";
@@ -122,6 +124,8 @@ async function main() {
   await i18nRoutes(app);
   await blueprintRoutes(app);
   await aiHealthRoutes(app);
+  await cloneRoutes(app);
+  await ytOsRoutes(app);
 
   await app.listen({ port: PORT, host: HOST });
   app.log.info(`REELSTORM API on http://${HOST}:${PORT}`);

@@ -67,6 +67,7 @@ function WizardInner() {
   const [stages, setStages] = useState<Stage[]>([]);
   const [idea, setIdea] = useState("");
   const [refUrl, setRefUrl] = useState("");
+  const [ideaTab, setIdeaTab] = useState<"idea" | "clone">("idea");
   const [audience, setAudience] = useState("Nollywood + global social");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -418,6 +419,51 @@ function WizardInner() {
 
           {step === 1 && (
             <div className="space-y-3 flex-1 flex flex-col">
+              <div className="flex gap-2 mb-1">
+                <button
+                  type="button"
+                  onClick={() => setIdeaTab("idea")}
+                  className={clsx(
+                    "mono text-[9px] px-3 py-1.5 rounded-rs border",
+                    ideaTab === "idea"
+                      ? "border-cyan/40 bg-cyan/10 text-cyan"
+                      : "border-white/10 text-white/40",
+                  )}
+                >
+                  Generate from Idea
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIdeaTab("clone")}
+                  className={clsx(
+                    "mono text-[9px] px-3 py-1.5 rounded-rs border",
+                    ideaTab === "clone"
+                      ? "border-orange/40 bg-orange/10 text-orange"
+                      : "border-white/10 text-white/40",
+                  )}
+                >
+                  Clone Viral Link
+                </button>
+              </div>
+
+              {ideaTab === "clone" ? (
+                <div className="flex-1 flex flex-col gap-3">
+                  <p className="text-sm text-white/60">
+                    Paste a YouTube Short / TikTok / Instagram Reel — analyze structure (1 RTC), then remake with your
+                    brand (5 RTC). Transformative only — never copies source video.
+                  </p>
+                  <Link
+                    href="/tools/clone"
+                    className="h-12 rounded-rs bg-orange text-black font-bold text-sm flex items-center justify-center"
+                  >
+                    Open Viral Clone Factory →
+                  </Link>
+                  <Link href="/yt-os" className="mono text-[10px] text-cyan hover:underline">
+                    Or browse all 11 YT-OS skills →
+                  </Link>
+                </div>
+              ) : (
+                <>
               <label className="mono text-[9px] text-white/40">RAW IDEA</label>
               <textarea
                 value={idea}
@@ -473,6 +519,8 @@ function WizardInner() {
                 <div className="mono text-[9px] text-white/40">
                   480p watermarked · no download · burns your 1 RTC free demo
                 </div>
+              )}
+                </>
               )}
             </div>
           )}

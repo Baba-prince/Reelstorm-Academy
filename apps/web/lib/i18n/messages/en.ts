@@ -28,6 +28,8 @@ export const en: MessageTree = {
     api: "API",
     dashboard: "Dashboard",
     wizard: "BOT Director",
+    ytos: "YT-OS",
+    clone: "Clone Factory",
     templatesRoom: "Templates Room",
     templateForge: "Template Forge",
     worldBuilder: "World Builder",

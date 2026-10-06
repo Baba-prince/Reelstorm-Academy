@@ -155,6 +155,22 @@ export async function grantFreeDemoFromBank(userId: string) {
   };
 }
 
+/** Debit SystemBank pool (clone analyze / bank-funded ops). */
+export async function debitSystemBank(amount: number, note?: string) {
+  if (amount <= 0) throw new Error("amount must be > 0");
+  const bank = await ensureSystemBank();
+  if (bank.remainingRTC < amount) {
+    throw new Error(`SystemBank exhausted — need ${amount}, have ${bank.remainingRTC}`);
+  }
+  return prisma.systemBank.update({
+    where: { id: SYSTEM_BANK_ID },
+    data: {
+      usedRTC: { increment: amount },
+      remainingRTC: { decrement: amount },
+    },
+  });
+}
+
 /** Spend the 1-min free demo (debit wallet + flag used). */
 export async function consumeFreeDemo(userId: string) {
   const user = await prisma.user.findUnique({

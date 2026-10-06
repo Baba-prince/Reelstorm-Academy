@@ -10,6 +10,8 @@ import { isAdminEmail } from "@reelstorm/domain";
 
 const NAV = [
   { href: "/wizard", key: "nav.wizard" },
+  { href: "/yt-os", key: "nav.ytos" },
+  { href: "/tools/clone", key: "nav.clone" },
   { href: "/dashboard", key: "nav.dashboard" },
   { href: "/templates-room", key: "nav.templatesRoom" },
   { href: "/template-forge", key: "nav.templateForge" },

@@ -9,6 +9,7 @@ export const QUEUES = {
   mergeMaster: "mergeMaster",
   soundStudio: "soundStudio",
   fetchTemplateIntros: "fetchTemplateIntros",
+  cloneReproduce: "cloneReproduce",
 } as const;
 
 export type QueueName = keyof typeof QUEUES;

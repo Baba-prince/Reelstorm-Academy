@@ -19,6 +19,8 @@ const MARKETING_PATHS = new Set([
 const APP_ONLY_PREFIXES = [
   "/dashboard",
   "/wizard",
+  "/yt-os",
+  "/tools",
   "/login",
   "/signup",
   "/onboarding",

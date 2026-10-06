@@ -6,4 +6,5 @@ export * from "./url-download.js";
 export * from "./pixabay.js";
 export * from "./pexels.js";
 export * from "./templateFetcher.js";
+export * from "./viral-meta.js";
 
