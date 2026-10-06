@@ -69,6 +69,31 @@ async function main() {
 
   await app.register(websocket);
 
+  // Serve locally staged intros when R2/MinIO unavailable (S3_LOCAL_OK=1)
+  const uploadRoot = process.env.UPLOAD_TMP_DIR || uploadTmp();
+  app.get("/media/local/*", async (req, reply) => {
+    const { createReadStream, existsSync, statSync } = await import("node:fs");
+    const path = await import("node:path");
+    const wildcard = (req.params as { "*": string })["*"] || "";
+    const safe = path.normalize(wildcard).replace(/^(\.\.(\/|\\|$))+/, "");
+    const abs = path.join(uploadRoot, safe);
+    if (!abs.startsWith(path.resolve(uploadRoot)) || !existsSync(abs) || !statSync(abs).isFile()) {
+      return reply.code(404).send({ error: "Not found" });
+    }
+    const ext = path.extname(abs).toLowerCase();
+    const type =
+      ext === ".mp4"
+        ? "video/mp4"
+        : ext === ".jpg" || ext === ".jpeg"
+          ? "image/jpeg"
+          : ext === ".png"
+            ? "image/png"
+            : "application/octet-stream";
+    reply.header("Content-Type", type);
+    reply.header("Cache-Control", "public, max-age=86400");
+    return reply.send(createReadStream(abs));
+  });
+
   app.get("/health", async () => ({
     ok: true,
     service: "reelstorm-api",

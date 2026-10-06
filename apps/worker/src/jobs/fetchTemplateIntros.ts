@@ -59,14 +59,14 @@ export async function fetchTemplateIntrosJob(job: Job<FetchTemplateIntrosData>) 
       if (remaining <= 0) break;
 
       const { source, videos } = await fetchIntroWithFallback(query, {
-        perPage: Math.max(perQuery, 8),
+        perPage: Math.max(perQuery * 3, 12),
       });
 
       let saved = 0;
       let skipped = 0;
 
-      for (const video of videos.slice(0, perQuery)) {
-        if (remaining <= 0) break;
+      for (const video of videos) {
+        if (remaining <= 0 || saved >= perQuery) break;
 
         const dup = await prisma.introTemplate.findUnique({
           where: {
