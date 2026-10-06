@@ -53,7 +53,7 @@ async function ensureRedis() {
 await ensureRedis();
 
 const { Worker } = await import("bullmq");
-const { redis, trackJob } = await import("./lib.js");
+const { redis, trackJob, bullPrefix } = await import("./lib.js");
 const { analyzeVideoJob } = await import("./jobs/analyzeVideo.js");
 const { extractTemplateJob } = await import("./jobs/extractTemplate.js");
 const { generateVideoJob } = await import("./jobs/generateVideo.js");
@@ -62,13 +62,15 @@ const { mergeMasterJob } = await import("./jobs/mergeMaster.js");
 const { soundStudioJob } = await import("./jobs/soundStudio.js");
 
 const connection = redis();
+const prefix = bullPrefix();
 
 function start(name: string, processor: (job: never) => Promise<unknown>) {
   const worker = new Worker(name, processor as never, {
     connection,
+    prefix,
     concurrency: Number(process.env.WORKER_CONCURRENCY || 2),
   });
-  worker.on("ready", () => console.log(`[worker] ${name} ready`));
+  worker.on("ready", () => console.log(`[worker] ${name} ready (prefix=${prefix})`));
   worker.on("failed", (job, err) => {
     console.error(`[worker] ${name} failed`, job?.id, err.message);
     if (job?.id) {

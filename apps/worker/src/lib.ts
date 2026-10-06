@@ -13,6 +13,11 @@ export function redis() {
   return connection;
 }
 
+/** Same prefix as API Queue — keeps BullMQ off other VPS projects' Redis keys */
+export function bullPrefix(): string {
+  return process.env.BULLMQ_PREFIX || "reelstorm";
+}
+
 export async function publishProgress(uploadId: string, progress: Omit<AnalysisProgress, "uploadId">) {
   const payload: AnalysisProgress = { uploadId, ...progress };
   await redis().publish(`analysis:${uploadId}`, JSON.stringify(payload));

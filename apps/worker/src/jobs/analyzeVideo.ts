@@ -109,7 +109,8 @@ export async function analyzeVideoJob(job: Job<AnalyzeVideoPayload>) {
 
     // Chain extractTemplate
     const { Queue } = await import("bullmq");
-    const q = new Queue("extractTemplate", { connection: (await import("../lib.js")).redis() });
+    const { redis, bullPrefix } = await import("../lib.js");
+    const q = new Queue("extractTemplate", { connection: redis(), prefix: bullPrefix() });
     await q.add("extractTemplate", {
       uploadId,
       localPath,

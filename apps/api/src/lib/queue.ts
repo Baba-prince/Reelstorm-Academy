@@ -12,6 +12,11 @@ export const QUEUES = {
 
 export type QueueName = keyof typeof QUEUES;
 
+/** Isolate BullMQ keys from other apps sharing the same Redis (VPS multi-project). */
+export function bullPrefix(): string {
+  return process.env.BULLMQ_PREFIX || "reelstorm";
+}
+
 let connection: IORedis | null = null;
 
 export function redisConnection() {
@@ -29,7 +34,10 @@ export function getQueue(name: QueueName) {
   const qName = QUEUES[name];
   let q = queues.get(qName);
   if (!q) {
-    q = new Queue(qName, { connection: redisConnection() });
+    q = new Queue(qName, {
+      connection: redisConnection(),
+      prefix: bullPrefix(),
+    });
     queues.set(qName, q);
   }
   return q;

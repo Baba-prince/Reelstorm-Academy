@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
-# Deploy REELSTORM to IONOS VPS (reelstorm.uk / app.reelstorm.uk)
-# Usage (from laptop, after you can SSH as root):
+# Deploy REELSTORM to IONOS VPS WITHOUT clashing with other projects.
+#
+# Isolation contract:
+#   Dir:     /opt/reelstorm-os
+#   PM2:     reelstorm-api | reelstorm-worker | reelstorm-web  (only these are touched)
+#   Ports:   WEB 3017 · API 4017  (not 3000/4000 — leave those for other apps)
+#   Redis:   redis://127.0.0.1:6379/17 + BULLMQ_PREFIX=reelstorm
+#   Nginx:   ONLY sites-available/reelstorm + server_name *.reelstorm.uk
+#            NEVER deletes other sites-enabled entries
+#   SSL:     certbot only for reelstorm.uk hosts
+#
 #   export VPS=root@87.106.103.43
-#   export SSHPASS='…'   # or use ssh keys
+#   export SSHPASS='…'   # or SSH key
 #   bash scripts/deploy-vps.sh
 set -euo pipefail
 
@@ -10,6 +19,12 @@ VPS="${VPS:-root@87.106.103.43}"
 APP_DIR="${APP_DIR:-/opt/reelstorm-os}"
 REPO="${REPO:-https://github.com/Beeplus7/Reelstorm-Academy.git}"
 BRANCH="${BRANCH:-main}"
+RS_WEB_PORT="${RS_WEB_PORT:-3017}"
+RS_API_PORT="${RS_API_PORT:-4017}"
+RS_REDIS_DB="${RS_REDIS_DB:-17}"
+RS_PM2_API="${RS_PM2_API:-reelstorm-api}"
+RS_PM2_WORKER="${RS_PM2_WORKER:-reelstorm-worker}"
+RS_PM2_WEB="${RS_PM2_WEB:-reelstorm-web}"
 
 ssh_cmd() {
   if [[ -n "${SSHPASS:-}" ]] && command -v sshpass >/dev/null; then
@@ -27,10 +42,24 @@ scp_cmd() {
   fi
 }
 
-echo "==> Probe $VPS"
-ssh_cmd "$VPS" 'uname -a && free -h | head -2'
+echo "==> Probe $VPS (inventory — do not disturb other projects)"
+ssh_cmd "$VPS" 'bash -s' <<'REMOTE'
+set -euo pipefail
+echo "--- host ---"; uname -a; free -h | head -2
+echo "--- listening ports (existing apps) ---"
+ss -tlnp 2>/dev/null | awk 'NR==1 || /LISTEN/' | head -40 || netstat -tlnp 2>/dev/null | head -40
+echo "--- pm2 (other projects) ---"
+pm2 jlist 2>/dev/null | python3 -c "import sys,json
+try:
+  apps=json.load(sys.stdin)
+  for a in apps: print(a.get('name'), a.get('pm2_env',{}).get('status'), a.get('pm2_env',{}).get('pm_cwd',''))
+except Exception as e: print('(pm2 empty or unavailable)', e)
+" || echo "(no pm2)"
+echo "--- nginx sites-enabled ---"
+ls -la /etc/nginx/sites-enabled 2>/dev/null || echo "(no nginx sites yet)"
+REMOTE
 
-echo "==> Bootstrap Node 20 + redis + nginx + pm2"
+echo "==> Bootstrap packages (safe — shared nginx/redis OK; we isolate by port/db/vhost)"
 ssh_cmd "$VPS" 'bash -s' <<'REMOTE'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -40,112 +69,134 @@ if ! command -v node >/dev/null || [[ "$(node -v | cut -d. -f1 | tr -d v)" -lt 2
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
   apt-get install -y nodejs
 fi
-npm i -g pm2
-systemctl enable --now redis-server || true
-node -v && npm -v && redis-cli ping
+command -v pm2 >/dev/null || npm i -g pm2
+systemctl enable --now redis-server nginx || true
+node -v; npm -v; redis-cli ping
 REMOTE
 
-echo "==> Sync repo to $APP_DIR"
+echo "==> Sync repo ONLY into $APP_DIR"
 ssh_cmd "$VPS" "mkdir -p $APP_DIR && if [[ -d $APP_DIR/.git ]]; then cd $APP_DIR && git fetch origin && git checkout $BRANCH && git reset --hard origin/$BRANCH; else git clone -b $BRANCH $REPO $APP_DIR; fi"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [[ -f "$ROOT/.env" ]]; then
-  echo "==> Upload .env (not committed)"
+  echo "==> Upload .env → $APP_DIR/.env only"
   scp_cmd "$ROOT/.env" "$VPS:$APP_DIR/.env"
 else
-  echo "WARN: no local .env — create $APP_DIR/.env on server before start"
+  echo "WARN: no local .env"
 fi
 
-# Production public URLs
-ssh_cmd "$VPS" "cd $APP_DIR && \
-  sed -i 's|^NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=https://api.reelstorm.uk|' .env || true; \
-  sed -i 's|^NEXT_PUBLIC_APP_URL=.*|NEXT_PUBLIC_APP_URL=https://app.reelstorm.uk|' .env || true; \
-  sed -i 's|^APP_URL=.*|APP_URL=https://app.reelstorm.uk|' .env || true; \
-  sed -i 's|^MARKETING_URL=.*|MARKETING_URL=https://reelstorm.uk|' .env || true; \
-  sed -i 's|^NEXT_PUBLIC_MARKETING_URL=.*|NEXT_PUBLIC_MARKETING_URL=https://reelstorm.uk|' .env || true; \
-  grep -q '^REDIS_URL=' .env || echo 'REDIS_URL=redis://127.0.0.1:6379' >> .env; \
-  grep -q '^MOCK_VIDEO_GEN=' .env || echo 'MOCK_VIDEO_GEN=1' >> .env"
-
-echo "==> Install + build + prisma"
-ssh_cmd "$VPS" "cd $APP_DIR && npm install && npm run build -w @reelstorm/domain && npm run db:generate && npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss && npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web"
-
-echo "==> PM2 processes"
-ssh_cmd "$VPS" 'bash -s' <<REMOTE
+echo "==> Stamp isolation env (ports / redis db / bull prefix / public URLs)"
+ssh_cmd "$VPS" "bash -s" <<REMOTE
 set -euo pipefail
 cd $APP_DIR
-cat > /tmp/reelstorm.ecosystem.cjs <<'EOF'
-module.exports = {
-  apps: [
-    { name: 'rs-api', cwd: '$APP_DIR/apps/api', script: 'dist/index.js', env: { NODE_ENV: 'production' }, max_memory_restart: '512M' },
-    { name: 'rs-worker', cwd: '$APP_DIR/apps/worker', script: 'dist/index.js', env: { NODE_ENV: 'production' }, max_memory_restart: '512M' },
-    { name: 'rs-web', cwd: '$APP_DIR/apps/web', script: 'node_modules/next/dist/bin/next', args: 'start -p 3000', env: { NODE_ENV: 'production', PORT: '3000' }, max_memory_restart: '768M' },
-  ],
-};
-EOF
-# Prefer built JS; fall back to tsx if dist missing
-if [[ ! -f apps/api/dist/index.js ]]; then
-  sed -i "s|script: 'dist/index.js'|script: 'npx', args: 'tsx src/index.ts'|" /tmp/reelstorm.ecosystem.cjs || true
-fi
-pm2 delete rs-api rs-worker rs-web 2>/dev/null || true
-# Run via npm workspaces start if available
-pm2 start bash --name rs-api -- -lc "cd $APP_DIR && set -a && source .env && set +a && npm run start -w @reelstorm/api"
-pm2 start bash --name rs-worker -- -lc "cd $APP_DIR && set -a && source .env && set +a && npm run start -w @reelstorm/worker"
-pm2 start bash --name rs-web -- -lc "cd $APP_DIR && set -a && source .env && set +a && npm run start -w @reelstorm/web"
-pm2 save
-pm2 startup systemd -u root --hp /root | tail -1 | bash || true
-pm2 status
+touch .env
+set_kv() {
+  local k="\$1" v="\$2"
+  if grep -q "^\$k=" .env; then
+    sed -i "s|^\$k=.*|\$k=\$v|" .env
+  else
+    echo "\$k=\$v" >> .env
+  fi
+}
+set_kv NODE_ENV production
+set_kv API_HOST 127.0.0.1
+set_kv API_PORT $RS_API_PORT
+set_kv PORT $RS_WEB_PORT
+set_kv NEXT_PUBLIC_API_URL https://api.reelstorm.uk
+set_kv NEXT_PUBLIC_APP_URL https://app.reelstorm.uk
+set_kv NEXT_PUBLIC_MARKETING_URL https://reelstorm.uk
+set_kv APP_URL https://app.reelstorm.uk
+set_kv MARKETING_URL https://reelstorm.uk
+set_kv REDIS_URL redis://127.0.0.1:6379/$RS_REDIS_DB
+set_kv BULLMQ_PREFIX reelstorm
+set_kv UPLOAD_TMP_DIR $APP_DIR/tmp/uploads
+set_kv MOCK_VIDEO_GEN 1
+mkdir -p $APP_DIR/tmp/uploads
+echo "Isolation:"
+grep -E '^(API_PORT|PORT|REDIS_URL|BULLMQ_PREFIX|NEXT_PUBLIC_API_URL|UPLOAD_TMP_DIR)=' .env
 REMOTE
 
-echo "==> Nginx vhosts"
-ssh_cmd "$VPS" 'bash -s' <<'REMOTE'
+echo "==> Install + build (inside $APP_DIR only)"
+ssh_cmd "$VPS" "cd $APP_DIR && npm install && npm run build -w @reelstorm/domain && npm run db:generate && npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss && npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web"
+
+echo "==> PM2 — restart ONLY ReelStorm apps (leave other projects alone)"
+ssh_cmd "$VPS" "bash -s" <<REMOTE
 set -euo pipefail
-cat > /etc/nginx/sites-available/reelstorm <<'NGX'
-map $host $rs_backend {
-  default 3000;
-}
-upstream rs_web { server 127.0.0.1:3000; }
-upstream rs_api { server 127.0.0.1:4000; }
+cd $APP_DIR
+# Delete only our named processes
+pm2 delete $RS_PM2_API $RS_PM2_WORKER $RS_PM2_WEB 2>/dev/null || true
+# Also clean legacy short names from earlier scripts if present
+pm2 delete rs-api rs-worker rs-web 2>/dev/null || true
+
+pm2 start bash --name $RS_PM2_API -- -lc "cd $APP_DIR && set -a && source .env && set +a && export API_PORT=$RS_API_PORT API_HOST=127.0.0.1 && npm run start -w @reelstorm/api"
+pm2 start bash --name $RS_PM2_WORKER -- -lc "cd $APP_DIR && set -a && source .env && set +a && npm run start -w @reelstorm/worker"
+pm2 start bash --name $RS_PM2_WEB -- -lc "cd $APP_DIR && set -a && source .env && set +a && export PORT=$RS_WEB_PORT && npm run start -w @reelstorm/web -- -p $RS_WEB_PORT"
+
+pm2 save
+pm2 status
+echo "--- confirming other PM2 apps still listed ---"
+pm2 jlist | python3 -c "import sys,json; apps=json.load(sys.stdin); print('total_apps', len(apps));
+[print(' ',a.get('name'), a.get('pm2_env',{}).get('status')) for a in apps]"
+REMOTE
+
+echo "==> Nginx — write ONLY reelstorm site (do not remove other sites)"
+ssh_cmd "$VPS" "bash -s" <<REMOTE
+set -euo pipefail
+cat > /etc/nginx/sites-available/reelstorm <<NGX
+# REELSTORM only — other projects keep their own server_name blocks
+upstream reelstorm_web { server 127.0.0.1:${RS_WEB_PORT}; keepalive 8; }
+upstream reelstorm_api { server 127.0.0.1:${RS_API_PORT}; keepalive 8; }
 
 server {
   listen 80;
+  listen [::]:80;
   server_name reelstorm.uk www.reelstorm.uk app.reelstorm.uk;
   client_max_body_size 2G;
+  location /.well-known/acme-challenge/ { root /var/www/html; }
   location / {
-    proxy_pass http://rs_web;
+    proxy_pass http://reelstorm_web;
     proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_set_header Upgrade \\\$http_upgrade;
     proxy_set_header Connection "upgrade";
   }
 }
 
 server {
   listen 80;
+  listen [::]:80;
   server_name api.reelstorm.uk;
   client_max_body_size 2G;
+  location /.well-known/acme-challenge/ { root /var/www/html; }
   location / {
-    proxy_pass http://rs_api;
+    proxy_pass http://reelstorm_api;
     proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
   }
 }
 NGX
-ln -sf /etc/nginx/sites-available/reelstorm /etc/nginx/sites-enabled/reelstorm
-rm -f /etc/nginx/sites-enabled/default
-nginx -t && systemctl reload nginx
+ln -sfn /etc/nginx/sites-available/reelstorm /etc/nginx/sites-enabled/reelstorm
+# IMPORTANT: do NOT rm other sites-enabled entries
+echo "sites-enabled after link:"
+ls -la /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
 REMOTE
 
-echo "==> Optional TLS (needs DNS pointed first)"
-ssh_cmd "$VPS" 'command -v certbot >/dev/null || apt-get install -y certbot python3-certbot-nginx; \
-  certbot --nginx -d reelstorm.uk -d www.reelstorm.uk -d app.reelstorm.uk -d api.reelstorm.uk --non-interactive --agree-tos -m admin@reelstorm.uk --redirect || echo "certbot skipped — point DNS then rerun"'
+echo "==> Health on isolated ports"
+ssh_cmd "$VPS" "curl -sS http://127.0.0.1:$RS_API_PORT/health || true; echo; curl -sS -o /dev/null -w 'web:%{http_code}\n' http://127.0.0.1:$RS_WEB_PORT/ || true"
 
-echo "==> Health"
-ssh_cmd "$VPS" 'curl -sS http://127.0.0.1:4000/health || true; echo; curl -sS -o /dev/null -w "web:%{http_code}\n" http://127.0.0.1:3000/ || true'
-
-echo "DONE. Point DNS A records to this VPS, then reopen https://reelstorm.uk and https://app.reelstorm.uk"
+echo ""
+echo "DONE — multi-project safe."
+echo "  App dir:  $APP_DIR"
+echo "  Ports:    web $RS_WEB_PORT · api $RS_API_PORT"
+echo "  Redis:    db $RS_REDIS_DB · prefix reelstorm"
+echo "  PM2:      $RS_PM2_API / $RS_PM2_WORKER / $RS_PM2_WEB"
+echo "  Nginx:    only server_name *.reelstorm.uk"
+echo "Next: bash scripts/apply-ssl.sh  (only reelstorm domains)"
