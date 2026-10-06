@@ -145,7 +145,7 @@ export async function readinessRoutes(app: FastifyInstance) {
       s3: 10,
       prod_stripe: 8,
       prod_video_gen: 10,
-      prod_elevenlabs: 6,
+      prod_sound_studio: 8,
       prod_worker_concurrency: 4,
     };
 

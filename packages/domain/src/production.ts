@@ -173,14 +173,25 @@ export function evaluateProductionApis(
 
   const eleven = present(env.ELEVENLABS_API_KEY);
   checks.push({
-    id: "elevenlabs",
+    id: "sound_studio",
     tier: "B",
-    label: "ElevenLabs Voice Forge",
+    label: "Sound Studio (voice OS)",
+    status: "pass",
+    detail: eleven
+      ? "Sound Studio owns sync/extract/clone/TTS — ElevenLabs wired as optional provider"
+      : "Sound Studio owns voice: sync · stem extract · mux · library (clone/TTS provider optional)",
+    weight: 8,
+  });
+  // Keep legacy id for older scorecards that still map prod_elevenlabs
+  checks.push({
+    id: "elevenlabs",
+    tier: "C",
+    label: "ElevenLabs provider (optional)",
     status: eleven ? "pass" : "partial",
     detail: eleven
-      ? `model=${env.ELEVENLABS_MODEL || "eleven_multilingual_v2"}`
-      : "Optional until Sound Studio — set ELEVENLABS_API_KEY (Creator/Pro) for voice",
-    weight: 8,
+      ? "Optional backend under Sound Studio"
+      : "Not required — Sound Studio is the voice surface; add key only if using hosted TTS/clone",
+    weight: 2,
   });
 
   // —— Infra scale ——

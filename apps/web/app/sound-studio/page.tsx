@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_URL, api } from "@/lib/api";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { getApiBase, api } from "@/lib/api";
 
 type Tab = "sync" | "extract" | "clone" | "tts" | "library";
 
@@ -27,7 +29,20 @@ type VoiceProfile = {
 type ElevenVoice = { voiceId: string; name: string; category?: string };
 
 export default function SoundStudioPage() {
-  const [tab, setTab] = useState<Tab>("sync");
+  return (
+    <Suspense fallback={<div className="mono text-cyan text-sm p-8">Loading Sound Studio…</div>}>
+      <SoundStudioInner />
+    </Suspense>
+  );
+}
+
+function SoundStudioInner() {
+  const params = useSearchParams();
+  const tabParam = params.get("tab") as Tab | null;
+  const textParam = params.get("text");
+  const [tab, setTab] = useState<Tab>(
+    tabParam && ["sync", "extract", "clone", "tts", "library"].includes(tabParam) ? tabParam : "sync",
+  );
   const [projectId, setProjectId] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,7 +65,7 @@ export default function SoundStudioPage() {
   const [cloneDesc, setCloneDesc] = useState("");
 
   // TTS
-  const [ttsText, setTtsText] = useState("");
+  const [ttsText, setTtsText] = useState(textParam ? decodeURIComponent(textParam) : "");
   const [voiceProfileId, setVoiceProfileId] = useState("");
   const [stockVoiceId, setStockVoiceId] = useState("");
 
@@ -113,7 +128,7 @@ export default function SoundStudioPage() {
     fd.append("file", file);
     if (projectId) fd.append("projectId", projectId);
     fd.append("label", "external");
-    const res = await fetch(`${API_URL}/api/sound/upload`, { method: "POST", body: fd });
+    const res = await fetch(`${getApiBase()}/api/sound/upload`, { method: "POST", body: fd });
     if (!res.ok) throw new Error(await res.text());
     return res.json() as Promise<{ asset: { id: string }; localPath: string }>;
   }

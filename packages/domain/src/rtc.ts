@@ -59,7 +59,7 @@ export const TIER_FEATURES: Record<Tier, string[]> = {
     "Everything in Studio",
     `${TIER_MONTHLY_RTC.storm} RTC / mo (${TIER_MONTHLY_RTC.storm / RTC_PER_ARCHIVE5} × 5-min blocks)`,
     "DashScope + Seedance / Kling / Veo routing",
-    "Voice Forge (ElevenLabs)",
+    "Sound Studio (sync · extract · clone · TTS)",
     "Priority BullMQ jobs",
     "Team seats (3)",
   ],

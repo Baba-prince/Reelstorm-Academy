@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { api, getApiBase, getWsBase } from "@/lib/api";
+import { api, getWsBase } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 type Stage = {
@@ -45,7 +45,6 @@ function WizardInner() {
   const [livePct, setLivePct] = useState(0);
   const [liveMsg, setLiveMsg] = useState("BOT Director standing by");
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [voBusy, setVoBusy] = useState(false);
   const [voNote, setVoNote] = useState<string | null>(null);
 
   const name = useMemo(() => {
@@ -124,24 +123,9 @@ function WizardInner() {
     }
   }
 
-  async function generateVoice() {
-    if (!movie?.voiceover?.text && !movie?.selectedLogline) return;
-    setVoBusy(true);
-    setVoNote(null);
-    try {
-      const res = await fetch(`${getApiBase()}/api/voice/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: movie.voiceover?.text || movie.selectedLogline }),
-      });
-      const j = (await res.json()) as { error?: string; audioBase64?: string };
-      if (!res.ok) throw new Error(j.error || res.statusText);
-      setVoNote(j.audioBase64 ? "ElevenLabs VO ready (base64 audio returned)." : "Voice generated.");
-    } catch (e) {
-      setVoNote((e as Error).message);
-    } finally {
-      setVoBusy(false);
-    }
+  async function openSoundStudioVo() {
+    const text = encodeURIComponent(movie?.voiceover?.text || movie?.selectedLogline || "");
+    window.location.href = `/sound-studio?tab=tts&text=${text}`;
   }
 
   async function feedFactory() {
@@ -275,11 +259,13 @@ function WizardInner() {
               </div>
               <button
                 type="button"
-                disabled={voBusy}
-                onClick={() => void generateVoice()}
-                className="h-11 px-4 rounded-rs border border-cyan/40 text-cyan text-sm font-semibold disabled:opacity-40"
+                onClick={() => {
+                  openSoundStudioVo();
+                  setVoNote("Opening Sound Studio — sync, extract, clone, and TTS live there.");
+                }}
+                className="h-11 px-4 rounded-rs border border-cyan/40 text-cyan text-sm font-semibold"
               >
-                {voBusy ? "Generating VO…" : "Generate ElevenLabs voiceover"}
+                Open Sound Studio for voice →
               </button>
               {voNote && <div className="text-xs text-white/50">{voNote}</div>}
               <button type="button" onClick={() => setStep(3)} className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4">

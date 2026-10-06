@@ -6,7 +6,13 @@
 export const BOT_DIRECTOR_STAGES = [
   { id: "welcome", step: "00", title: "Welcome", meta: "Director bot greets you", engine: "SCRIPT" },
   { id: "idea", step: "01", title: "1st Scene · Idea", meta: "Raw idea or video → 3 loglines", engine: "SCRIPT" },
-  { id: "script", step: "02", title: "Script · Voice", meta: "Forge script + ElevenLabs VO", engine: "SCRIPT" },
+  {
+    id: "script",
+    step: "02",
+    title: "Script · Voice",
+    meta: "Forge script → Sound Studio VO / clone",
+    engine: "SCRIPT",
+  },
   { id: "world", step: "03", title: "Hand Scene · World", meta: "Characters + 4-angle locations", engine: "WORLD" },
   { id: "scenes", step: "04", title: "Scene Map", meta: "1st Scene → Hand Scene timeline", engine: "STUDIO" },
   { id: "shots", step: "05", title: "Shot List", meta: "Durations · framing · budget", engine: "ARCHIVE" },

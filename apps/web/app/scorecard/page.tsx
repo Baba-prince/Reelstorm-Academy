@@ -42,11 +42,11 @@ const LIVE_MAP: Array<{ id: string; area: string; item: string; weight: number; 
   { id: "disk", area: "Infra", item: "Upload volume free space (≥50 GiB)", weight: 4, key: "disk" },
   { id: "s3", area: "Infra", item: "Object storage S3/R2 (not local MinIO)", weight: 8, key: "s3" },
   { id: "auth", area: "Security", item: "Supabase + Google OAuth", weight: 6, key: "auth" },
-  { id: "llm", area: "AI", item: "DashScope LLM (production)", weight: 6, key: "llm" },
-  { id: "stripe", area: "Billing", item: "Stripe live + webhook", weight: 8, key: "prod_stripe" },
-  { id: "video", area: "AI", item: "Seedance video (MOCK_VIDEO_GEN=0)", weight: 8, key: "prod_video_gen" },
-  { id: "eleven", area: "AI", item: "ElevenLabs Voice Forge", weight: 6, key: "prod_elevenlabs" },
-  { id: "workers", area: "Scale", item: "Worker concurrency ≥8", weight: 4, key: "prod_worker_concurrency" },
+            { id: "llm", area: "AI", item: "DashScope LLM (production)", weight: 6, key: "llm" },
+            { id: "stripe", area: "Billing", item: "Stripe live + webhook", weight: 8, key: "prod_stripe" },
+            { id: "video", area: "AI", item: "Seedance video (MOCK_VIDEO_GEN=0)", weight: 8, key: "prod_video_gen" },
+            { id: "sound", area: "Audio", item: "Sound Studio voice OS", weight: 8, key: "prod_sound_studio" },
+            { id: "workers", area: "Scale", item: "Worker concurrency ≥8", weight: 4, key: "prod_worker_concurrency" },
 ];
 
 function scoreOf(status: CheckStatus, weight: number) {
@@ -151,7 +151,7 @@ export default function ScorecardPage() {
             <span className="bg-storm bg-clip-text text-transparent">readiness</span>
           </h1>
           <p className="mt-3 text-white/60 max-w-xl text-[15px]">
-            Live scan: forge media stack, Redis, Stripe, DashScope/Seedance, ElevenLabs, R2, worker scale.
+            Live scan: forge media stack, Redis, Stripe, DashScope/Seedance, Sound Studio, R2, worker scale.
             {scanning ? " Scanning…" : ` API ${apiLive ? "online" : "offline"}.`}
           </p>
         </div>

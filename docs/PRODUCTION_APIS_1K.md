@@ -26,14 +26,15 @@ S3_SECRET_ACCESS_KEY=…
 S3_PUBLIC_URL=https://media.reelstorm.uk
 ```
 
-## Tier B — AI (must)
+## Tier B — AI generation
 
-| Service | Env | Notes |
+| Service | Role | Required? |
 |---|---|---|
-| **DashScope** | `DASHSCOPE_API_KEY`, `DASHSCOPE_MODEL=qwen-plus` | LLM + Seedance video |
-| **Seedance** | uses DashScope key (or `SEEDANCE_API_KEY`) | |
-| **ElevenLabs Creator/Pro** | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Free tier will rate-limit |
-| **Disable mocks** | `MOCK_VIDEO_GEN=0` | Required |
+| **DashScope** | LLM + Seedance video | Yes for real video |
+| **Sound Studio** | Sync · stem extract · mux · clone · TTS | **Yes — owns all voice** |
+| **ElevenLabs** | Optional provider *under* Sound Studio | No — only if you want hosted TTS/clone |
+
+Sound Studio is the product surface for voice. Do **not** treat ElevenLabs as a launch blocker.
 
 ## Tier C — optional
 

@@ -27,8 +27,9 @@ R2_PUBLIC_URL=https://archive5.reelstorm.uk
 # AI
 DASHSCOPE_API_KEY=sk-…
 SEEDANCE_API_KEY=…   # or reuse DashScope
-ELEVENLABS_API_KEY=…
-ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+# Voice = Sound Studio (/sound-studio). ElevenLabs is optional provider only:
+# ELEVENLABS_API_KEY=
+# ELEVENLABS_VOICE_ID=
 
 # Stripe live
 STRIPE_SECRET_KEY=sk_live_…
