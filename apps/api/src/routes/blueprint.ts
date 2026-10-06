@@ -139,6 +139,7 @@ async function llmBlueprint(
   rawIdea: string,
   audience?: string,
   templateId?: string,
+  videoUrl?: string,
 ): Promise<MovieBlueprint> {
   const fallback = heuristicBlueprint(rawIdea, audience, templateId);
   try {
@@ -147,11 +148,16 @@ async function llmBlueprint(
         {
           role: "system",
           content:
-            "You are BOT Director for REELSTORM. Return ONLY valid JSON for a Movie Blueprint with keys: title, selectedLogline, loglines (3 items id/text/tone/durationSec/audience), worldBible {characters[{id,stableId,name,role}], locations[{id,stableId,name,angles}], style{lut,grain,accent}}, sceneMap[{id,from,to,prompt,type,startSec,endSec}], shotList[{id,sceneId,type,dur,framing,camera,status}], templateDNA{stylePreset,aspectRatio}, budget{rtcEstimate,archive5Blocks,notes}. Use stable IDs like CH_HOST_01, LOC_PRIMARY_01.",
+            "You are BOT Director for REELSTORM. Return ONLY valid JSON for a Movie Blueprint with keys: title, selectedLogline, loglines (3 items id/text/tone/durationSec/audience), worldBible {characters[{id,stableId,name,role}], locations[{id,stableId,name,angles}], style{lut,grain,accent}}, sceneMap[{id,from,to,prompt,type,startSec,endSec}], shotList[{id,sceneId,type,dur,framing,camera,status}], templateDNA{stylePreset,aspectRatio}, budget{rtcEstimate,archive5Blocks,notes}. Use stable IDs like CH_HOST_01, LOC_PRIMARY_01. If a referenceVideoUrl is provided, rebuild pacing, tone, and visual DNA in the style of that reel.",
         },
         {
           role: "user",
-          content: JSON.stringify({ rawIdea, audience: audience || "global", templateId }),
+          content: JSON.stringify({
+            rawIdea,
+            audience: audience || "global",
+            templateId,
+            referenceVideoUrl: videoUrl || null,
+          }),
         },
       ],
       { json: true, timeoutMs: 20_000 },
@@ -207,6 +213,30 @@ export async function blueprintRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "rawIdea, videoUrl, or videoFileId required" });
     }
 
+    let videoUrl = (body.videoUrl || "").trim() || null;
+    let uploadId = body.videoFileId || null;
+    let referenceKind: string | null = null;
+
+    // Auto-fetch YouTube / social / direct links into the workstation analyze pipeline
+    if (videoUrl && !uploadId) {
+      try {
+        // eslint-disable-next-line no-new
+        new URL(videoUrl);
+        const { startReferenceVideoFetch } = await import("../lib/reference-from-url.js");
+        const started = await startReferenceVideoFetch({
+          url: videoUrl,
+          analyze: true,
+          log: app.log,
+        });
+        uploadId = started.uploadId;
+        referenceKind = started.kindLabel;
+      } catch (err) {
+        return reply.code(400).send({
+          error: err instanceof Error ? err.message : "Invalid reference video URL",
+        });
+      }
+    }
+
     let userId = body.userId;
     if (!userId) {
       const email = body.ownerEmail || "producer@reelstorm.academy";
@@ -222,8 +252,8 @@ export async function blueprintRoutes(app: FastifyInstance) {
       data: {
         userId,
         rawIdea: rawIdea || null,
-        videoUrl: body.videoUrl || null,
-        uploadId: body.videoFileId || null,
+        videoUrl,
+        uploadId,
         templateId: body.templateId || null,
         audience: body.audience || null,
         status: "draft",
@@ -235,7 +265,11 @@ export async function blueprintRoutes(app: FastifyInstance) {
       stage: "welcome",
       engine: "SCRIPT",
       percent: 5,
-      message: "BOT Director online — shaping your idea…",
+      message: referenceKind
+        ? `BOT Director online — pulling ${referenceKind} reference…`
+        : "BOT Director online — shaping your idea…",
+      uploadId,
+      videoUrl,
     });
 
     await publishBlueprint(draft.id, {
@@ -243,10 +277,17 @@ export async function blueprintRoutes(app: FastifyInstance) {
       stage: "idea",
       engine: "SCRIPT",
       percent: 25,
-      message: "Generating loglines…",
+      message: videoUrl
+        ? "Reference locked — generating loglines from idea + DNA…"
+        : "Generating loglines…",
     });
 
-    const movie = await llmBlueprint(rawIdea || "Storm reel", body.audience, body.templateId);
+    const movie = await llmBlueprint(
+      rawIdea || "Storm reel",
+      body.audience,
+      body.templateId,
+      videoUrl || undefined,
+    );
 
     await publishBlueprint(draft.id, {
       blueprintId: draft.id,
@@ -300,6 +341,9 @@ export async function blueprintRoutes(app: FastifyInstance) {
       movie,
       stages: BOT_DIRECTOR_STAGES,
       wsChannel: `blueprint:${blueprint.id}`,
+      reference: videoUrl
+        ? { videoUrl, uploadId, kindLabel: referenceKind, wsChannel: uploadId ? `analysis:${uploadId}` : null }
+        : null,
     });
   });
 

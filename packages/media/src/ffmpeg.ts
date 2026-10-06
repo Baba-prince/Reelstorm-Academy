@@ -84,11 +84,18 @@ export type ProbeResult = {
 
 export function probeVideo(filePath: string): Promise<ProbeResult> {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, data) => {
+    ffmpeg.ffprobe(filePath, (err: Error | null, data: any) => {
       if (err) return reject(err);
-      const video = data.streams.find((s) => s.codec_type === "video");
-      const audio = data.streams.find((s) => s.codec_type === "audio");
-      const durationSec = Number(data.format.duration || 0);
+      const streams = (data?.streams || []) as Array<{
+        codec_type?: string;
+        width?: number;
+        height?: number;
+        r_frame_rate?: string;
+        codec_name?: string;
+      }>;
+      const video = streams.find((s) => s.codec_type === "video");
+      const audio = streams.find((s) => s.codec_type === "audio");
+      const durationSec = Number(data?.format?.duration || 0);
       let fps = 24;
       if (video?.r_frame_rate) {
         const [n, d] = video.r_frame_rate.split("/").map(Number);
@@ -101,7 +108,7 @@ export function probeVideo(filePath: string): Promise<ProbeResult> {
         fps,
         videoCodec: video?.codec_name,
         audioCodec: audio?.codec_name,
-        bitrate: data.format.bit_rate ? Number(data.format.bit_rate) : undefined,
+        bitrate: data?.format?.bit_rate ? Number(data.format.bit_rate) : undefined,
       });
     });
   });

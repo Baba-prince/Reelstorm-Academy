@@ -31,11 +31,42 @@ type Movie = {
 
 const ENGINE = ["SCRIPT", "WORLD", "STUDIO", "ARCHIVE", "MERGE"] as const;
 
+const SOCIAL_HINTS = [
+  "YouTube",
+  "TikTok",
+  "Instagram",
+  "Facebook",
+  "X",
+  "Vimeo",
+  "MP4",
+] as const;
+
+function looksLikeUrl(value: string) {
+  return /^https?:\/\//i.test(value.trim());
+}
+
+function detectPlatform(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+    if (host.includes("youtube") || host === "youtu.be") return "YouTube";
+    if (host.includes("tiktok")) return "TikTok";
+    if (host.includes("instagram") || host === "instagr.am") return "Instagram";
+    if (host.includes("facebook") || host.includes("fb.watch") || host === "fb.com") return "Facebook";
+    if (host === "x.com" || host.includes("twitter")) return "X";
+    if (host.includes("vimeo")) return "Vimeo";
+    if (/\.(mp4|mov|webm)(\?|$)/i.test(new URL(url).pathname)) return "Direct MP4";
+    return "Web video";
+  } catch {
+    return null;
+  }
+}
+
 function WizardInner() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [stages, setStages] = useState<Stage[]>([]);
   const [idea, setIdea] = useState("");
+  const [refUrl, setRefUrl] = useState("");
   const [audience, setAudience] = useState("Nollywood + global social");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -46,11 +77,16 @@ function WizardInner() {
   const [liveMsg, setLiveMsg] = useState("BOT Director standing by");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [voNote, setVoNote] = useState<string | null>(null);
+  const [refUploadId, setRefUploadId] = useState<string | null>(null);
+  const [refStatus, setRefStatus] = useState<string | null>(null);
 
   const name = useMemo(() => {
     const raw = (user?.name || user?.email || "Producer").split(/[\s@._-]/)[0];
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, [user]);
+
+  const platform = useMemo(() => (refUrl.trim() ? detectPlatform(refUrl.trim()) : null), [refUrl]);
+  const canGenerate = idea.trim().length > 0 || looksLikeUrl(refUrl);
 
   useEffect(() => {
     api<{ stages: Stage[] }>("/api/blueprint/stages")
@@ -58,7 +94,7 @@ function WizardInner() {
       .catch(() =>
         setStages([
           { id: "welcome", step: "00", title: "Welcome", meta: "Director greets you", engine: "SCRIPT" },
-          { id: "idea", step: "01", title: "1st Scene · Idea", meta: "3 loglines", engine: "SCRIPT" },
+          { id: "idea", step: "01", title: "1st Scene · Idea", meta: "Idea + link", engine: "SCRIPT" },
           { id: "script", step: "02", title: "Script · Voice", meta: "VO", engine: "SCRIPT" },
           { id: "world", step: "03", title: "World", meta: "CH_ / LOC_", engine: "WORLD" },
           { id: "scenes", step: "04", title: "Scene Map", meta: "1st→Hand", engine: "STUDIO" },
@@ -78,11 +114,13 @@ function WizardInner() {
           percent?: number;
           message?: string;
           projectId?: string;
+          uploadId?: string;
         };
         if (data.engine) setEngine(data.engine);
         if (typeof data.percent === "number") setLivePct(data.percent);
         if (data.message) setLiveMsg(data.message);
         if (data.projectId) setProjectId(data.projectId);
+        if (data.uploadId) setRefUploadId(data.uploadId);
       } catch {
         /* ignore */
       }
@@ -90,32 +128,85 @@ function WizardInner() {
     return () => ws.close();
   }, [blueprintId]);
 
+  useEffect(() => {
+    if (!refUploadId) return;
+    const ws = new WebSocket(`${getWsBase()}/ws/analysis/${refUploadId}`);
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data) as {
+          percent?: number;
+          message?: string;
+          error?: string;
+          stage?: string;
+        };
+        if (data.error) {
+          setRefStatus(`Reference failed: ${data.error}`);
+          return;
+        }
+        if (data.message) setRefStatus(data.message);
+        if (data.stage) setLiveMsg(data.message || `Reference ${data.stage}`);
+      } catch {
+        /* ignore */
+      }
+    };
+    const poll = setInterval(() => {
+      api<{
+        upload: { status: string; progressPct: number; progressMsg: string | null; error: string | null };
+      }>(`/api/upload/video/${refUploadId}`)
+        .then((d) => {
+          if (d.upload.progressMsg) setRefStatus(d.upload.progressMsg);
+          if (d.upload.error) setRefStatus(`Reference failed: ${d.upload.error}`);
+        })
+        .catch(() => undefined);
+    }, 2500);
+    return () => {
+      ws.close();
+      clearInterval(poll);
+    };
+  }, [refUploadId]);
+
   async function generate() {
-    if (!idea.trim()) {
-      setMsg("Drop a raw idea or paste a YouTube URL first.");
+    const ideaText = idea.trim();
+    let url = refUrl.trim();
+    if (!url && looksLikeUrl(ideaText)) url = ideaText;
+    if (!ideaText && !url) {
+      setMsg("Drop a raw idea and/or paste a YouTube / social video link.");
+      return;
+    }
+    if (url && !looksLikeUrl(url)) {
+      setMsg("Reference link must start with http:// or https://");
       return;
     }
     setBusy(true);
     setMsg(null);
     setProjectId(null);
+    setRefStatus(url ? `Queuing ${detectPlatform(url) || "web"} reference…` : null);
     try {
-      const isUrl = /^https?:\/\//i.test(idea.trim());
       const data = await api<{
         blueprintId: string;
         movie: Movie;
+        reference?: { uploadId?: string | null; kindLabel?: string | null } | null;
       }>("/api/blueprint/generate", {
         method: "POST",
         body: JSON.stringify({
-          rawIdea: isUrl ? undefined : idea.trim(),
-          videoUrl: isUrl ? idea.trim() : undefined,
+          rawIdea: ideaText && !looksLikeUrl(ideaText) ? ideaText : undefined,
+          videoUrl: url || undefined,
           audience,
           ownerEmail: user?.email,
         }),
       });
       setBlueprintId(data.blueprintId);
       setMovie(data.movie);
+      if (data.reference?.uploadId) setRefUploadId(data.reference.uploadId);
+      if (data.reference?.kindLabel) {
+        setRefStatus(`${data.reference.kindLabel} reference downloading in background…`);
+      }
       setStep(2);
-      setLiveMsg("Blueprint locked — walk the stages");
+      setLiveMsg(
+        url
+          ? "Blueprint locked — reference DNA extracting in LIVE ENGINE"
+          : "Blueprint locked — walk the stages",
+      );
     } catch (e) {
       setMsg((e as Error).message);
     } finally {
@@ -167,7 +258,8 @@ function WizardInner() {
             )}
           </h1>
           <p className="mt-2 text-white/55 text-sm max-w-xl">
-            One bot layer — idea in, Movie Blueprint out. Feeds Template Forge DNA into Studio · Archive · Merge.
+            Idea and/or YouTube · TikTok · Instagram · Facebook · X link in — Movie Blueprint out. Reference DNA
+            feeds the factory.
           </p>
         </div>
         <Link href="/dashboard" className="mono text-[11px] text-white/40 hover:text-cyan">
@@ -176,7 +268,6 @@ function WizardInner() {
       </div>
 
       <div className="grid lg:grid-cols-[220px_1fr_280px] gap-4 flex-1 min-h-0">
-        {/* Stepper */}
         <aside className="rounded-rs-xl border border-white/[0.08] bg-deep p-3 space-y-1">
           {stages.map((s, i) => (
             <button
@@ -197,7 +288,6 @@ function WizardInner() {
           ))}
         </aside>
 
-        {/* Center stage */}
         <section className="rounded-rs-xl border border-white/[0.08] bg-panel/80 p-5 flex flex-col min-h-[420px]">
           <div className="mono text-[11px] text-orange mb-3">
             {current?.step} · {current?.title}
@@ -206,9 +296,19 @@ function WizardInner() {
           {step === 0 && (
             <div className="space-y-4 flex-1">
               <p className="text-white/70 text-sm leading-relaxed">
-                I&apos;m your BOT Director. Drop a raw idea or a reference URL — I&apos;ll walk 7 stages and hand a
-                blueprint the factory can execute without guesswork.
+                I&apos;m your BOT Director. Drop a raw idea, paste a YouTube or social video link (or both) — I&apos;ll
+                walk 7 stages and hand a blueprint the factory can execute without guesswork.
               </p>
+              <div className="flex flex-wrap gap-1.5">
+                {SOCIAL_HINTS.map((h) => (
+                  <span
+                    key={h}
+                    className="mono text-[9px] px-2 py-1 rounded-full border border-white/10 text-white/45"
+                  >
+                    {h}
+                  </span>
+                ))}
+              </div>
               <button
                 type="button"
                 onClick={() => setStep(1)}
@@ -221,12 +321,35 @@ function WizardInner() {
 
           {step === 1 && (
             <div className="space-y-3 flex-1 flex flex-col">
+              <label className="mono text-[9px] text-white/40">RAW IDEA</label>
               <textarea
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
-                placeholder='e.g. "Vexo Garage FOMO 30s ad" or https://youtube.com/watch?v=…'
-                className="flex-1 min-h-[140px] rounded-rs bg-void border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-cyan/40"
+                placeholder='e.g. "Vexo Garage FOMO 30s ad for Lagos youth"'
+                className="flex-1 min-h-[110px] rounded-rs bg-void border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-cyan/40"
               />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="mono text-[9px] text-cyan">REFERENCE VIDEO LINK · WORKSTATION</label>
+                  {platform && (
+                    <span className="mono text-[9px] px-2 py-0.5 rounded-full border border-cyan/30 text-cyan">
+                      {platform}
+                    </span>
+                  )}
+                </div>
+                <input
+                  value={refUrl}
+                  onChange={(e) => setRefUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && canGenerate && void generate()}
+                  placeholder="https://youtube.com/watch?v=…  ·  tiktok.com/@…  ·  instagram.com/reel/…  ·  mp4"
+                  className="w-full h-12 rounded-rs bg-void border border-white/10 px-4 text-sm focus:outline-none focus:border-cyan/40"
+                />
+                <div className="mono text-[8px] text-white/35">
+                  YouTube · TikTok · Instagram · Facebook · X · Vimeo · direct MP4 — yt-dlp pulls DNA into LIVE ENGINE
+                </div>
+              </div>
+
               <input
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
@@ -235,17 +358,30 @@ function WizardInner() {
               />
               <button
                 type="button"
-                disabled={busy || !idea.trim()}
+                disabled={busy || !canGenerate}
                 onClick={() => void generate()}
                 className="h-12 rounded-rs bg-orange text-black font-bold text-sm disabled:opacity-40"
               >
-                {busy ? "Directing…" : "Generate blueprint"}
+                {busy
+                  ? refUrl.trim()
+                    ? "Pulling reference + directing…"
+                    : "Directing…"
+                  : refUrl.trim()
+                    ? "Generate from idea + link"
+                    : "Generate blueprint"}
               </button>
             </div>
           )}
 
           {step === 2 && movie && (
             <div className="space-y-3 flex-1 overflow-auto">
+              {refUrl.trim() && (
+                <div className="rounded-rs border border-cyan/25 bg-cyan/5 px-3 py-2 text-xs text-cyan/90">
+                  Reference: {detectPlatform(refUrl) || "Web"} · {refUrl.slice(0, 64)}
+                  {refUrl.length > 64 ? "…" : ""}
+                  {refStatus ? <div className="mono text-[9px] text-white/45 mt-1">{refStatus}</div> : null}
+                </div>
+              )}
               <div className="text-sm text-white/70">{movie.selectedLogline}</div>
               <div className="space-y-2">
                 {movie.loglines.map((l) => (
@@ -268,7 +404,11 @@ function WizardInner() {
                 Open Sound Studio for voice →
               </button>
               {voNote && <div className="text-xs text-white/50">{voNote}</div>}
-              <button type="button" onClick={() => setStep(3)} className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4">
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4"
+              >
                 Next: World →
               </button>
             </div>
@@ -295,7 +435,11 @@ function WizardInner() {
               <div className="mono text-[10px] text-white/40">
                 LUT {movie.worldBible.style.lut} · grain {movie.worldBible.style.grain}
               </div>
-              <button type="button" onClick={() => setStep(4)} className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4">
+              <button
+                type="button"
+                onClick={() => setStep(4)}
+                className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4"
+              >
                 Next: Scenes →
               </button>
             </div>
@@ -311,7 +455,11 @@ function WizardInner() {
                   <div className="text-sm mt-1">{s.prompt}</div>
                 </div>
               ))}
-              <button type="button" onClick={() => setStep(5)} className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4 mt-2">
+              <button
+                type="button"
+                onClick={() => setStep(5)}
+                className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4 mt-2"
+              >
                 Next: Shots →
               </button>
             </div>
@@ -348,7 +496,11 @@ function WizardInner() {
                   </tbody>
                 </table>
               </div>
-              <button type="button" onClick={() => setStep(6)} className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4">
+              <button
+                type="button"
+                onClick={() => setStep(6)}
+                className="h-11 rounded-rs bg-violet text-white text-sm font-bold px-4"
+              >
                 Next: Feed Factory →
               </button>
             </div>
@@ -360,6 +512,7 @@ function WizardInner() {
                 Blueprint {blueprintId || "—"} is ready. Feed it into the factory to spawn Soul IDs, rooms, storyboard,
                 then run Studio → Archive5 → Merge.
               </p>
+              {refStatus && <div className="text-xs text-cyan/80 mono">{refStatus}</div>}
               <button
                 type="button"
                 disabled={busy || !blueprintId}
@@ -382,7 +535,6 @@ function WizardInner() {
           )}
         </section>
 
-        {/* Live Engine */}
         <aside className="rounded-rs-xl border border-white/[0.08] bg-deep p-4 space-y-4">
           <div className="mono text-[11px] text-cyan">LIVE ENGINE</div>
           <div className="space-y-2">
@@ -410,6 +562,7 @@ function WizardInner() {
               <div className="h-full progress-bar" style={{ width: `${livePct}%` }} />
             </div>
             <div className="text-[11px] text-white/50 mt-2">{liveMsg}</div>
+            {refStatus && <div className="text-[10px] text-cyan/70 mt-2 mono">{refStatus}</div>}
           </div>
           {movie && (
             <div className="rounded-rs border border-white/10 p-3">

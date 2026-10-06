@@ -62,18 +62,47 @@ function run(cmd: string, args: string[], cwd?: string): Promise<{ code: number;
   });
 }
 
-/** Detect YouTube / Vimeo / direct mp4 / generic page URL */
-export function classifyVideoUrl(url: string): "youtube" | "vimeo" | "direct" | "generic" {
+export type VideoUrlKind =
+  | "youtube"
+  | "vimeo"
+  | "instagram"
+  | "tiktok"
+  | "facebook"
+  | "x"
+  | "direct"
+  | "generic";
+
+/** Detect YouTube / social / Vimeo / direct mp4 / generic page URL */
+export function classifyVideoUrl(url: string): VideoUrlKind {
   try {
     const u = new URL(url);
-    const host = u.hostname.replace(/^www\./, "");
-    if (host.includes("youtube.com") || host === "youtu.be") return "youtube";
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    if (host.includes("youtube.com") || host === "youtu.be" || host === "m.youtube.com") return "youtube";
     if (host.includes("vimeo.com")) return "vimeo";
+    if (host.includes("instagram.com") || host === "instagr.am") return "instagram";
+    if (host.includes("tiktok.com") || host === "vm.tiktok.com") return "tiktok";
+    if (host.includes("facebook.com") || host.includes("fb.watch") || host === "fb.com") return "facebook";
+    if (host === "x.com" || host.includes("twitter.com") || host === "t.co") return "x";
     if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(u.pathname)) return "direct";
     return "generic";
   } catch {
     return "generic";
   }
+}
+
+/** Human label for workstation chips */
+export function videoUrlKindLabel(kind: VideoUrlKind): string {
+  const map: Record<VideoUrlKind, string> = {
+    youtube: "YouTube",
+    vimeo: "Vimeo",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    facebook: "Facebook",
+    x: "X / Twitter",
+    direct: "Direct MP4",
+    generic: "Web video",
+  };
+  return map[kind];
 }
 
 /**
