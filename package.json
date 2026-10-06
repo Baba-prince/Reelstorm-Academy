@@ -17,6 +17,8 @@
     "db:push": "npm run push -w @reelstorm/db",
     "db:migrate": "npm run migrate -w @reelstorm/db",
     "smoke": "bash scripts/smoke.sh",
+    "check:apis": "bash scripts/check-production-apis.sh",
+    "check:apis:live": "bash scripts/check-production-apis.sh --live",
     "worker:fetch-intros": "node --import tsx scripts/fetch-intros.mjs",
     "db:seed-system-bank": "npx tsx scripts/seedSystemBank.ts",
     "db:allocate-free-demos": "npx tsx scripts/allocateFreeDemoToAllUsers.ts",

@@ -1,8 +1,14 @@
 # REELSTORM ACADEMY OS — Production Build Scorecard
 
-**Version:** v1.4 (ffprobe · Template Forge · Production 1k gate)  
+**Version:** v1.5 (smoke + production API scripts closed)  
 **Live UI:** `/scorecard`  
 **API probe:** `GET /api/readiness` → `production1k`
+
+## Gaps closed in v1.5
+
+| Gap | Fix |
+|-----|-----|
+| Smoke + production API scripts PARTIAL | `scripts/smoke.sh` full live probes · `check-production-apis.sh` offline + `--live` |
 
 ## Gaps closed in v1.4
 
@@ -29,7 +35,9 @@
 ```bash
 bash scripts/stamp-production-1k-env.sh
 # fill DASHSCOPE_API_KEY, ELEVENLABS_API_KEY, sk_live_*, R2 S3_*
-bash scripts/check-production-apis.sh
+npm run check:apis
+npm run check:apis:live
+API_URL=https://app.reelstorm.uk WEB_URL=https://app.reelstorm.uk npm run smoke
 curl -sS https://app.reelstorm.uk/api/readiness | jq .production1k
 ```
 

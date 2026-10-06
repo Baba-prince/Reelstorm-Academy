@@ -2,7 +2,9 @@
 
 Probe: `GET /api/readiness` → `production1k`  
 Stamp defaults: `bash scripts/stamp-production-1k-env.sh`  
-Offline check: `bash scripts/check-production-apis.sh`
+Offline check: `npm run check:apis` / `bash scripts/check-production-apis.sh`  
+Live check: `npm run check:apis:live`  
+Smoke: `API_URL=https://app.reelstorm.uk WEB_URL=https://app.reelstorm.uk npm run smoke`
 
 ## Tier A — platform (must)
 

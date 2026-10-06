@@ -28,7 +28,7 @@ const STATIC: Array<Omit<Check, "status" | "detail"> & { status: CheckStatus; de
   { id: "pages", area: "Frontend", item: "Factory pages · Forge · Templates · Wallet · Onboarding", weight: 6, status: "pass", detail: "Next production build OK" },
   { id: "forgeUi", area: "Differentiator", item: "Template Forge upload + URL extract + Apply Generate", weight: 8, status: "pass", detail: "Same-origin API/WS · reactive Apply" },
   { id: "onboard", area: "Frontend", item: "Onboarding ideals + dashboard welcome by name", weight: 4, status: "pass", detail: "Nollywood/Asia/social packs · Welcome / Welcome back" },
-  { id: "tests", area: "Quality", item: "Smoke + production API check scripts", weight: 3, status: "partial", detail: "scripts/smoke.sh · check-production-apis.sh" },
+  { id: "tests", area: "Quality", item: "Smoke + production API check scripts", weight: 3, status: "pass", detail: "npm run smoke · npm run check:apis · check:apis:live" },
 ];
 
 const LIVE_MAP: Array<{ id: string; area: string; item: string; weight: number; key: string }> = [
