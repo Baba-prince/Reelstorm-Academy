@@ -18,5 +18,6 @@ Host: IONOS VPS `87.106.103.43` (Ubuntu 24.04)
    - `reelstorm.uk` / `www` → web :3000
    - `app.reelstorm.uk` → web :3000
    - `api.reelstorm.uk` → api :4000
-7. Stripe webhook → `https://api.reelstorm.uk/api/billing/stripe-webhook`
+7. Stripe webhook → `https://app.reelstorm.uk/api/billing/stripe-webhook` (nginx `/api/` → API)
 8. Supabase Google provider: paste `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`; add Supabase callback URI in Google Console.
+9. Production 1k APIs: see [PRODUCTION_APIS_1K.md](./PRODUCTION_APIS_1K.md) — DashScope, ElevenLabs, R2, `MOCK_VIDEO_GEN=0`, `WORKER_CONCURRENCY=8`.

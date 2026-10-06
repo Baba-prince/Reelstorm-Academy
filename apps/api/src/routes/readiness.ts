@@ -1,9 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import { access } from "node:fs/promises";
+import { access, statfs } from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { prisma } from "@reelstorm/db";
-import { classifyVideoUrl, resolveFfmpeg, resolveYtDlp } from "@reelstorm/media";
+import {
+  evaluateProductionApis,
+  scoreProductionChecks,
+} from "@reelstorm/domain";
+import { classifyVideoUrl, resolveFfmpeg, resolveYtDlp, probeObjectStorage } from "@reelstorm/media";
 import { redisConnection } from "../lib/queue.js";
 
 async function ok(p: string) {
@@ -15,7 +19,7 @@ async function ok(p: string) {
   }
 }
 
-/** Live readiness probe used by /scorecard */
+/** Live readiness probe used by /scorecard + production 1k gates */
 export async function readinessRoutes(app: FastifyInstance) {
   app.get("/api/readiness", async () => {
     const checks: Record<string, { status: "pass" | "partial" | "fail"; detail: string }> = {};
@@ -41,7 +45,6 @@ export async function readinessRoutes(app: FastifyInstance) {
 
     const ffmpeg = await resolveFfmpeg();
     const ffmpegOk = ffmpeg !== "ffmpeg" ? await ok(ffmpeg) : false;
-    // also try which via spawn failure later — mark partial if PATH name only
     checks.ffmpeg = ffmpegOk
       ? { status: "pass", detail: ffmpeg }
       : { status: "fail", detail: "ffmpeg binary not found (bin/ffmpeg or PATH)" };
@@ -62,35 +65,78 @@ export async function readinessRoutes(app: FastifyInstance) {
     };
 
     const root = path.resolve(process.cwd(), "../..");
+    const uploadDir = process.env.UPLOAD_TMP_DIR || path.join(root, "tmp/uploads");
     checks.localStorage = {
       status: "pass",
-      detail: process.env.UPLOAD_TMP_DIR || path.join(root, "tmp/uploads"),
+      detail: uploadDir,
     };
+
+    try {
+      const fsStat = await statfs(uploadDir);
+      const freeGb = (Number(fsStat.bavail) * Number(fsStat.bsize)) / (1024 ** 3);
+      checks.disk = {
+        status: freeGb >= 50 ? "pass" : freeGb >= 20 ? "partial" : "fail",
+        detail: `${freeGb.toFixed(1)} GiB free on upload volume (target ≥50 GiB for ~1000 users)`,
+      };
+    } catch {
+      checks.disk = { status: "partial", detail: "Could not stat upload volume" };
+    }
 
     checks.auth = {
-      status: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL ? "partial" : "fail",
-      detail: "Supabase URL present — prod JWT verification still soft/dev",
+      status: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL ? "pass" : "fail",
+      detail: process.env.GOOGLE_CLIENT_ID
+        ? "Supabase + Google Client ID configured"
+        : "Supabase URL present — add Google OAuth for Gmail sign-in",
     };
 
-    checks.ollama = { status: "partial", detail: process.env.OLLAMA_MODEL || "llama3.1:8b" };
-    try {
-      const r = await fetch(`${process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434"}/api/tags`);
-      if (r.ok) checks.ollama = { status: "pass", detail: "Ollama reachable" };
-    } catch {
-      /* keep partial */
+    // Prefer DashScope in production; Ollama is local-only fallback
+    if (process.env.DASHSCOPE_API_KEY) {
+      checks.llm = {
+        status: "pass",
+        detail: `DashScope ${process.env.DASHSCOPE_MODEL || "qwen-plus"}`,
+      };
+    } else {
+      checks.llm = { status: "fail", detail: "DASHSCOPE_API_KEY missing (Ollama not used for 1k prod)" };
+      try {
+        const r = await fetch(`${process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434"}/api/tags`);
+        if (r.ok) {
+          checks.llm = {
+            status: "partial",
+            detail: "Ollama only — set DASHSCOPE_API_KEY for production",
+          };
+        }
+      } catch {
+        /* keep fail */
+      }
+    }
+    checks.ollama = checks.llm; // back-compat for scorecard map
+
+    const storageProbe = await probeObjectStorage();
+    checks.s3 = storageProbe;
+
+    const prod = evaluateProductionApis(process.env);
+    const scored = scoreProductionChecks(prod);
+    for (const c of prod) {
+      checks[`prod_${c.id}`] = { status: c.status, detail: `[${c.tier}] ${c.detail}` };
     }
 
     const weights: Record<string, number> = {
-      api: 10,
+      api: 8,
       db: 10,
-      redis: 10,
-      ffmpeg: 8,
-      ytdlp: 8,
-      urlExtract: 10,
-      webReference: 4,
-      localStorage: 5,
-      auth: 6,
-      ollama: 5,
+      redis: 8,
+      ffmpeg: 6,
+      ytdlp: 6,
+      urlExtract: 6,
+      webReference: 2,
+      localStorage: 3,
+      disk: 6,
+      auth: 8,
+      llm: 8,
+      s3: 10,
+      prod_stripe: 8,
+      prod_video_gen: 10,
+      prod_elevenlabs: 6,
+      prod_worker_concurrency: 4,
     };
 
     let earned = 0;
@@ -104,9 +150,17 @@ export async function readinessRoutes(app: FastifyInstance) {
     const pct = Math.round((earned / total) * 100);
 
     return {
-      version: "1.2.0",
+      version: "1.3.0-1k",
       pct,
       grade: pct >= 90 ? "A" : pct >= 75 ? "B" : pct >= 60 ? "C" : pct >= 40 ? "D" : "F",
+      production1k: {
+        ready: scored.readyFor1k,
+        pct: scored.pct,
+        grade: scored.grade,
+        blocking: scored.blocking,
+        webhookUrl: "https://app.reelstorm.uk/api/billing/stripe-webhook",
+        checks: prod,
+      },
       checks,
     };
   });

@@ -115,10 +115,13 @@ set_kv MARKETING_URL https://reelstorm.uk
 set_kv REDIS_URL redis://127.0.0.1:6379/$RS_REDIS_DB
 set_kv BULLMQ_PREFIX reelstorm
 set_kv UPLOAD_TMP_DIR $APP_DIR/tmp/uploads
-set_kv MOCK_VIDEO_GEN 1
+# Production 1k defaults — real video gen + worker scale
+set_kv MOCK_VIDEO_GEN 0
+set_kv WORKER_CONCURRENCY 8
+set_kv VIDEO_PROVIDER auto
 mkdir -p $APP_DIR/tmp/uploads
 echo "Isolation:"
-grep -E '^(API_PORT|PORT|REDIS_URL|BULLMQ_PREFIX|NEXT_PUBLIC_API_URL|UPLOAD_TMP_DIR)=' .env
+grep -E '^(API_PORT|PORT|REDIS_URL|BULLMQ_PREFIX|NEXT_PUBLIC_API_URL|UPLOAD_TMP_DIR|MOCK_VIDEO_GEN|WORKER_CONCURRENCY)=' .env
 REMOTE
 
 echo "==> Install + build (inside $APP_DIR only)"
@@ -158,6 +161,16 @@ server {
   server_name reelstorm.uk www.reelstorm.uk app.reelstorm.uk;
   client_max_body_size 2G;
   location /.well-known/acme-challenge/ { root /var/www/html; }
+  # Same-origin API proxy (Stripe webhook, readiness, Templates Room)
+  location /api/ {
+    proxy_pass http://reelstorm_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_request_buffering off;
+  }
   location / {
     proxy_pass http://reelstorm_web;
     proxy_http_version 1.1;

@@ -61,12 +61,17 @@ export default function ScorecardPage() {
             { id: "api", area: "API", item: "Fastify health + routes", weight: 8, key: "api" },
             { id: "db", area: "Data", item: "Supabase Postgres via Prisma", weight: 8, key: "db" },
             { id: "redis", area: "Infra", item: "Redis / memory-server for BullMQ", weight: 8, key: "redis" },
-            { id: "ffmpeg", area: "Media", item: "ffmpeg binary (analyze/split/merge)", weight: 8, key: "ffmpeg" },
-            { id: "ytdlp", area: "Media", item: "yt-dlp for web reference download", weight: 8, key: "ytdlp" },
-            { id: "urlExtract", area: "Differentiator", item: "POST /api/upload/video/from-url", weight: 10, key: "urlExtract" },
-            { id: "localStorage", area: "Infra", item: "Local AssetCenter temp storage", weight: 4, key: "localStorage" },
-            { id: "auth", area: "Security", item: "Supabase JWT + dev login", weight: 6, key: "auth" },
-            { id: "ollama", area: "AI", item: "Local Ollama orchestration", weight: 4, key: "ollama" },
+            { id: "ffmpeg", area: "Media", item: "ffmpeg binary (analyze/split/merge)", weight: 6, key: "ffmpeg" },
+            { id: "ytdlp", area: "Media", item: "yt-dlp for web reference download", weight: 6, key: "ytdlp" },
+            { id: "urlExtract", area: "Differentiator", item: "POST /api/upload/video/from-url", weight: 6, key: "urlExtract" },
+            { id: "disk", area: "Infra", item: "Upload volume free space (≥50 GiB)", weight: 4, key: "disk" },
+            { id: "s3", area: "Infra", item: "Object storage S3/R2 (not local MinIO)", weight: 8, key: "s3" },
+            { id: "auth", area: "Security", item: "Supabase + Google OAuth", weight: 6, key: "auth" },
+            { id: "llm", area: "AI", item: "DashScope LLM (production)", weight: 6, key: "llm" },
+            { id: "stripe", area: "Billing", item: "Stripe live + webhook", weight: 8, key: "prod_stripe" },
+            { id: "video", area: "AI", item: "Seedance video (MOCK off)", weight: 8, key: "prod_video_gen" },
+            { id: "eleven", area: "AI", item: "ElevenLabs Voice Forge", weight: 6, key: "prod_elevenlabs" },
+            { id: "workers", area: "Scale", item: "Worker concurrency ≥8", weight: 4, key: "prod_worker_concurrency" },
           ];
           for (const m of map) {
             const c = data.checks[m.key];
@@ -121,13 +126,13 @@ export default function ScorecardPage() {
     <div className="max-w-[1100px] space-y-8 forge-in">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="mono text-[11px] text-cyan mb-2">PRODUCTION BUILD SCORECARD // v1.2</div>
+          <div className="mono text-[11px] text-cyan mb-2">PRODUCTION BUILD SCORECARD // v1.3 · 1k APIs</div>
           <h1 className="display text-4xl md:text-5xl">
             Ship{" "}
             <span className="bg-storm bg-clip-text text-transparent">readiness</span>
           </h1>
           <p className="mt-3 text-white/60 max-w-xl text-[15px]">
-            Live scan including web URL reference extract.
+            Live scan for platform, Stripe, DashScope/Seedance, ElevenLabs, R2, and worker scale.
             {scanning ? " Scanning…" : ` API ${apiLive ? "online" : "offline"}.`}
           </p>
         </div>

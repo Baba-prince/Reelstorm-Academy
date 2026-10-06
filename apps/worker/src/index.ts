@@ -68,7 +68,9 @@ function start(name: string, processor: (job: never) => Promise<unknown>) {
   const worker = new Worker(name, processor as never, {
     connection,
     prefix,
-    concurrency: Number(process.env.WORKER_CONCURRENCY || 2),
+    concurrency: Number(
+      process.env.WORKER_CONCURRENCY || (process.env.NODE_ENV === "production" ? 8 : 2),
+    ),
   });
   worker.on("ready", () => console.log(`[worker] ${name} ready (prefix=${prefix})`));
   worker.on("failed", (job, err) => {
