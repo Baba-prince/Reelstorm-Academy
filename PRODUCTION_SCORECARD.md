@@ -1,8 +1,18 @@
 # REELSTORM ACADEMY OS — Production Build Scorecard
 
-**Version:** v1.3 (Production APIs · ~1000 users)  
+**Version:** v1.4 (ffprobe · Template Forge · Production 1k gate)  
 **Live UI:** `/scorecard`  
 **API probe:** `GET /api/readiness` → `production1k`
+
+## Gaps closed in v1.4
+
+| Gap | Fix |
+|-----|-----|
+| Template Forge stuck at 0% | VPS `apt install ffmpeg` + ffprobe path wiring |
+| Redis DB 17 out of range | `databases 32` in redis.conf |
+| Forge buttons / WS dead | Same-origin `getApiBase` / `getWsBase` + nginx `/ws/` |
+| Scorecard offline on app host | Scorecard uses `getApiBase()` not hard-coded api DNS |
+| No 1k visibility | Production 1k gate panel + blocking chips |
 
 ## Gaps closed in v1.3
 
@@ -13,7 +23,6 @@
 | Worker scale | `WORKER_CONCURRENCY=8` (prod default) |
 | MinIO-only storage | S3/R2 probe; docs for Cloudflare R2 |
 | Stripe webhook path | nginx `/api/` proxy on app host |
-| Scorecard | Stripe / Seedance / ElevenLabs / R2 / concurrency rows |
 
 ## Launch (production 1k)
 
