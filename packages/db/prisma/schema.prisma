@@ -46,6 +46,7 @@ enum SubTier {
   free
   storm
   storm_pro
+  premium_pro
   network
 }
 
@@ -183,6 +184,31 @@ model VideoTemplate {
   updatedAt     DateTime @updatedAt
   sourceUpload  VideoUpload @relation(fields: [sourceUploadId], references: [id])
   projects      Project[]
+}
+
+/** Stock intro clips cached from Pexels (primary) / Pixabay (backup) → R2 */
+model IntroTemplate {
+  id           String   @id @default(cuid())
+  type         String   @default("intro")
+  category     String
+  name         String
+  source       String
+  externalId   String
+  r2Key        String?
+  r2Url        String?
+  thumbnailUrl String?
+  coverUrl     String?
+  durationSec  Float    @default(0)
+  tags         String[] @default([])
+  license      String   @default("free-commercial")
+  query        String?
+  bytes        BigInt?
+  meta         Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@index([type, category])
 }
 
 model Block {

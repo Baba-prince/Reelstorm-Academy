@@ -127,9 +127,9 @@ function heuristicBlueprint(rawIdea: string, audience?: string, templateId?: str
       ...sceneMap.map((s) => [s.id, s.id.toUpperCase()]),
     ]),
     budget: {
-      rtcEstimate: blocks * 100,
+      rtcEstimate: blocks * 5,
       archive5Blocks: blocks,
-      notes: `${blocks} × ARCHIVE5 @ 100 RTC`,
+      notes: `${blocks} × ARCHIVE5 set @ 5 RTC (1 RTC = 1 min)`,
     },
     voiceover: { text: loglines[0].text },
   };

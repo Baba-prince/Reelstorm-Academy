@@ -1,123 +1,211 @@
 /**
  * REELSTORM Currency (RTC) + subscription tiers
- * Adopted from VisaVideos / passport-paper StripePriceTierService:
- *   free · journey (£39/mo) · journey_pro (£89/mo)
- * Mapped to Storm factory units: 1 ARCHIVE5 block (5 min) = RTC_PER_ARCHIVE5
+ *
+ * Unit rule (Captain model):
+ *   1 RTC = 1 minute of final rendered master @ 720p
+ *   1 SET  = one finished 5-min ARCHIVE5 asset = 5 RTC
+ *
+ * Factory cost basis ~$2.20 / RTC (720p) → sell ~$7.99 / RTC with ~65–70% margin.
+ * Clip length is the cost lever (5s Cost Saver vs 10s Cinematic).
  */
 
-export const RTC_PER_ARCHIVE5 = 100; // 1 × 5-min block
+export const RTC_PER_MINUTE = 1;
+/** One finished 5-minute ARCHIVE5 set */
+export const RTC_PER_ARCHIVE5 = 5;
 export const ARCHIVE5_SECONDS = 300;
+export const ARCHIVE5_MINUTES = 5;
 
-export type PaidTier = "storm" | "storm_pro";
+/** Soft cost basis for previews (720p). Not billed — Seedance/API real costs vary. */
+export const COST_USD_PER_RTC_720 = 2.2;
+export const COST_USD_PER_CLIP_720 = 0.3;
+export const SELL_USD_PER_RTC = 7.99;
+
+export type PaidTier = "storm" | "storm_pro" | "premium_pro";
 export type Tier = "free" | PaidTier | "network";
 
-/** VisaVideos naming parallel for docs / admin */
-export const TIER_VISA_ALIAS: Record<Exclude<Tier, "network">, string> = {
-  free: "Free",
-  storm: "Journey",
-  storm_pro: "Journey Pro",
-};
-
+/** Product display names (Captain launch stack) */
 export const TIER_DISPLAY_NAME: Record<Tier, string> = {
-  free: "Studio",
-  storm: "Storm",
-  storm_pro: "Storm Pro",
+  free: "Free Test",
+  storm: "Basic",
+  storm_pro: "Premium",
+  premium_pro: "Premium Pro",
   network: "Network",
 };
 
+/** Short alias for cards / docs */
+export const TIER_ALIAS: Record<Tier, string> = {
+  free: "Hook",
+  storm: "Ad shops",
+  storm_pro: "YouTubers",
+  premium_pro: "Artists · Ads",
+  network: "Academies",
+};
+
 export const TIER_DISPLAY_PRICE: Record<Tier, string> = {
-  free: "Free",
-  storm: "£39/mo",
-  storm_pro: "£89/mo",
+  free: "$0",
+  storm: "$49/mo",
+  storm_pro: "$99/mo",
+  premium_pro: "$199/mo",
   network: "Custom",
 };
 
-export const TIER_PRICE_GBP: Record<Tier, number> = {
+export const TIER_PRICE_USD: Record<Tier, number> = {
   free: 0,
-  storm: 39,
-  storm_pro: 89,
-  network: 0, // custom quote
+  storm: 49,
+  storm_pro: 99,
+  premium_pro: 199,
+  network: 0,
 };
 
-/** Monthly RTC allowance (invested into 5-min ARCHIVE5 sections) */
+/** @deprecated use TIER_PRICE_USD — kept for old GBP callers */
+export const TIER_PRICE_GBP: Record<Tier, number> = {
+  free: 0,
+  storm: 49,
+  storm_pro: 99,
+  premium_pro: 199,
+  network: 0,
+};
+
+/** Monthly RTC allowance — sell SETS, meter in minutes */
 export const TIER_MONTHLY_RTC: Record<Tier, number> = {
-  free: 300, // 3 blocks
-  storm: 1500, // 15 blocks @ £39
-  storm_pro: 4000, // 40 blocks @ £89
-  network: 20000, // default pool; overridable per tenant
+  free: 1, // 1 min test · 480p · watermark · no download
+  storm: 15, // 3 sets × 5 min · 720p only
+  storm_pro: 25, // 5 sets · 1080p unlocked (hero)
+  premium_pro: 50, // 10 sets · 1080p native + DNA upload
+  network: 200, // default WL pool; overridable per tenant
+};
+
+/** Finished 5-min sets included (Free = partial test minute, not a full set) */
+export const TIER_MONTHLY_SETS: Record<Tier, number> = {
+  free: 0,
+  storm: 3,
+  storm_pro: 5,
+  premium_pro: 10,
+  network: 40,
+};
+
+export const TIER_MAX_RESOLUTION: Record<Tier, "480p" | "720p" | "1080p"> = {
+  free: "480p",
+  storm: "720p", // lock — force upgrade for 1080p
+  storm_pro: "1080p",
+  premium_pro: "1080p",
+  network: "1080p",
 };
 
 export const TIER_FEATURES: Record<Tier, string[]> = {
   free: [
-    "Template Forge upload + YouTube URL extract",
-    `${TIER_MONTHLY_RTC.free} RTC / mo (${TIER_MONTHLY_RTC.free / RTC_PER_ARCHIVE5} × ARCHIVE5)`,
-    "Local Ollama orchestration",
-    "Mock video gen path",
-    "Scorecard + brand kit",
+    "1 RTC (1 min) · 480p preview",
+    "Big watermark · no download · expires 24h",
+    "1 template only (Nollywood or Asia)",
+    "Archive Vault preview only",
   ],
   storm: [
-    "Everything in Studio",
-    `${TIER_MONTHLY_RTC.storm} RTC / mo (${TIER_MONTHLY_RTC.storm / RTC_PER_ARCHIVE5} × 5-min blocks)`,
-    "DashScope + Seedance / Kling / Veo routing",
-    "Sound Studio (sync · extract · clone · TTS)",
-    "Priority BullMQ jobs",
-    "Team seats (3)",
+    "3 sets × 5-min = 15 RTC / mo",
+    "720p only (1080p = upgrade)",
+    "3 templates · Archive5 30 days",
+    "Watermark off · download unlocked",
   ],
   storm_pro: [
-    "Everything in Storm",
-    `${TIER_MONTHLY_RTC.storm_pro} RTC / mo (${TIER_MONTHLY_RTC.storm_pro / RTC_PER_ARCHIVE5} × 5-min blocks)`,
-    "White-label API starter (1 tenant)",
-    "Custom brand tokens on embed",
-    "Team seats (10)",
-    "Merge Studio masters",
+    "5 sets × 5-min = 25 RTC / mo — YouTuber hero",
+    "1080p unlocked · 10 templates",
+    "Custom voice clone · no watermark",
+    "Archive5 unlimited · Merge Studio · 1 seat",
+  ],
+  premium_pro: [
+    "10 sets × 5-min = 50 RTC / mo",
+    "1080p native · unlimited templates",
+    "Video Upload → Template DNA",
+    "3 seats · R2 priority · RTC rollover",
   ],
   network: [
-    "Everything in Storm Pro",
+    "Everything in Premium Pro",
     "Multi-tenant Academy white-label",
     "Custom domain + RS-under-your-brand",
-    "Revenue share / RTC resale",
-    "SLA render farm",
-    "Dedicated support",
+    "Revenue share / RTC resale · SLA farm",
   ],
 };
 
+/** VisaVideos naming retired — kept as soft alias for migrations */
+export const TIER_VISA_ALIAS: Record<Exclude<Tier, "network" | "premium_pro">, string> = {
+  free: "Free",
+  storm: "Basic",
+  storm_pro: "Premium",
+};
+
 export function rtcForDurationSec(durationSec: number): number {
-  const blocks = Math.max(1, Math.ceil(durationSec / ARCHIVE5_SECONDS));
-  return blocks * RTC_PER_ARCHIVE5;
+  const minutes = Math.max(1, Math.ceil(durationSec / 60));
+  return minutes * RTC_PER_MINUTE;
 }
 
 export function blocksFromRtc(rtc: number): number {
   return Math.floor(rtc / RTC_PER_ARCHIVE5);
 }
 
+export function setsFromRtc(rtc: number): number {
+  return blocksFromRtc(rtc);
+}
+
+export function minutesFromRtc(rtc: number): number {
+  return Math.floor(rtc / RTC_PER_MINUTE);
+}
+
+/** Estimate RTC + clip cost from shot list (BOT Wizard cost control) */
+export function estimateBlueprintCost(opts: {
+  clipCount: number;
+  clipSeconds?: number; // 5 = Cost Saver, 10 = Cinematic
+}): {
+  clips: number;
+  clipSeconds: number;
+  apiCostUsd: number;
+  rtc: number;
+  sets: number;
+  mode: "cost_saver" | "cinematic";
+} {
+  const clipSeconds = opts.clipSeconds === 10 ? 10 : 5;
+  const clips = Math.max(0, opts.clipCount);
+  const apiCostUsd = Number((clips * COST_USD_PER_CLIP_720).toFixed(2));
+  // Rough: factory maps clip runtime → final minutes; floor at 1 RTC
+  const totalSec = clips * clipSeconds;
+  const rtc = Math.max(1, Math.ceil(totalSec / 60));
+  return {
+    clips,
+    clipSeconds,
+    apiCostUsd,
+    rtc,
+    sets: blocksFromRtc(rtc),
+    mode: clipSeconds === 5 ? "cost_saver" : "cinematic",
+  };
+}
+
 export type RtcPack = {
   id: string;
   rtc: number;
-  priceGbp: number;
+  priceUsd: number;
   label: string;
+  /** @deprecated */
+  priceGbp?: number;
 };
 
-/** One-time RTC top-ups (VisaVideos Power Tap style packs) */
+/** Overage packs — where viral months print margin */
 export const RTC_PACKS: RtcPack[] = [
-  { id: "pack_5", rtc: 500, priceGbp: 15, label: "5 blocks" },
-  { id: "pack_15", rtc: 1500, priceGbp: 39, label: "15 blocks (Storm month)" },
-  { id: "pack_40", rtc: 4000, priceGbp: 89, label: "40 blocks (Pro month)" },
-  { id: "pack_100", rtc: 10000, priceGbp: 199, label: "100 blocks" },
+  { id: "pack_10", rtc: 10, priceUsd: 69, priceGbp: 69, label: "10 RTC · 2 sets" },
+  { id: "pack_25", rtc: 25, priceUsd: 149, priceGbp: 149, label: "25 RTC · 5 sets" },
+  { id: "pack_50", rtc: 50, priceUsd: 269, priceGbp: 269, label: "50 RTC · 10 sets" },
 ];
 
 /**
- * Stripe Price IDs — same VisaVideos Journey / Journey Pro catalogue
- * (passport-paper StripePriceTierService).
- * Map Visa journey → storm, journey_pro → storm_pro.
+ * Stripe Price IDs — create Basic $49 / Premium $99 / Premium Pro $199 in Dashboard,
+ * then set STRIPE_PRICE_* env. Legacy Journey IDs kept as fallbacks until swapped.
  */
 export const STRIPE_PRICE_TO_TIER: Record<string, PaidTier> = {
-  price_1TyGglKFjjrlm6Pq5miSVDh6: "storm", // Journey £39
-  price_1TyGgyKFjjrlm6PqObBXjtrj: "storm_pro", // Journey Pro £89
+  price_1TyGglKFjjrlm6Pq5miSVDh6: "storm", // legacy Journey → Basic until replaced
+  price_1TyGgyKFjjrlm6PqObBXjtrj: "storm_pro", // legacy Journey Pro → Premium
 };
 
 export const DEFAULT_STRIPE_PRICE: Record<PaidTier, string> = {
   storm: "price_1TyGglKFjjrlm6Pq5miSVDh6",
   storm_pro: "price_1TyGgyKFjjrlm6PqObBXjtrj",
+  premium_pro: "price_premium_pro_placeholder",
 };
 
 export function tierForStripePrice(priceId: string): PaidTier | null {
@@ -126,5 +214,11 @@ export function tierForStripePrice(priceId: string): PaidTier | null {
 
 export function stripePriceForTier(tier: PaidTier): string {
   if (tier === "storm") return process.env.STRIPE_PRICE_STORM || DEFAULT_STRIPE_PRICE.storm;
-  return process.env.STRIPE_PRICE_STORM_PRO || DEFAULT_STRIPE_PRICE.storm_pro;
+  if (tier === "storm_pro")
+    return process.env.STRIPE_PRICE_STORM_PRO || DEFAULT_STRIPE_PRICE.storm_pro;
+  return process.env.STRIPE_PRICE_PREMIUM_PRO || DEFAULT_STRIPE_PRICE.premium_pro;
+}
+
+export function isPaidTier(tier: string): tier is PaidTier {
+  return tier === "storm" || tier === "storm_pro" || tier === "premium_pro";
 }

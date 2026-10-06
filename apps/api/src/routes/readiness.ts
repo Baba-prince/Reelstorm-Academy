@@ -132,6 +132,21 @@ export async function readinessRoutes(app: FastifyInstance) {
     const storageProbe = await probeObjectStorage();
     checks.s3 = storageProbe;
 
+    // Template Room stock intros (Pexels→Pixabay→R2)
+    try {
+      const introCount = await prisma.introTemplate.count({ where: { type: "intro" } });
+      const target = 100;
+      checks.intro_cache = {
+        status: introCount >= target ? "pass" : introCount >= 20 ? "partial" : "fail",
+        detail: `${introCount}/${target} intros cached (Pexels→Pixabay→R2 · $0 vs Seedance)`,
+      };
+    } catch (e) {
+      checks.intro_cache = {
+        status: "fail",
+        detail: `IntroTemplate table missing? ${(e as Error).message}`,
+      };
+    }
+
     const prod = evaluateProductionApis(process.env);
     const scored = scoreProductionChecks(prod);
     for (const c of prod) {
@@ -156,6 +171,7 @@ export async function readinessRoutes(app: FastifyInstance) {
       prod_video_gen: 10,
       prod_sound_studio: 8,
       prod_worker_concurrency: 4,
+      intro_cache: 6,
     };
 
     let earned = 0;

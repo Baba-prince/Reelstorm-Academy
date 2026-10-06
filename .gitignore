@@ -19,3 +19,4 @@ packages/db/prisma/migrations/**/migration_lock.toml.bak
 bin/
 tmp/
 supabase/.temp/
+.venv-xlsx/

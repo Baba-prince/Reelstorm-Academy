@@ -111,17 +111,17 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         <div className="flex gap-2">
           <div className="flex-1 rounded-md border border-cyan/30 bg-cyan/10 p-2">
             <div className="mono text-[7px] text-cyan">BALANCE</div>
-            <div className="display text-[22px] text-cyan leading-none mt-1">1,500</div>
+            <div className="display text-[22px] text-cyan leading-none mt-1">25</div>
             <div className="text-[8px] text-white/40 mt-1">RTC</div>
           </div>
           <div className="flex-1 rounded-md border border-orange/30 bg-orange/10 p-2">
             <div className="mono text-[7px] text-orange">ARCHIVE5</div>
-            <div className="display text-[22px] text-orange leading-none mt-1">15</div>
-            <div className="text-[8px] text-white/40 mt-1">blocks left</div>
+            <div className="display text-[22px] text-orange leading-none mt-1">5</div>
+            <div className="text-[8px] text-white/40 mt-1">sets left</div>
           </div>
         </div>
         <div className="rounded-md border border-white/10 p-2 text-[9px] text-white/55">
-          Debit rule: <span className="text-white font-semibold">100 RTC</span> → one 5-min vault section
+          Debit rule: <span className="text-white font-semibold">5 RTC</span> → one 5-min set (1 RTC/min)
         </div>
       </div>,
       "#00D9FF",
@@ -184,7 +184,7 @@ export function SystemMock({ kind }: { kind: MockKind }) {
             <div className="w-10 h-7 rounded bg-gradient-to-r from-violet to-orange opacity-80" />
             <div className="flex-1 min-w-0">
               <div className="text-[9px] font-semibold truncate">ARCHIVE5 · EP0{n}</div>
-              <div className="mono text-[7px] text-white/35">5:00 · vaulted · −100 RTC</div>
+              <div className="mono text-[7px] text-white/35">5:00 · vaulted · −5 RTC</div>
             </div>
           </div>
         ))}
@@ -431,9 +431,9 @@ Authorization: Bearer rs_live_…
       ["Pricing"],
       <div className="grid grid-cols-3 gap-1.5">
         {[
-          ["Free", "0", "#7C3AED"],
-          ["Journey", "£39", "#00D9FF"],
-          ["Pro", "£89", "#FF7A00"],
+          ["Free", "$0", "#00D9FF"],
+          ["Basic", "$49", "#7C3AED"],
+          ["Premium", "$99", "#FF7A00"],
         ].map(([n, p, c]) => (
           <div key={n} className="rounded-md border p-2 text-center" style={{ borderColor: `${c}66` }}>
             <div className="text-[8px] font-bold">{n}</div>

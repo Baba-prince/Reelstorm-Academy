@@ -38,6 +38,21 @@ type Ideal = {
   musicCue: string;
   accent: string;
   genreTags: string[];
+  coverUrl?: string;
+  stockIntroCategory?: string;
+};
+
+type StockIntro = {
+  id: string;
+  category: string;
+  name: string;
+  r2Url: string | null;
+  coverUrl?: string | null;
+  thumbnail?: string | null;
+  duration: number;
+  source: string;
+  license: string;
+  tags: string[];
 };
 
 export default function TemplatesRoomPage() {
@@ -50,6 +65,10 @@ export default function TemplatesRoomPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
+  const [intros, setIntros] = useState<StockIntro[]>([]);
+  const [introStatus, setIntroStatus] = useState<{ total: number; target: number; pct: number } | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -60,6 +79,35 @@ export default function TemplatesRoomPage() {
     );
     setCategories(data.categories);
     setTemplates(data.templates);
+
+    const stockCat =
+      filter === "all"
+        ? ""
+        : filter === "product_ad"
+          ? "product"
+          : filter === "intro" || filter === "social"
+            ? "intros"
+            : filter === "action_thriller"
+              ? "drama"
+              : filter;
+    const introQs = new URLSearchParams({ type: "intro" });
+    if (stockCat) introQs.set("category", stockCat);
+    try {
+      const introData = await api<{ templates: StockIntro[]; count: number }>(
+        `/api/templates?${introQs.toString()}`,
+      );
+      setIntros(introData.templates || []);
+    } catch {
+      setIntros([]);
+    }
+    try {
+      const st = await api<{ total: number; target: number; pct: number }>(
+        "/api/templates/intros/status",
+      );
+      setIntroStatus(st);
+    } catch {
+      setIntroStatus(null);
+    }
   }, [filter, q]);
 
   useEffect(() => {
@@ -158,6 +206,75 @@ export default function TemplatesRoomPage() {
         </p>
       )}
 
+      {introStatus && (
+        <div className="rounded-rs border border-cyan/20 bg-cyan/5 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="mono text-[9px] text-cyan">STOCK INTROS · PEXELS → PIXABAY → R2</div>
+            <div className="text-[13px] text-white/70 mt-1">
+              {introStatus.total} / {introStatus.target} cached · {introStatus.pct}% · $0 vs Seedance
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            className="h-9 px-3 rounded-rs border border-white/15 text-[11px] mono text-white/70 hover:bg-white/[0.04] disabled:opacity-40"
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const r = await api<{ jobId?: string }>("/api/templates/intros/fetch", {
+                  method: "POST",
+                  body: JSON.stringify({}),
+                });
+                setMsg(`Intro fetch queued · job ${r.jobId || "ok"} — worker fills R2 cache`);
+              } catch (e) {
+                setMsg((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            FILL INTROS
+          </button>
+        </div>
+      )}
+
+      {intros.length > 0 && (
+        <section className="space-y-3">
+          <div className="mono text-[10px] text-orange tracking-[0.14em]">
+            FREE INTRO REELS · CACHED ({intros.length})
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
+            {intros.slice(0, 10).map((intro) => (
+              <a
+                key={intro.id}
+                href={intro.r2Url || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-rs-xl border border-white/[0.08] bg-panel overflow-hidden hover:border-white/20 transition group"
+              >
+                <div
+                  className="aspect-video bg-void relative"
+                  style={{
+                    backgroundImage: intro.coverUrl || intro.thumbnail
+                      ? `url(${intro.coverUrl || intro.thumbnail})`
+                      : undefined,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <div className="mono text-[8px] text-cyan uppercase">{intro.source}</div>
+                    <div className="text-[11px] font-semibold truncate">{intro.name}</div>
+                    <div className="mono text-[8px] text-white/45">{Math.round(intro.duration)}s</div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {templates.map((t) => (
           <button
@@ -173,9 +290,11 @@ export default function TemplatesRoomPage() {
             )}
           >
             <div
-              className="h-28 relative p-4 flex flex-col justify-between"
+              className="h-36 relative p-4 flex flex-col justify-between bg-cover bg-center"
               style={{
-                background: `linear-gradient(135deg, ${t.accent}55 0%, #0A0A0A 55%, ${catColor(t.category)}33 100%)`,
+                backgroundImage: t.coverUrl
+                  ? `linear-gradient(180deg, transparent 20%, #0A0A0Acc 100%), url(${t.coverUrl})`
+                  : `linear-gradient(135deg, ${t.accent}55 0%, #0A0A0A 55%, ${catColor(t.category)}33 100%)`,
               }}
             >
               <div className="mono text-[9px] text-white/70 tracking-[0.14em]">
@@ -183,12 +302,11 @@ export default function TemplatesRoomPage() {
                 {t.region && t.region !== "global" ? ` · ${t.region.toUpperCase()}` : ""}
               </div>
               <div className="flex justify-between items-end gap-2">
-                <div className="display text-[20px] leading-none">{t.name}</div>
+                <div className="display text-[20px] leading-none drop-shadow">{t.name}</div>
                 <div className="mono text-[9px] text-white/50 shrink-0">
                   {t.durationSec}s · {t.aspectRatio}
                 </div>
               </div>
-              {/* Fake storyboard strip */}
               <div className="absolute bottom-0 left-0 right-0 h-1.5 flex">
                 {t.shots.map((s, i) => (
                   <div

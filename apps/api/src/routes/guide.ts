@@ -41,8 +41,8 @@ function localCoach(pathname: string, message: string, option?: GuideOption): {
     lower.includes("£")
   ) {
     lines.push(
-      "• 100 RTC = one 5-min ARCHIVE5 vault.",
-      "• Free / Journey £39 / Journey Pro £89 map to Studio / Storm / Storm Pro packs.",
+      "• 1 RTC = 1 minute of finished master · 1 set = 5 RTC.",
+      "• Free Test $0 · Basic $49 (3 sets, 720p) · Premium $99 (5 sets, 1080p) · Premium Pro $199.",
       "• 10 ARCHIVE5/mo ≈ 1000 RTC → Storm (£39) covers 15 blocks; Free only covers 3.",
       "• Check /wallet before Studio if remaining blocks < 2.",
     );

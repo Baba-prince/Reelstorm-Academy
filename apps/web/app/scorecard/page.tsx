@@ -46,6 +46,7 @@ const LIVE_MAP: Array<{ id: string; area: string; item: string; weight: number; 
             { id: "stripe", area: "Billing", item: "Stripe live + webhook", weight: 8, key: "prod_stripe" },
             { id: "video", area: "AI", item: "Seedance video (MOCK_VIDEO_GEN=0)", weight: 8, key: "prod_video_gen" },
             { id: "sound", area: "Audio", item: "Sound Studio voice OS", weight: 8, key: "prod_sound_studio" },
+            { id: "intros", area: "Templates", item: "Stock intros R2 cache (≥100)", weight: 6, key: "intro_cache" },
             { id: "workers", area: "Scale", item: "Worker concurrency ≥8", weight: 4, key: "prod_worker_concurrency" },
 ];
 

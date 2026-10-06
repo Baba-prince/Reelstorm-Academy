@@ -9,7 +9,7 @@ const ENDPOINTS = [
   { m: "PATCH", path: "/v1/wl/brand", desc: "Update colors, product name, hideReelstorm" },
   { m: "GET", path: "/v1/wl/templates", desc: "List style templates" },
   { m: "POST", path: "/v1/wl/from-url", desc: "YouTube / web reference → analyze" },
-  { m: "POST", path: "/v1/wl/generate", desc: "Script → ARCHIVE5 (debits 100 RTC / 5-min)" },
+  { m: "POST", path: "/v1/wl/generate", desc: "Script → ARCHIVE5 (debits 5 RTC / 5-min set)" },
   { m: "GET", path: "/v1/wl/wallet", desc: "RTC balance + ledger" },
   { m: "POST", path: "/v1/wl/keys", desc: "Mint additional API keys" },
 ];
@@ -61,7 +61,7 @@ export default function DevelopersPage() {
     "script": "INT. STUDIO - NIGHT\\n...",
     "durationSec": 300
   }'
-# → bills 100 RTC for one ARCHIVE5 block`}</pre>
+# → bills 5 RTC for one ARCHIVE5 set (1 RTC/min)`}</pre>
           <div className="mt-8 flex gap-3">
             <Link href="/white-label" className="h-11 px-5 inline-flex items-center rounded-rs bg-orange text-black font-bold text-sm">
               Provision tenant

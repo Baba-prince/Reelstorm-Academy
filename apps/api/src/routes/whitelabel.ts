@@ -2,11 +2,16 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { prisma } from "@reelstorm/db";
 import {
   RTC_PER_ARCHIVE5,
+  RTC_PACKS,
+  TIER_ALIAS,
   TIER_DISPLAY_NAME,
   TIER_DISPLAY_PRICE,
   TIER_FEATURES,
+  TIER_MAX_RESOLUTION,
   TIER_MONTHLY_RTC,
+  TIER_MONTHLY_SETS,
   blocksFromRtc,
+  isPaidTier,
   stripePriceForTier,
 } from "@reelstorm/domain";
 import {
@@ -289,21 +294,27 @@ export async function whiteLabelRoutes(app: FastifyInstance) {
 
 export async function billingRoutes(app: FastifyInstance) {
   app.get("/api/billing/tiers", async () => {
-    const tiers = (["free", "storm", "storm_pro", "network"] as const).map((id) => ({
+    const ids = ["free", "storm", "storm_pro", "premium_pro", "network"] as const;
+    const tiers = ids.map((id) => ({
       id,
       name: TIER_DISPLAY_NAME[id],
       price: TIER_DISPLAY_PRICE[id],
       monthlyRtc: TIER_MONTHLY_RTC[id],
+      monthlySets: TIER_MONTHLY_SETS[id],
       archive5Blocks: blocksFromRtc(TIER_MONTHLY_RTC[id]),
+      maxResolution: TIER_MAX_RESOLUTION[id],
       features: TIER_FEATURES[id],
-      visaAlias: id === "storm" ? "Journey" : id === "storm_pro" ? "Journey Pro" : id === "free" ? "Free" : "Enterprise",
-      stripePriceId:
-        id === "storm" || id === "storm_pro" ? stripePriceForTier(id) : null,
+      alias: TIER_ALIAS[id],
+      featured: id === "storm_pro",
+      stripePriceId: isPaidTier(id) ? stripePriceForTier(id) : null,
     }));
     return {
       currency: "RTC",
+      rtcPerMinute: 1,
       rtcPerArchive5: RTC_PER_ARCHIVE5,
-      note: "Adopted from VisaVideos Free / Journey £39 / Journey Pro £89 tier system",
+      unit: "1 RTC = 1 minute of final master (720p) · 1 set = 5 RTC",
+      note: "Sell SETS. Meter minutes. Basic locked to 720p. Premium is the YouTuber hero.",
+      packs: RTC_PACKS,
       stripeReady: Boolean(process.env.STRIPE_SECRET_KEY),
       tiers,
     };
@@ -343,7 +354,7 @@ export async function billingRoutes(app: FastifyInstance) {
   app.post("/api/billing/grant-monthly", async (req, reply) => {
     const body = (req.body || {}) as { email?: string; tier?: string };
     const email = body.email || "producer@reelstorm.academy";
-    const tier = (body.tier || "storm") as "free" | "storm" | "storm_pro" | "network";
+    const tier = (body.tier || "storm") as "free" | "storm" | "storm_pro" | "premium_pro" | "network";
     const user = await prisma.user.upsert({
       where: { email },
       create: { email, tier },
@@ -361,7 +372,7 @@ export async function billingRoutes(app: FastifyInstance) {
     return { user, wallet, grantedRtc: amount };
   });
 
-  /** POST /api/billing/checkout — Stripe Checkout for Storm / Storm Pro */
+  /** POST /api/billing/checkout — Stripe Checkout for Basic / Premium / Premium Pro */
   app.post("/api/billing/checkout", async (req, reply) => {
     const secret = process.env.STRIPE_SECRET_KEY;
     if (!secret) return reply.code(503).send({ error: "STRIPE_SECRET_KEY not configured" });
@@ -371,12 +382,18 @@ export async function billingRoutes(app: FastifyInstance) {
     if (!user) return reply.code(401).send({ error: "Sign in required" });
 
     const body = (req.body || {}) as { tier?: string };
-    if (body.tier !== "storm" && body.tier !== "storm_pro") {
-      return reply.code(400).send({ error: "tier must be storm or storm_pro" });
+    if (!isPaidTier(body.tier || "")) {
+      return reply.code(400).send({ error: "tier must be storm | storm_pro | premium_pro" });
     }
+    const tier = body.tier as "storm" | "storm_pro" | "premium_pro";
 
     const { stripePriceForTier } = await import("@reelstorm/domain");
-    const priceId = stripePriceForTier(body.tier);
+    const priceId = stripePriceForTier(tier);
+    if (priceId.includes("placeholder")) {
+      return reply.code(503).send({
+        error: `Stripe price missing for ${tier} — set STRIPE_PRICE_* in .env`,
+      });
+    }
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(secret);
 
@@ -388,9 +405,9 @@ export async function billingRoutes(app: FastifyInstance) {
       allow_promotion_codes: true,
       client_reference_id: user.id,
       subscription_data: {
-        metadata: { userId: user.id, reelstormTier: body.tier },
+        metadata: { userId: user.id, reelstormTier: tier },
       },
-      metadata: { userId: user.id, reelstormTier: body.tier },
+      metadata: { userId: user.id, reelstormTier: tier },
       success_url: `${appUrl}/wallet?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/wallet?cancelled=1`,
     });
@@ -438,12 +455,11 @@ export async function billingRoutes(app: FastifyInstance) {
       };
       const userId = session.metadata?.userId || session.client_reference_id;
       if (!userId) return { received: true, skipped: "no_user_id" };
+      const tierRaw = session.metadata?.reelstormTier;
       const tier =
-        session.metadata?.reelstormTier === "storm_pro"
-          ? "storm_pro"
-          : session.metadata?.reelstormTier === "storm"
-            ? "storm"
-            : null;
+        tierRaw === "premium_pro" || tierRaw === "storm_pro" || tierRaw === "storm"
+          ? tierRaw
+          : null;
       if (!tier) return { received: true, skipped: "no_tier" };
       const user = await prisma.user.update({
         where: { id: userId },

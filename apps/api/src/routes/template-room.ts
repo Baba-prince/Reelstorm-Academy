@@ -4,11 +4,13 @@ import {
   IDEAL_TEMPLATES,
   TEMPLATE_ROOM_CATEGORIES,
   getIdealTemplate,
+  idealCoverDataUri,
   idealToTemplateJson,
   listIdealTemplates,
   type TemplateRoomCategory,
 } from "@reelstorm/domain";
 import { enqueue } from "../lib/queue.js";
+import { withIdealCover } from "./templates.js";
 
 const CATALOG_UPLOAD_ID = "tmpl_room_catalog_root";
 
@@ -56,7 +58,12 @@ async function ensureIdealAsVideoTemplate(idealId: string) {
       aspectRatio: ideal.aspectRatio,
       lut: ideal.lut,
       templateJson: json,
-      thumbnailUrl: null,
+      thumbnailUrl: idealCoverDataUri({
+        name: ideal.name,
+        category: ideal.category,
+        accent: ideal.accent,
+        tagline: ideal.tagline,
+      }),
     },
   });
 
@@ -95,8 +102,9 @@ export async function templateRoomRoutes(app: FastifyInstance) {
     }
     return {
       categories: TEMPLATE_ROOM_CATEGORIES,
-      templates: list,
+      templates: list.map(withIdealCover),
       total: list.length,
+      introsHint: "GET /api/templates?type=intro&category=nollywood — R2-cached stock openers",
     };
   });
 
@@ -105,7 +113,7 @@ export async function templateRoomRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     const ideal = getIdealTemplate(id);
     if (!ideal) return reply.code(404).send({ error: "Ideal template not found" });
-    return { template: ideal, dna: idealToTemplateJson(ideal) };
+    return { template: withIdealCover(ideal), dna: idealToTemplateJson(ideal) };
   });
 
   /** POST /api/templates/room/seed — materialize all ideals as VideoTemplates */

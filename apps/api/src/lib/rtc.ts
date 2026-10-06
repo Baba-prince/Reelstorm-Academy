@@ -131,7 +131,7 @@ export async function debitArchive5(walletId: string, blockId: string, durationS
     walletId,
     amount,
     type: "DEBIT_ARCHIVE5",
-    note: `${amount} RTC for ARCHIVE5 (${Math.ceil(durationSec / 300)} × 5-min)`,
+    note: `${amount} RTC for ARCHIVE5 (${Math.ceil(durationSec / 60)} min · 1 RTC/min)`,
     refType: "block",
     refId: blockId,
   });

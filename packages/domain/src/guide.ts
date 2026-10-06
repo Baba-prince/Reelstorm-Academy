@@ -32,7 +32,7 @@ Mission:
 - Prefer factory order: BOT Director Wizard or Template Forge → World Builder → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
 - Sound Studio is the voice OS (sync · extract · mux · library). Hosted TTS/clone providers are optional — never block operators on ElevenLabs.
 - Soft launch: Ollama may power the guide LLM; Stripe test + mock video are OK until live DashScope/Seedance/sk_live keys are stamped.
-- RTC rule: 100 RTC = one 5-minute ARCHIVE5 section. Tiers map Free/Journey £39/Journey Pro £89 → Studio/Storm/Storm Pro.
+- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. Tiers: Free Test $0 · Basic $49 (3 sets, 720p) · Premium $99 (5 sets, 1080p hero) · Premium Pro $199 (10 sets).
 
 Tone: sharp producer, not corporate. Brand colors mentally: violet / cyan / orange on void black.`;
 
@@ -90,14 +90,15 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/pricing",
     layer: "marketing",
     title: "RTC Pricing",
-    blurb: "Currency meters factory compute.",
+    blurb: "Sell sets. Meter minutes.",
     tips: [
-      "100 RTC = one ARCHIVE5 (5 min).",
-      "Journey £39 ≈ Storm pack; Journey Pro £89 ≈ Storm Pro volume.",
+      "1 RTC = 1 min master · 1 set = 5 RTC.",
+      "Basic $49 locks 720p; Premium $99 unlocks 1080p (YouTuber hero).",
+      "Overage packs: 10 / 25 / 50 RTC when a month goes viral.",
     ],
     options: [
-      { id: "pick", label: "Which tier?", prompt: "Help me pick a tier for 4 episodes/month.", kind: "improve" },
-      { id: "wallet", label: "Open wallet", prompt: "How do I check balance and top up?", href: "/wallet", kind: "goto" },
+      { id: "pick", label: "Which tier?", prompt: "Help me pick Basic vs Premium for 4 videos/month.", kind: "improve" },
+      { id: "wallet", label: "Open wallet", prompt: "How do I check balance and see −5 RTC on squeeze?", href: "/wallet", kind: "goto" },
       { id: "wl", label: "White-label packs", prompt: "How do academies buy RTC for their brand?", href: "/white-label", kind: "learn" },
     ],
   },
@@ -264,10 +265,10 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/archive-vault",
     layer: "os",
     title: "Archive Vault",
-    blurb: "Immutable 5-min IP — 100 RTC each.",
+    blurb: "Immutable 5-min IP — 5 RTC each (1 RTC/min).",
     tips: ["Tag series/episode/brand so remix stays findable."],
     options: [
-      { id: "debit", label: "RTC debit", prompt: "When exactly is RTC debited for ARCHIVE5?", kind: "learn" },
+      { id: "debit", label: "RTC debit", prompt: "When exactly is RTC debited for ARCHIVE5? (5 RTC per 5-min set)", kind: "learn" },
       { id: "merge", label: "Ready to merge?", prompt: "Checklist before Merge Studio.", href: "/merge-studio", kind: "improve" },
     ],
   },
@@ -286,11 +287,11 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/wallet",
     layer: "os",
     title: "RTC Wallet",
-    blurb: "Balance · ARCHIVE5 remaining · ledger.",
-    tips: ["Top up before Studio if remaining < 2 blocks."],
+    blurb: "Balance · sets left · −5 RTC per squeeze.",
+    tips: ["Top up before Studio if remaining < 2 sets (10 RTC).", "Basic is 720p-only — upgrade Premium for 1080p."],
     options: [
-      { id: "math", label: "RTC math", prompt: "I have 450 RTC — how many ARCHIVE5 can I vault?", kind: "learn" },
-      { id: "buy", label: "Buy packs", prompt: "Where do I purchase RTC packs?", href: "/pricing", kind: "goto" },
+      { id: "math", label: "RTC math", prompt: "I have 25 RTC — how many 5-min sets can I vault?", kind: "learn" },
+      { id: "buy", label: "Buy packs", prompt: "Where do I purchase RTC overage packs?", href: "/pricing", kind: "goto" },
     ],
   },
   {

@@ -213,3 +213,5 @@ export * from "./guide.js";
 export * from "./template-room.js";
 export * from "./production.js";
 export * from "./blueprint.js";
+export * from "./intro-catalog.js";
+export * from "./cover-art.js";

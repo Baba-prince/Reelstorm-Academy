@@ -16,8 +16,10 @@ export default function TermsPage() {
           </p>
           <p>
             <strong className="text-white">RTC.</strong> Reelstorm Currency meters ARCHIVE5 output.
-            100 RTC = one 5-minute block. Unused monthly RTC may not roll over unless stated in your
-            Network agreement. Purchased packs are non-refundable once spent on generation jobs.
+            1 RTC = 1 minute of finished master (720p). One 5-minute ARCHIVE5 set = 5 RTC. Unused monthly
+            RTC rolls over on Premium Pro only; Basic and Premium follow plan terms. Network (white-label)
+            allowances follow the tenant agreement. Purchased packs are non-refundable once spent on
+            generation jobs.
           </p>
           <p>
             <strong className="text-white">White-label.</strong> Academy tenants are responsible for

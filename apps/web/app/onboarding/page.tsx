@@ -39,7 +39,7 @@ type Draft = {
   role: string;
   region: string;
   templateId: string;
-  tierInterest: "free" | "storm" | "storm_pro";
+  tierInterest: "free" | "storm" | "storm_pro" | "premium_pro";
 };
 
 function Wizard() {
@@ -49,7 +49,7 @@ function Wizard() {
   const [role, setRole] = useState("youtuber");
   const [region, setRegion] = useState("nigeria");
   const [templateId, setTemplateId] = useState(TEMPLATES[0].id);
-  const [tierInterest, setTierInterest] = useState<"free" | "storm" | "storm_pro">("storm");
+  const [tierInterest, setTierInterest] = useState<"free" | "storm" | "storm_pro" | "premium_pro">("storm_pro");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -308,12 +308,13 @@ function Wizard() {
               <br />
               <span className="text-violet">when ready.</span>
             </h2>
-            <div className="grid sm:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {(
                 [
-                  { id: "free" as const, name: "Studio", price: "Free", note: "3 × ARCHIVE5" },
-                  { id: "storm" as const, name: "Storm", price: "£39", note: "15 blocks · Journey" },
-                  { id: "storm_pro" as const, name: "Storm Pro", price: "£89", note: "40 blocks · Pro" },
+                  { id: "free" as const, name: "Free Test", price: "$0", note: "1 RTC · 480p · no download" },
+                  { id: "storm" as const, name: "Basic", price: "$49", note: "3 sets · 720p only" },
+                  { id: "storm_pro" as const, name: "Premium", price: "$99", note: "5 sets · 1080p hero" },
+                  { id: "premium_pro" as const, name: "Premium Pro", price: "$199", note: "10 sets · DNA upload" },
                 ] as const
               ).map((t) => (
                 <button

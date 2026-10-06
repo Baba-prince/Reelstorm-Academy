@@ -60,7 +60,7 @@ export default function WhiteLabelPage() {
           </h1>
           <p className="mt-5 text-white/55 text-[16px] max-w-[520px] leading-relaxed">
             Studios and academies call our factory with their logo, colors, and product name.
-            Students never see RS — unless you want them to. Metered in RTC (100 RTC = one 5-min ARCHIVE5).
+            Students never see RS — unless you want them to. Metered in RTC (1 RTC = 1 min · 5 RTC = one 5-min set).
           </p>
         </div>
       </section>
@@ -74,7 +74,7 @@ export default function WhiteLabelPage() {
                 "REST API: /v1/wl/* with rs_live_ keys",
                 "Brand tokens: colors, monogram, product name",
                 "Generate + YouTube URL extract under your brand",
-                "Tenant RTC wallet (Storm Pro pool by default)",
+                "Tenant RTC wallet (Premium Pro pool by default)",
                 "Hide ReelStorm chrome when hideReelstorm=true",
               ].map((i) => (
                 <li key={i} className="flex gap-2">

@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             for ARCHIVE5 IP as configured by the project owner.
           </p>
           <p>
-            Billing tier data follows the VisaVideos-aligned Storm / Storm Pro model for subscription
+            Billing tier data follows Free Test / Basic / Premium / Premium Pro for subscription
             state; RTC ledgers record grants and ARCHIVE5 debits.
           </p>
           <p className="text-white/40 text-sm">Last updated: 2026-10-06 · privacy@reelstorm.academy</p>

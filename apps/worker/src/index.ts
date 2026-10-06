@@ -76,6 +76,7 @@ const { generateVideoJob } = await import("./jobs/generateVideo.js");
 const { archiveBlockJob } = await import("./jobs/archiveBlock.js");
 const { mergeMasterJob } = await import("./jobs/mergeMaster.js");
 const { soundStudioJob } = await import("./jobs/soundStudio.js");
+const { fetchTemplateIntrosJob } = await import("./jobs/fetchTemplateIntros.js");
 
 const connection = redis();
 const prefix = bullPrefix();
@@ -105,5 +106,6 @@ start("generateVideo", generateVideoJob);
 start("archiveBlock", archiveBlockJob);
 start("mergeMaster", mergeMasterJob);
 start("soundStudio", soundStudioJob);
+start("fetchTemplateIntros", fetchTemplateIntrosJob);
 
 console.log("REELSTORM Worker online — queues ready");
