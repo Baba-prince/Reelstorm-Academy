@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { API_URL, WS_URL, api } from "@/lib/api";
+import { getApiBase, getWsBase, api } from "@/lib/api";
 import clsx from "clsx";
 
 type AnalysisEvent = {
@@ -46,6 +46,7 @@ export default function TemplateForgePage() {
   const [script, setScript] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [rebuildMsg, setRebuildMsg] = useState<string | null>(null);
+  const [rebuildBusy, setRebuildBusy] = useState(false);
   const [refUrl, setRefUrl] = useState("");
   const [urlBusy, setUrlBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,7 +60,7 @@ export default function TemplateForgePage() {
         `/api/upload/video/${uploadId}`,
       )
         .then((d) => {
-          if (d.upload.progressMsg || d.upload.error) {
+          if (d.upload.progressMsg || d.upload.error || d.upload.progressPct) {
             setProgress({
               uploadId,
               stage: d.upload.status === "FAILED" ? "failed" : d.upload.status.toLowerCase(),
@@ -87,7 +88,7 @@ export default function TemplateForgePage() {
   useEffect(() => {
     if (!uploadId) return;
     wsRef.current?.close();
-    const ws = new WebSocket(`${WS_URL}/ws/analysis/${uploadId}`);
+    const ws = new WebSocket(`${getWsBase()}/ws/analysis/${uploadId}`);
     wsRef.current = ws;
     ws.onmessage = (ev) => {
       try {
@@ -121,7 +122,7 @@ export default function TemplateForgePage() {
       form.append("file", file);
       form.append("analyze", "true");
 
-      const res = await fetch(`${API_URL}/api/upload/video`, {
+      const res = await fetch(`${getApiBase()}/api/upload/video`, {
         method: "POST",
         body: form,
       });
@@ -169,10 +170,16 @@ export default function TemplateForgePage() {
   }
 
   async function rebuild() {
-    if (!selectedTemplate || !script.trim()) {
-      setRebuildMsg("Select a template and paste a new script.");
+    if (rebuildBusy) return;
+    if (!selectedTemplate) {
+      setRebuildMsg("Select a template from the gallery first.");
       return;
     }
+    if (!script.trim()) {
+      setRebuildMsg("Paste a new script before applying.");
+      return;
+    }
+    setRebuildBusy(true);
     setRebuildMsg("Creating project + applying template…");
     try {
       const { project } = await api<{ project: { id: string } }>("/api/projects", {
@@ -189,10 +196,13 @@ export default function TemplateForgePage() {
       setRebuildMsg(`STORM rebuild queued for project ${project.id}`);
     } catch (e) {
       setRebuildMsg((e as Error).message);
+    } finally {
+      setRebuildBusy(false);
     }
   }
 
   const pct = progress?.percent ?? 0;
+  const canRebuild = Boolean(selectedTemplate && script.trim()) && !rebuildBusy;
 
   return (
     <div className="space-y-8 forge-in max-w-[1200px]">
@@ -225,6 +235,7 @@ export default function TemplateForgePage() {
             className="flex-1 h-12 rounded-rs bg-void border border-white/10 px-4 text-sm focus:outline-none focus:border-cyan/50"
           />
           <button
+            type="button"
             onClick={() => void handleUrlExtract()}
             disabled={urlBusy || !refUrl.trim()}
             className="h-12 px-6 rounded-rs bg-cyan text-black font-bold text-sm disabled:opacity-40"
@@ -339,7 +350,7 @@ export default function TemplateForgePage() {
         <section className="rounded-rs-xl border border-white/[0.08] bg-deep overflow-hidden">
           <div className="h-12 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel">
             <span className="mono text-[11px]">TEMPLATE GALLERY</span>
-            <button onClick={loadTemplates} className="mono text-[9px] text-cyan">
+            <button type="button" onClick={loadTemplates} className="mono text-[9px] text-cyan">
               REFRESH
             </button>
           </div>
@@ -349,6 +360,7 @@ export default function TemplateForgePage() {
             )}
             {templates.map((t) => (
               <button
+                type="button"
                 key={t.id}
                 onClick={() => setSelectedTemplate(t.id)}
                 className={clsx(
@@ -376,15 +388,19 @@ export default function TemplateForgePage() {
             className="flex-1 min-h-[180px] rounded-rs bg-void border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-violet/50"
           />
           <button
-            onClick={rebuild}
-            className="mt-4 h-12 rounded-rs bg-orange text-black font-bold text-[14px]"
+            type="button"
+            onClick={() => void rebuild()}
+            disabled={!canRebuild}
+            className="mt-4 h-12 rounded-rs bg-orange text-black font-bold text-[14px] disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Apply Template → Generate
+            {rebuildBusy ? "Queuing…" : "Apply Template → Generate"}
           </button>
+          {!selectedTemplate && (
+            <div className="mt-2 mono text-[10px] text-white/40">Select a template in the gallery to enable Generate.</div>
+          )}
           {rebuildMsg && <div className="mt-3 text-sm text-white/60">{rebuildMsg}</div>}
         </section>
       </div>
     </div>
   );
 }
-

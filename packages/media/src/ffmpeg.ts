@@ -1,10 +1,75 @@
 import ffmpeg from "fluent-ffmpeg";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, access } from "node:fs/promises";
+import { constants } from "node:fs";
 import path from "node:path";
 import { ARCHIVE5_BLOCK_SECONDS } from "@reelstorm/domain";
 
+async function fileExists(p: string) {
+  try {
+    await access(p, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Resolve ffprobe next to ffmpeg or from env / common paths */
+export async function resolveFfprobe(ffmpegPath?: string): Promise<string> {
+  if (process.env.FFPROBE_PATH && (await fileExists(process.env.FFPROBE_PATH))) {
+    return process.env.FFPROBE_PATH;
+  }
+  const candidates: string[] = [];
+  if (ffmpegPath) {
+    candidates.push(path.join(path.dirname(ffmpegPath), "ffprobe"));
+  }
+  if (process.env.FFMPEG_PATH) {
+    candidates.push(path.join(path.dirname(process.env.FFMPEG_PATH), "ffprobe"));
+  }
+  candidates.push(
+    path.resolve(process.cwd(), "../../bin/ffprobe"),
+    path.resolve(process.cwd(), "bin/ffprobe"),
+    "/usr/bin/ffprobe",
+    "/usr/local/bin/ffprobe",
+    "/opt/homebrew/bin/ffprobe",
+  );
+  for (const c of candidates) {
+    if (await fileExists(c)) return c;
+  }
+  return "ffprobe";
+}
+
+/** Configure fluent-ffmpeg paths (call at process boot) */
+export async function configureFfmpegPaths(ffmpegBin?: string): Promise<{ ffmpeg: string; ffprobe: string }> {
+  const ff =
+    ffmpegBin ||
+    process.env.FFMPEG_PATH ||
+    (await fileExists("/usr/bin/ffmpeg")
+      ? "/usr/bin/ffmpeg"
+      : await fileExists(path.resolve(process.cwd(), "../../bin/ffmpeg"))
+        ? path.resolve(process.cwd(), "../../bin/ffmpeg")
+        : "ffmpeg");
+  const probe = await resolveFfprobe(ff === "ffmpeg" ? undefined : ff);
+  if (ff !== "ffmpeg") {
+    ffmpeg.setFfmpegPath(ff);
+    process.env.FFMPEG_PATH = ff;
+  }
+  if (probe !== "ffprobe" || (await fileExists(probe))) {
+    ffmpeg.setFfprobePath(probe);
+    process.env.FFPROBE_PATH = probe;
+  }
+  return { ffmpeg: ff, ffprobe: probe };
+}
+
+// Eager configure when env already set (worker/api bootstrap)
 if (process.env.FFMPEG_PATH) {
   ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
+  void resolveFfprobe(process.env.FFMPEG_PATH).then((p) => {
+    ffmpeg.setFfprobePath(p);
+    process.env.FFPROBE_PATH = p;
+  });
+}
+if (process.env.FFPROBE_PATH) {
+  ffmpeg.setFfprobePath(process.env.FFPROBE_PATH);
 }
 
 export type ProbeResult = {

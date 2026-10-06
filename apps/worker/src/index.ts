@@ -8,11 +8,23 @@ config({ path: resolve(root, ".env") });
 config();
 
 const ffmpeg = resolve(root, "bin/ffmpeg");
+const ffprobe = resolve(root, "bin/ffprobe");
 const ytdlp = resolve(root, "bin/yt-dlp");
+const binDir = resolve(root, "bin");
 if (existsSync(ffmpeg)) {
   process.env.FFMPEG_PATH = ffmpeg;
-  process.env.PATH = `${resolve(root, "bin")}:${process.env.PATH || ""}`;
+} else if (existsSync("/usr/bin/ffmpeg")) {
+  process.env.FFMPEG_PATH = "/usr/bin/ffmpeg";
 }
+if (existsSync(ffprobe)) {
+  process.env.FFPROBE_PATH = ffprobe;
+} else if (existsSync("/usr/bin/ffprobe")) {
+  process.env.FFPROBE_PATH = "/usr/bin/ffprobe";
+} else if (process.env.FFMPEG_PATH) {
+  const sibling = resolve(dirname(process.env.FFMPEG_PATH), "ffprobe");
+  if (existsSync(sibling)) process.env.FFPROBE_PATH = sibling;
+}
+process.env.PATH = `${binDir}:/usr/bin:${process.env.PATH || ""}`;
 if (existsSync(ytdlp)) process.env.YTDLP_PATH = ytdlp;
 
 async function ensureRedis() {
@@ -51,6 +63,10 @@ async function ensureRedis() {
 }
 
 await ensureRedis();
+
+const { configureFfmpegPaths } = await import("@reelstorm/media");
+const bins = await configureFfmpegPaths(process.env.FFMPEG_PATH);
+console.log(`[worker] ffmpeg=${bins.ffmpeg} ffprobe=${bins.ffprobe}`);
 
 const { Worker } = await import("bullmq");
 const { redis, trackJob, bullPrefix } = await import("./lib.js");

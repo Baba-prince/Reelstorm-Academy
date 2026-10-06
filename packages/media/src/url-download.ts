@@ -27,7 +27,9 @@ export function resolveYtDlp(): Promise<string> {
 
 export function resolveFfmpeg(): Promise<string> {
   return (async () => {
+    if (process.env.FFMPEG_PATH && (await exists(process.env.FFMPEG_PATH))) return process.env.FFMPEG_PATH;
     if (await exists(BIN_FFMPEG)) return BIN_FFMPEG;
+    if (await exists("/usr/bin/ffmpeg")) return "/usr/bin/ffmpeg";
     if (await exists("/usr/local/bin/ffmpeg")) return "/usr/local/bin/ffmpeg";
     if (await exists("/opt/homebrew/bin/ffmpeg")) return "/opt/homebrew/bin/ffmpeg";
     return "ffmpeg";

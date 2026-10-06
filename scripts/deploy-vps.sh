@@ -69,7 +69,14 @@ ssh_cmd "$VPS" 'bash -s' <<'REMOTE'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y curl git build-essential nginx redis-server ca-certificates
+apt-get install -y curl git build-essential nginx redis-server ca-certificates ffmpeg
+# Allow Redis DB index 17 for ReelStorm isolation (default max is 15)
+if grep -q '^databases ' /etc/redis/redis.conf 2>/dev/null; then
+  sed -i 's/^databases .*/databases 32/' /etc/redis/redis.conf
+elif [[ -f /etc/redis/redis.conf ]]; then
+  echo 'databases 32' >> /etc/redis/redis.conf
+fi
+systemctl restart redis-server || true
 if ! command -v node >/dev/null || [[ "$(node -v | cut -d. -f1 | tr -d v)" -lt 20 ]]; then
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
   apt-get install -y nodejs
@@ -170,6 +177,17 @@ server {
     proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto \\\$scheme;
     proxy_request_buffering off;
+  }
+  location /ws/ {
+    proxy_pass http://reelstorm_api;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade \\\$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_read_timeout 3600s;
   }
   location / {
     proxy_pass http://reelstorm_web;

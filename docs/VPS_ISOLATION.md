@@ -7,7 +7,8 @@ Same IONOS box (`87.106.103.43`) can host multiple products. ReelStorm is fenced
 | Code dir | `/opt/reelstorm-os` only | Their own `/opt/…` or `/var/www/…` |
 | PM2 names | `reelstorm-api`, `reelstorm-worker`, `reelstorm-web` | Untouched (deploy never `pm2 delete` others) |
 | Ports | **3017** (web), **4017** (api) | Keep 3000/4000/etc. |
-| Redis | DB **`/17`** + `BULLMQ_PREFIX=reelstorm` | Other DBs / prefixes |
+| Redis | DB **`/17`** (requires `databases 32` in redis.conf) + `BULLMQ_PREFIX=reelstorm` | Other DBs / prefixes |
+| ffmpeg / ffprobe | `apt install ffmpeg` on VPS | Template Forge analyze |
 | Nginx | File `sites-available/reelstorm` · `server_name *.reelstorm.uk` only | Other site files stay in `sites-enabled` |
 | SSL | `certbot --cert-name reelstorm.uk` for reelstorm hosts only | Their certs unchanged |
 | Uploads | `/opt/reelstorm-os/tmp/uploads` | Separate paths |

@@ -6,18 +6,40 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const dataDir = path.join(root, "tmp", "redis-data");
 mkdirSync(dataDir, { recursive: true });
 
-/** Point fluent-ffmpeg / PATH at bundled binaries */
+/** Point fluent-ffmpeg / PATH at bundled or system binaries */
 export function ensureLocalBins() {
   const ffmpeg = path.join(root, "bin", "ffmpeg");
+  const ffprobe = path.join(root, "bin", "ffprobe");
   const ytdlp = path.join(root, "bin", "yt-dlp");
+  const binDir = path.join(root, "bin");
+  const systemFfmpeg = "/usr/bin/ffmpeg";
+  const systemFfprobe = "/usr/bin/ffprobe";
+
   if (existsSync(ffmpeg)) {
     process.env.FFMPEG_PATH = ffmpeg;
-    process.env.PATH = `${path.join(root, "bin")}:${process.env.PATH || ""}`;
+  } else if (existsSync(systemFfmpeg)) {
+    process.env.FFMPEG_PATH = systemFfmpeg;
+  }
+  if (existsSync(ffprobe)) {
+    process.env.FFPROBE_PATH = ffprobe;
+  } else if (existsSync(systemFfprobe)) {
+    process.env.FFPROBE_PATH = systemFfprobe;
+  } else if (process.env.FFMPEG_PATH) {
+    const sibling = path.join(path.dirname(process.env.FFMPEG_PATH), "ffprobe");
+    if (existsSync(sibling)) process.env.FFPROBE_PATH = sibling;
+  }
+  if (process.env.FFMPEG_PATH || existsSync(binDir)) {
+    process.env.PATH = `${binDir}:/usr/bin:${process.env.PATH || ""}`;
   }
   if (existsSync(ytdlp)) {
     process.env.YTDLP_PATH = ytdlp;
   }
-  return { ffmpeg: existsSync(ffmpeg), ytdlp: existsSync(ytdlp), root };
+  return {
+    ffmpeg: Boolean(process.env.FFMPEG_PATH),
+    ffprobe: Boolean(process.env.FFPROBE_PATH),
+    ytdlp: existsSync(ytdlp),
+    root,
+  };
 }
 
 /**

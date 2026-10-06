@@ -7,7 +7,7 @@ import {
   evaluateProductionApis,
   scoreProductionChecks,
 } from "@reelstorm/domain";
-import { classifyVideoUrl, resolveFfmpeg, resolveYtDlp, probeObjectStorage } from "@reelstorm/media";
+import { classifyVideoUrl, resolveFfmpeg, resolveFfprobe, resolveYtDlp, probeObjectStorage } from "@reelstorm/media";
 import { redisConnection } from "../lib/queue.js";
 
 async function ok(p: string) {
@@ -48,6 +48,12 @@ export async function readinessRoutes(app: FastifyInstance) {
     checks.ffmpeg = ffmpegOk
       ? { status: "pass", detail: ffmpeg }
       : { status: "fail", detail: "ffmpeg binary not found (bin/ffmpeg or PATH)" };
+
+    const ffprobe = await resolveFfprobe(ffmpegOk ? ffmpeg : undefined);
+    const ffprobeOk = ffprobe !== "ffprobe" ? await ok(ffprobe) : false;
+    checks.ffprobe = ffprobeOk
+      ? { status: "pass", detail: ffprobe }
+      : { status: "fail", detail: "ffprobe not found — Template Forge analyze will fail" };
 
     const ytdlp = await resolveYtDlp();
     const ytdlpOk = ytdlp !== "yt-dlp" ? await ok(ytdlp) : false;
@@ -125,6 +131,7 @@ export async function readinessRoutes(app: FastifyInstance) {
       db: 10,
       redis: 8,
       ffmpeg: 6,
+      ffprobe: 8,
       ytdlp: 6,
       urlExtract: 6,
       webReference: 2,
