@@ -145,7 +145,7 @@ export async function fetchTemplateIntrosJob(job: Job<FetchTemplateIntrosData>) 
   };
 
   if (job.id) {
-    await trackJob("fetchTemplateIntros", String(job.id), "COMPLETED", job.data, result);
+    await trackJob("fetchTemplateIntros", String(job.id), "COMPLETED", job.data, { result });
   }
   return result;
 }

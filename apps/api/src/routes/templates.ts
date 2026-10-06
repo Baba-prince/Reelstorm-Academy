@@ -82,7 +82,7 @@ export async function templateRoutes(app: FastifyInstance) {
         pexels: await prisma.introTemplate.count({ where: { source: "pexels" } }),
         pixabay: await prisma.introTemplate.count({ where: { source: "pixabay" } }),
       },
-      note: "Stock intros are $0 API-cost media (Pexels/Pixabay free commercial) vs Seedance renders",
+      note: "Stock intros are $0 API-cost media (Pixabay primary → R2) vs Seedance renders",
     };
   });
 
