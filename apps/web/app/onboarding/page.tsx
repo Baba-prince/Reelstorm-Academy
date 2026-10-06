@@ -29,6 +29,10 @@ const TEMPLATES = [
   { id: "nlw-owambe-entrance", label: "Owambe Entrance", cat: "Nollywood" },
   { id: "asia-kdrama-rain-bus", label: "K-Drama Rain Bus", cat: "Asia" },
   { id: "asia-bollywood-item-hook", label: "Bollywood Color Hook", cat: "Asia" },
+  { id: "social-music-video", label: "Music Video", cat: "Music" },
+  { id: "social-instagram-advert", label: "Instagram Advert", cat: "Ads" },
+  { id: "social-tiktok-video", label: "TikTok Video", cat: "Shorts" },
+  { id: "social-youtube-clipper", label: "YouTube Clipper Reel", cat: "YouTube" },
 ];
 
 type Draft = {
@@ -269,7 +273,9 @@ function Wizard() {
         {step === 3 && (
           <section className="space-y-6">
             <h2 className="display text-4xl leading-none">Pick your first ideal.</h2>
-            <p className="text-white/50 text-sm">Nollywood + Asia packs — apply as DNA later.</p>
+            <p className="text-white/50 text-sm">
+              Nollywood, Asia, music video, Instagram ad, TikTok, YouTube clipper — apply as DNA later.
+            </p>
             <div className="space-y-2">
               {TEMPLATES.map((t) => (
                 <button

@@ -1,6 +1,6 @@
 /**
  * Templates Room — curated realistic short-form ideals
- * Categories: drama · action/thriller · product ads · intros · Nollywood · Asia
+ * Categories: drama · action/thriller · product ads · intros · Nollywood · Asia · social
  */
 
 export type TemplateRoomCategory =
@@ -9,7 +9,8 @@ export type TemplateRoomCategory =
   | "product_ad"
   | "intro"
   | "nollywood"
-  | "asia";
+  | "asia"
+  | "social";
 
 export type IdealRegion = "nigeria" | "asia" | "global";
 
@@ -89,6 +90,12 @@ export const TEMPLATE_ROOM_CATEGORIES: {
     label: "Intros",
     blurb: "Cold opens & channel intros you can stamp on every episode.",
     color: "#C4B5FD",
+  },
+  {
+    id: "social",
+    label: "Music · Social",
+    blurb: "Music videos, Instagram ads, TikTok hooks, YouTube clipper reels.",
+    color: "#FF7A00",
   },
 ];
 
@@ -885,6 +892,114 @@ export const IDEAL_TEMPLATES: IdealTemplate[] = [
     musicCue: "Lo-fi Japan morning loop",
     accent: "#C4B5FD",
     genreTags: ["japan", "vlog", "tokyo", "asia", "lifestyle"],
+  },
+
+  // —— MUSIC · SOCIAL ——
+  {
+    id: "social-music-video",
+    category: "social",
+    region: "global",
+    name: "Music Video",
+    tagline: "Beat-locked cuts — performance to story in one chorus.",
+    durationSec: 45,
+    aspectRatio: "16:9",
+    mood: ["rhythmic", "stylized", "high energy"],
+    lut: "Music Video Pop Punch",
+    stylePreset: "mv_performance_story",
+    idealUse: "Artist singles, Afrobeats visuals, lyric videos, brand collabs.",
+    sampleScript:
+      "OPEN on silhouette against neon.\nBeat drop → smash to dance floor.\nHOOK: artist to camera, lyrics burn-in.\nOUTRO: freeze on logo + stream CTA.",
+    shots: [
+      { atSec: 0, durationSec: 5, framing: "wide", camera: "crane_down", note: "Silhouette establish" },
+      { atSec: 5, durationSec: 8, framing: "medium", camera: "orbit", note: "Performance verse" },
+      { atSec: 13, durationSec: 10, framing: "close", camera: "whip_pan", note: "Chorus face + lyric flash" },
+      { atSec: 23, durationSec: 12, framing: "wide", camera: "steadicam", note: "Story B-roll / dancers" },
+      { atSec: 35, durationSec: 10, framing: "close", camera: "slow_push", note: "Final hook + title card" },
+    ],
+    colorGrade: { contrast: 1.3, saturation: 1.25, temperature: 4, shadows: "#0a0612", highlights: "#ffe8ff" },
+    cameraMoves: ["crane_down", "orbit", "whip_pan", "steadicam", "slow_push"],
+    musicCue: "Track-driven — cut on kick / snare",
+    accent: "#FF7A00",
+    genreTags: ["music-video", "performance", "afrobeats", "pop"],
+  },
+  {
+    id: "social-instagram-advert",
+    category: "social",
+    region: "global",
+    name: "Instagram Advert",
+    tagline: "3s hook → product hero → swipe CTA.",
+    durationSec: 15,
+    aspectRatio: "1:1",
+    mood: ["clean", "aspirational", "conversion"],
+    lut: "IG Feed Clean",
+    stylePreset: "ig_feed_ad",
+    idealUse: "Feed / Stories / Reels ads for DTC and local brands.",
+    sampleScript:
+      "HOOK (0–3s): Problem flash on screen.\nPRODUCT (3–10s): Hero shot + benefit line.\nCTA (10–15s): Price / offer + swipe up / link in bio.",
+    shots: [
+      { atSec: 0, durationSec: 3, framing: "close", camera: "snap_zoom", note: "Problem / desire hook" },
+      { atSec: 3, durationSec: 5, framing: "product", camera: "orbit", note: "Hero product beauty" },
+      { atSec: 8, durationSec: 4, framing: "lifestyle", camera: "static", note: "In-use lifestyle beat" },
+      { atSec: 12, durationSec: 3, framing: "graphic", camera: "impact", note: "Offer + CTA card" },
+    ],
+    colorGrade: { contrast: 1.15, saturation: 1.1, temperature: 2, shadows: "#121212", highlights: "#ffffff" },
+    cameraMoves: ["snap_zoom", "orbit", "static", "impact"],
+    musicCue: "Trending short loop — low lyric conflict",
+    accent: "#E1306C",
+    genreTags: ["instagram", "advert", "ugc", "d2c", "feed"],
+  },
+  {
+    id: "social-tiktok-video",
+    category: "social",
+    region: "global",
+    name: "TikTok Video",
+    tagline: "Scroll-stop first frame — stitch-ready hook.",
+    durationSec: 21,
+    aspectRatio: "9:16",
+    mood: ["fast", "native", "caption-led"],
+    lut: "TikTok Native Punch",
+    stylePreset: "tiktok_hook_loop",
+    idealUse: "Organic TikToks, trend rides, creator + brand collabs.",
+    sampleScript:
+      "TEXT ON SCREEN: Wait for it…\nCreator breaks pattern on beat 2.\nReveal product / punchline.\nEND CARD: follow + sound credit.",
+    shots: [
+      { atSec: 0, durationSec: 3, framing: "close", camera: "handheld", note: "Face-to-cam pattern interrupt" },
+      { atSec: 3, durationSec: 6, framing: "medium", camera: "snap_cut", note: "Setup / trend beat" },
+      { atSec: 9, durationSec: 7, framing: "close", camera: "whip", note: "Payoff / product reveal" },
+      { atSec: 16, durationSec: 5, framing: "graphic", camera: "static", note: "Follow CTA + watermark safe" },
+    ],
+    colorGrade: { contrast: 1.2, saturation: 1.15, temperature: 0, shadows: "#0d0d0d", highlights: "#f5f5f5" },
+    cameraMoves: ["handheld", "snap_cut", "whip", "static"],
+    musicCue: "Trending TikTok sound — cuts on drop",
+    accent: "#00F2EA",
+    genreTags: ["tiktok", "shorts", "ugc", "trend", "vertical"],
+  },
+  {
+    id: "social-youtube-clipper",
+    category: "social",
+    region: "global",
+    name: "YouTube Clipper Reel",
+    tagline: "Long-form gold → vertical clip with captions.",
+    durationSec: 40,
+    aspectRatio: "9:16",
+    mood: ["punchy", "caption-heavy", "retention"],
+    lut: "YouTube Short Clean",
+    stylePreset: "yt_clipper_reel",
+    idealUse: "Clip long podcasts / streams into Shorts & Reels.",
+    sampleScript:
+      "COLD OPEN: best line from the episode (no intro).\nCAPTIONS burn in word-by-word.\nMID: reaction cutaway / B-roll.\nEND: subscribe + full episode link.",
+    shots: [
+      { atSec: 0, durationSec: 6, framing: "close", camera: "crop_reframe", note: "Speaker A money quote" },
+      { atSec: 6, durationSec: 10, framing: "split", camera: "static", note: "A/B reaction or dual cam" },
+      { atSec: 16, durationSec: 12, framing: "close", camera: "punch_in", note: "Peak joke / insight" },
+      { atSec: 28, durationSec: 8, framing: "graphic", camera: "impact", note: "Subscribe + full ep CTA" },
+      { atSec: 36, durationSec: 4, framing: "logo", camera: "static", note: "Channel stamp" },
+    ],
+    colorGrade: { contrast: 1.18, saturation: 1.05, temperature: 1, shadows: "#101010", highlights: "#ffffff" },
+    cameraMoves: ["crop_reframe", "static", "punch_in", "impact"],
+    musicCue: "Bed under VO only — duck for speech",
+    accent: "#FF0000",
+    genreTags: ["youtube", "shorts", "clipper", "podcast", "reels"],
   },
 
 ];
