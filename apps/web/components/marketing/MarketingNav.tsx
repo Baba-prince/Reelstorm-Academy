@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n/I18nProvider";
 const LINKS = [
   { href: "/how-it-works", key: "nav.howItWorks" },
   { href: "/training", key: "nav.training" },
+  { href: "/producers", key: "nav.producers" },
   { href: "/pricing", key: "nav.pricing" },
   { href: "/white-label", key: "nav.whiteLabel" },
   { href: "/developers", key: "nav.api" },
@@ -32,7 +33,7 @@ export function MarketingNav({ variant = "overlay" }: { variant?: "overlay" | "s
           </div>
           <div className="leading-none">
             <div className="display text-[12px] md:text-[13px]">REELSTORM</div>
-            <div className="mono text-[8px] text-cyan mt-1 tracking-[0.18em]">ACADEMY OS</div>
+            <div className="mono text-[8px] text-cyan mt-1 tracking-[0.18em]">ACADEMY OS · YT-OS</div>
           </div>
         </Link>
 

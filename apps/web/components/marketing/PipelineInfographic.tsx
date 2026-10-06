@@ -1,12 +1,12 @@
 "use client";
 
 const STEPS = [
-  { n: "01", name: "SCRIPT / URL", sub: "Paste script or drop a reference reel", color: "#C4B5FD" },
+  { n: "01", name: "IDEA / LINK", sub: "Wizard · YT-OS · Clone viral URL", color: "#C4B5FD" },
   { n: "02", name: "WORLD", sub: "Soul ID + 4-angle Perfect Room", color: "#7C3AED" },
   { n: "03", name: "STORYBOARD", sub: "Lock first frames before pixels move", color: "#00D9FF" },
-  { n: "04", name: "STORM", sub: "Veo · Kling · Seedance render farm", color: "#00D9FF" },
-  { n: "05", name: "ARCHIVE5", sub: "Immutable 5-min IP blocks", color: "#FF7A00" },
-  { n: "06", name: "MERGE", sub: "FFmpeg concat to 30-min master", color: "#FF7A00" },
+  { n: "04", name: "STORM", sub: "Seedance render · Pixabay intros $0", color: "#00D9FF" },
+  { n: "05", name: "ARCHIVE5", sub: "Immutable 5-min IP · 5 RTC", color: "#FF7A00" },
+  { n: "06", name: "MERGE", sub: "FFmpeg concat to bankable master", color: "#FF7A00" },
 ];
 
 export function PipelineInfographic() {

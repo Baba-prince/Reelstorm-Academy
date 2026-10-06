@@ -31,9 +31,9 @@ const FALLBACK_TIERS: TierRow[] = [
     maxResolution: "480p",
     alias: "Hook",
     features: [
-      "1 RTC · 1 min · 480p",
-      "Watermark · no download · 24h",
-      "1 template (Nollywood or Asia)",
+      "1 RTC demo · SystemBank",
+      "YT-OS skills · Clone analyze",
+      "Pixabay intros $0 · watermark · 24h",
     ],
   },
   {

@@ -11,14 +11,15 @@ export default function HowItWorksPage() {
 
       <section className="px-5 md:px-8 pt-16 md:pt-24 pb-12">
         <div className="mx-auto max-w-[960px]">
-          <div className="mono text-[11px] text-cyan mb-3">INFOGRAPHIC · FACTORY MAP</div>
+          <div className="mono text-[11px] text-cyan mb-3">INFOGRAPHIC · YT-OS · CLONE · FACTORY</div>
           <h1 className="display text-[clamp(2.5rem,8vw,5.5rem)] leading-[0.9]">
             How the storm
             <br />
             <span className="text-white/40">makes a master.</span>
           </h1>
-          <p className="mt-5 text-white/55 text-[16px] max-w-[480px] leading-relaxed">
-            From vibe to vault in one operating system. No Premiere scrubbing. No face drift. No lost projects.
+          <p className="mt-5 text-white/55 text-[16px] max-w-[520px] leading-relaxed">
+            Idea or viral link in. YT-OS skills, Clone Factory, and Pixabay intros feed the same factory —
+            World → Studio → ARCHIVE5 → Merge. Free 1-RTC demo from SystemBank.
           </p>
         </div>
       </section>
@@ -29,23 +30,22 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Vertical process story — one column, diagrammatic */}
       <section className="px-5 md:px-8 py-16 md:py-24 border-t border-white/[0.06]">
         <div className="mx-auto max-w-[800px] space-y-16">
           {[
             {
-              t: "Lock intent before pixels",
-              d: "Start in BOT Director Wizard (7 stages) or Template Forge. Story Contract + optional web reference URL extracts style DNA so generation has a grammar.",
+              t: "Idea, viral link, or DNA",
+              d: "Start in BOT Director Wizard, YT-OS (/rs-* skills), Template Forge, or Viral Clone Factory. Paste YouTube / TikTok / Instagram — we extract structure, never the source bytes.",
               c: "#7C3AED",
             },
             {
-              t: "Architectum world lock",
-              d: "Soul ID (immutable face) and 4-angle room plates. If the first frame is wrong, everything is wrong — so we lock it.",
+              t: "Transformative remake + Pixabay",
+              d: "Clone analyze (1 RTC) then reproduce (5 RTC) with rewritten script, Pixabay B-roll, and Seedance prompts. Stock intros in Templates Room ship at $0 Seedance cost.",
               c: "#00D9FF",
             },
             {
-              t: "STORM · Sound · ARCHIVE5",
-              d: "Parallel block generation, QC gates, Sound Studio voice OS, then immutable 5-minute vault entries ready to remix or merge.",
+              t: "World · STORM · ARCHIVE5 · Merge",
+              d: "Soul ID + room plates, parallel block generation, Sound Studio voice OS, immutable 5-minute vault entries (5 RTC), then FFmpeg merge to a bankable master.",
               c: "#FF7A00",
             },
           ].map((b, i) => (
@@ -65,16 +65,22 @@ export default function HowItWorksPage() {
       <section className="px-5 md:px-8 py-20 border-t border-white/[0.06] text-center">
         <div className="flex flex-wrap justify-center gap-3">
           <Link
-            href="/wizard"
+            href="/yt-os"
             className="inline-flex h-14 px-8 items-center rounded-rs bg-orange text-black font-bold"
           >
-            Open BOT Director
+            Open YT-OS
           </Link>
           <Link
-            href="/template-forge"
+            href="/tools/clone"
             className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
           >
-            Template Forge
+            Clone Factory
+          </Link>
+          <Link
+            href="/wizard"
+            className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
+          >
+            BOT Director
           </Link>
           <Link
             href="/training"

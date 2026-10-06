@@ -6,20 +6,32 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 const AUDIENCES = [
   {
     title: "YouTubers",
-    line: "14–21 videos a week without a 20-person edit team.",
-    points: ["Reference any viral format via URL", "Soul ID keeps your face consistent", "ARCHIVE5 for series seasons"],
+    line: "YT-OS + Clone Factory: ship 14–21 videos a week without a 20-person edit team.",
+    points: [
+      "Eleven /rs-* skills — hooks, titles, calendar, publish",
+      "Paste a viral link → transformative remake (1+5 RTC)",
+      "Pixabay intros at $0 Seedance · ARCHIVE5 seasons",
+    ],
     accent: "#7C3AED",
   },
   {
     title: "Music artists",
     line: "Visual worlds that match the record — on demand.",
-    points: ["Seedance path for music-sync cuts", "Room Memory for performance spaces", "Merge blocks into longform visuals"],
+    points: [
+      "Seedance path for music-sync cuts",
+      "Room Memory for performance spaces",
+      "Merge blocks into longform visuals",
+    ],
     accent: "#00D9FF",
   },
   {
     title: "Advert outlets",
     line: "Campaign volume with locked brand worlds.",
-    points: ["Template presets per client look", "QC gates before delivery", "Master cuts for 15 / 30 / 60"],
+    points: [
+      "Template presets + Pixabay stock DNA",
+      "QC gates before delivery",
+      "Master cuts for 15 / 30 / 60",
+    ],
     accent: "#FF7A00",
   },
 ];
@@ -31,14 +43,15 @@ export default function ProducersPage() {
 
       <section className="px-5 md:px-8 pt-16 md:pt-24 pb-12">
         <div className="mx-auto max-w-[960px]">
-          <div className="mono text-[11px] text-orange mb-3">FOR PRODUCERS</div>
+          <div className="mono text-[11px] text-orange mb-3">FOR PRODUCERS · YT-OS · CLONE</div>
           <h1 className="display text-[clamp(2.5rem,8vw,5rem)] leading-[0.9]">
             Built for people
             <br />
             <span className="text-white/40">who ship every week.</span>
           </h1>
-          <p className="mt-5 text-white/55 text-[16px] max-w-[480px]">
-            REELSTORM doesn’t compete with studios. We are the factory that lets creators become studios.
+          <p className="mt-5 text-white/55 text-[16px] max-w-[520px]">
+            REELSTORM doesn’t compete with studios. Free 1-RTC demo from SystemBank — then YT-OS and Clone
+            Factory let creators become studios across Africa and Asia.
           </p>
         </div>
       </section>
@@ -65,12 +78,26 @@ export default function ProducersPage() {
       </section>
 
       <section className="px-5 md:px-8 py-20 border-t border-white/[0.06] text-center">
-        <Link
-          href="/template-forge"
-          className="inline-flex h-14 px-8 items-center rounded-rs bg-orange text-black font-bold"
-        >
-          Open your factory floor
-        </Link>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link
+            href="/signup"
+            className="inline-flex h-14 px-8 items-center rounded-rs bg-orange text-black font-bold"
+          >
+            Start free demo
+          </Link>
+          <Link
+            href="/yt-os"
+            className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
+          >
+            Open YT-OS
+          </Link>
+          <Link
+            href="/tools/clone"
+            className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
+          >
+            Clone Factory
+          </Link>
+        </div>
       </section>
     </div>
   );
