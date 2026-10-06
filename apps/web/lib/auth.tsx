@@ -30,7 +30,12 @@ type AuthCtx = {
   token: string | null;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
-  signUpWithEmail: (email: string, password: string, name?: string) => Promise<{ error?: string }>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    name?: string,
+  ) => Promise<{ error?: string; needsConfirmation?: boolean }>;
+  resendConfirmation: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -97,18 +102,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sb = getSupabaseBrowser();
     if (!sb) return { error: "Supabase not configured" };
     const { error } = await sb.auth.signInWithPassword({ email, password });
-    return { error: error?.message };
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+        return {
+          error:
+            "Email not confirmed yet. Open the link we sent, or resend confirmation from Sign up.",
+        };
+      }
+      return { error: error.message };
+    }
+    return {};
   }, []);
 
   const signUpWithEmail = useCallback(async (email: string, password: string, name?: string) => {
     const sb = getSupabaseBrowser();
     if (!sb) return { error: "Supabase not configured" };
-    const { error } = await sb.auth.signUp({
+    const redirectTo = `${window.location.origin}/auth/callback?next=/onboarding`;
+    const { data, error } = await sb.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name || email.split("@")[0] },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: redirectTo,
+      },
+    });
+    if (error) return { error: error.message };
+    // Supabase returns a user with empty identities when email already registered (anti-enumeration)
+    const identities = data.user?.identities;
+    if (data.user && Array.isArray(identities) && identities.length === 0) {
+      return {
+        error: "This email may already be registered. Sign in, or use Resend confirmation.",
+      };
+    }
+    // No session ⇒ confirmation email required
+    if (!data.session) {
+      return { needsConfirmation: true };
+    }
+    return {};
+  }, []);
+
+  const resendConfirmation = useCallback(async (email: string) => {
+    const sb = getSupabaseBrowser();
+    if (!sb) return { error: "Supabase not configured" };
+    const { error } = await sb.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     });
     return { error: error?.message };
@@ -128,14 +169,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sbUser: session?.user || null,
       user,
       loading,
-      token: session?.access_token || (typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null),
+      token:
+        session?.access_token ||
+        (typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null),
       signInWithGoogle,
       signInWithEmail,
       signUpWithEmail,
+      resendConfirmation,
       signOut,
       refreshProfile: () => syncProfile(session?.access_token || localStorage.getItem(TOKEN_KEY)),
     }),
-    [session, user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, syncProfile],
+    [
+      session,
+      user,
+      loading,
+      signInWithGoogle,
+      signInWithEmail,
+      signUpWithEmail,
+      resendConfirmation,
+      signOut,
+      syncProfile,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

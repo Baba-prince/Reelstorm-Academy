@@ -18,3 +18,4 @@ packages/db/prisma/migrations/**/migration_lock.toml.bak
 # local tool binaries
 bin/
 tmp/
+supabase/.temp/
