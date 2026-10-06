@@ -35,7 +35,7 @@ export default function HowItWorksPage() {
           {[
             {
               t: "Lock intent before pixels",
-              d: "Story Contract + optional web reference URL. Template Forge extracts style DNA so generation has a grammar.",
+              d: "Start in BOT Director Wizard (7 stages) or Template Forge. Story Contract + optional web reference URL extracts style DNA so generation has a grammar.",
               c: "#7C3AED",
             },
             {
@@ -44,8 +44,8 @@ export default function HowItWorksPage() {
               c: "#00D9FF",
             },
             {
-              t: "STORM render + ARCHIVE5",
-              d: "Parallel block generation, QC gates, then immutable 5-minute vault entries ready to remix or merge.",
+              t: "STORM · Sound · ARCHIVE5",
+              d: "Parallel block generation, QC gates, Sound Studio voice OS, then immutable 5-minute vault entries ready to remix or merge.",
               c: "#FF7A00",
             },
           ].map((b, i) => (
@@ -65,10 +65,16 @@ export default function HowItWorksPage() {
       <section className="px-5 md:px-8 py-20 border-t border-white/[0.06] text-center">
         <div className="flex flex-wrap justify-center gap-3">
           <Link
-            href="/template-forge"
+            href="/wizard"
             className="inline-flex h-14 px-8 items-center rounded-rs bg-orange text-black font-bold"
           >
-            Run the pipeline
+            Open BOT Director
+          </Link>
+          <Link
+            href="/template-forge"
+            className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
+          >
+            Template Forge
           </Link>
           <Link
             href="/training"

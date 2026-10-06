@@ -85,6 +85,11 @@ function Wizard() {
       /* ignore */
     }
     await refreshProfile();
+    try {
+      sessionStorage.setItem("rs_just_onboarded", "1");
+    } catch {
+      /* ignore */
+    }
     router.replace("/dashboard");
   }
 

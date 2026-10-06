@@ -16,6 +16,7 @@ export type TrainingPage = {
     | "soul"
     | "archive5"
     | "dashboard"
+    | "wizard"
     | "forge"
     | "world"
     | "storyboard"
@@ -23,6 +24,7 @@ export type TrainingPage = {
     | "vault"
     | "merge"
     | "wallet"
+    | "sound"
     | "whitelabel"
     | "developers"
     | "pricing"
@@ -35,7 +37,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 0,
     section: "COVER",
     title: "REELSTORM — Training Manual",
-    lead: "Flip-over operator guide for Academy Studio. Learn the factory screen by screen.",
+    lead: "Flip-over operator guide for Academy Studio. Learn the factory screen by screen — including BOT Director Wizard and Sound Studio.",
     steps: [],
     mock: "cover",
   },
@@ -43,7 +45,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 1,
     section: "INDEX",
     title: "Table of Contents — Flip Index",
-    lead: "Tap any chapter to flip instantly. Four sections · 19 pages · production verified.",
+    lead: "Tap any chapter to flip instantly. Four sections · 21 pages · soft-launch verified.",
     steps: [],
     mock: "index",
   },
@@ -76,9 +78,9 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 4,
     section: "A — System Rules",
     title: "STORM Pipeline Rules",
-    lead: "Six stages, zero Premiere scrubbing. Each stage is a gated job with QC.",
+    lead: "Seven stages, zero Premiere scrubbing. Each stage is a gated job with QC — Sound Studio owns voice.",
     steps: [
-      "Forge → World → Storyboard → Studio → Vault → Merge.",
+      "Forge (or Wizard) → World → Storyboard → Studio → Sound → Vault → Merge.",
       "Blocks render in parallel; failed QC never reaches vault.",
       "Merge only after ARCHIVE5 entries are immutable.",
     ],
@@ -115,11 +117,11 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 7,
     section: "B — Operator Training",
     title: "Dashboard — Start Here",
-    lead: "Your command center: live jobs, RTC balance, and shortcuts into each factory stage.",
+    lead: "Your command center: welcome by name, live jobs, RTC balance, and shortcuts into each factory stage.",
     steps: [
       "Open Dashboard after sign-in — check LIVE ENGINE status.",
       "Scan open projects and residual RTC before starting work.",
-      "Jump to Template Forge to begin a new Story Contract.",
+      "Jump to BOT Director Wizard or Template Forge to begin.",
     ],
     mock: "dashboard",
     href: "/dashboard",
@@ -127,18 +129,31 @@ export const TRAINING_PAGES: TrainingPage[] = [
   {
     id: 8,
     section: "B — Operator Training",
+    title: "BOT Director Wizard — Blueprint",
+    lead: "Seven-stage director flow: brief → cast → world → beats → voice → render → ship. Generates a blueprint the factory can run.",
+    steps: [
+      "Open /wizard and walk stages 1–7 (or skip ahead once you know the path).",
+      "Generate a blueprint — Live Engine streams progress over WebSocket.",
+      "Send the blueprint into the factory (from-blueprint) when READY.",
+    ],
+    mock: "wizard",
+    href: "/wizard",
+  },
+  {
+    id: 9,
+    section: "B — Operator Training",
     title: "Template Forge — Steal the Style",
     lead: "Upload an MP4 or paste a YouTube URL. We extract style DNA so generation has a grammar.",
     steps: [
       "Drop a reference file or paste a public video URL.",
       "Review extracted cut rate, LUT, camera, room, and voice tags.",
-      "Attach DNA to your Story Contract and continue to World Builder.",
+      "Apply Generate / attach DNA to your Story Contract, then World Builder.",
     ],
     mock: "forge",
     href: "/template-forge",
   },
   {
-    id: 9,
+    id: 10,
     section: "B — Operator Training",
     title: "World Builder — Lock the Room",
     lead: "Architectum plates: four angles + Soul ID. Wrong first frame = wrong everything.",
@@ -151,7 +166,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/world-builder",
   },
   {
-    id: 10,
+    id: 11,
     section: "B — Operator Training",
     title: "Storyboard — Beat Map",
     lead: "Break the script into beat cards the STORM engine can render as parallel jobs.",
@@ -164,7 +179,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/storyboard",
   },
   {
-    id: 11,
+    id: 12,
     section: "B — Operator Training",
     title: "Studio — STORM Render",
     lead: "Parallel block generation with QC gates. Watch jobs, don’t scrub timelines.",
@@ -177,7 +192,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/studio",
   },
   {
-    id: 12,
+    id: 13,
     section: "B — Operator Training",
     title: "Archive Vault — Immutable IP",
     lead: "Vaulted ARCHIVE5 entries are your bankable library — searchable by DNA and Soul.",
@@ -190,7 +205,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/archive-vault",
   },
   {
-    id: 13,
+    id: 14,
     section: "B — Operator Training",
     title: "Merge Studio — Bankable Masters",
     lead: "Assemble vaulted blocks into a continuous master without regenerating faces or rooms.",
@@ -203,7 +218,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/merge-studio",
   },
   {
-    id: 14,
+    id: 15,
     section: "B — Operator Training",
     title: "RTC Wallet — Spend & Top Up",
     lead: "Balance, ARCHIVE5 remaining, and tier sit on one screen before you burn compute.",
@@ -216,20 +231,20 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/wallet",
   },
   {
-    id: 15,
+    id: 16,
     section: "B — Operator Training",
-    title: "Sound Studio — Sync · Extract · Clone",
-    lead: "Pull external beds, extract stems from video, clone talent voices, then Voice Forge TTS.",
+    title: "Sound Studio — Voice OS",
+    lead: "Sound Studio owns sync, stem extract, mux, and the voice library. Hosted clone/TTS providers are optional.",
     steps: [
-      "Upload or paste a URL to sync external audio onto a Template Forge upload.",
+      "Sync an external bed onto a Template Forge upload (file, URL, or library asset).",
       "Extract full + voice/music stems from any video uploadId.",
-      "Clone with ElevenLabs IVC, then TTS any script into the library.",
+      "Mux stems back onto picture; use library voices for clone/TTS only if a provider key is set.",
     ],
-    mock: "forge",
+    mock: "sound",
     href: "/sound-studio",
   },
   {
-    id: 16,
+    id: 17,
     section: "C — Academy White-label",
     title: "White-label — Your Brand, Our Factory",
     lead: "Academies run ReelStorm under their brand with tenant keys and shared RTC ledgers.",
@@ -242,7 +257,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/white-label",
   },
   {
-    id: 17,
+    id: 18,
     section: "C — Academy White-label",
     title: "Developers — API Smoke Path",
     lead: "Health → generate → vault. Same RTC rules as the console.",
@@ -255,10 +270,10 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/developers",
   },
   {
-    id: 18,
+    id: 19,
     section: "C — Academy White-label",
     title: "Pricing — Free / Journey / Journey Pro",
-    lead: "Adopted from VisaVideos tier shape: Free entry, Journey £39, Journey Pro £89 — mapped to RTC packs.",
+    lead: "Free entry, Journey £39, Journey Pro £89 — mapped to RTC packs (soft launch may use Stripe test mode).",
     steps: [
       "Free: explore factory + limited RTC drip.",
       "Journey £39 → Studio pack (~300 RTC).",
@@ -268,14 +283,14 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/pricing",
   },
   {
-    id: 19,
+    id: 20,
     section: "D — Launch",
     title: "Production Checklist + Final",
-    lead: "Ship when readiness is green and operators can flip this guide without guessing.",
+    lead: "Ship when scorecard is green. Soft launch accepts Ollama LLM, Stripe test, and mock video until live keys arrive.",
     steps: [
-      "API /api/readiness ≥ A · Redis · ffmpeg · yt-dlp live.",
-      "Wallet + white-label smoke: health, generate, debit.",
-      "Operators trained on Forge → Sound → Vault → Merge path.",
+      "Open /scorecard → RE-SCAN — target grade A (API /api/readiness).",
+      "Confirm ffmpeg/ffprobe, Redis db 17, worker concurrency ≥8, Sound Studio PASS.",
+      "Operators trained on Wizard or Forge → Sound → Vault → Merge.",
     ],
     mock: "checklist",
     href: "/scorecard",
@@ -297,34 +312,35 @@ export const INDEX_SECTIONS = [
   },
   {
     title: "Section B: Operator Training",
-    pages: "Pages 7–15",
+    pages: "Pages 7–16",
     color: "#00D9FF",
     items: [
       { id: 7, label: "Dashboard Navigation" },
-      { id: 8, label: "Template Forge" },
-      { id: 9, label: "World Builder" },
-      { id: 10, label: "Storyboard" },
-      { id: 11, label: "Studio STORM" },
-      { id: 12, label: "Archive Vault" },
-      { id: 13, label: "Merge Studio" },
-      { id: 14, label: "RTC Wallet" },
-      { id: 15, label: "Sound Studio" },
+      { id: 8, label: "BOT Director Wizard" },
+      { id: 9, label: "Template Forge" },
+      { id: 10, label: "World Builder" },
+      { id: 11, label: "Storyboard" },
+      { id: 12, label: "Studio STORM" },
+      { id: 13, label: "Archive Vault" },
+      { id: 14, label: "Merge Studio" },
+      { id: 15, label: "RTC Wallet" },
+      { id: 16, label: "Sound Studio" },
     ],
   },
   {
     title: "Section C: Academy White-label",
-    pages: "Pages 16–18",
+    pages: "Pages 17–19",
     color: "#FF7A00",
     items: [
-      { id: 16, label: "White-label Tenant" },
-      { id: 17, label: "Developers API" },
-      { id: 18, label: "Pricing Tiers" },
+      { id: 17, label: "White-label Tenant" },
+      { id: 18, label: "Developers API" },
+      { id: 19, label: "Pricing Tiers" },
     ],
   },
   {
     title: "Section D: Launch",
-    pages: "Page 19",
+    pages: "Page 20",
     color: "#E5E7EB",
-    items: [{ id: 19, label: "Production Checklist" }],
+    items: [{ id: 20, label: "Production Checklist" }],
   },
 ];

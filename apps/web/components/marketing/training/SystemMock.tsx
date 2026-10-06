@@ -60,7 +60,7 @@ export function SystemMock({ kind }: { kind: MockKind }) {
           </svg>
         </div>
         <div className="relative z-10">
-          <div className="mono text-[10px] text-cyan tracking-[0.2em]">ACADEMY OS · v1.1</div>
+          <div className="mono text-[10px] text-cyan tracking-[0.2em]">ACADEMY OS · v1.5</div>
           <div className="display text-[42px] md:text-[56px] leading-[0.9] mt-3">
             TRAINING
             <br />
@@ -69,9 +69,9 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
         <div className="relative z-10 flex items-end justify-between gap-4">
           <p className="text-[12px] text-white/55 max-w-[220px] leading-relaxed">
-            Flip each page. Match the screen. Run the factory.
+            Flip each page. Match the screen. Run the factory — Wizard · Forge · Sound.
           </p>
-          <div className="mono text-[9px] text-orange tracking-[0.16em]">20 PAGES</div>
+          <div className="mono text-[9px] text-orange tracking-[0.16em]">21 PAGES</div>
         </div>
       </div>
     );
@@ -129,11 +129,11 @@ export function SystemMock({ kind }: { kind: MockKind }) {
   }
 
   if (kind === "storm") {
-    const stages = ["Forge", "World", "Board", "Studio", "Vault", "Merge"];
+    const stages = ["Wizard/Forge", "World", "Board", "Studio", "Sound", "Vault", "Merge"];
     return shell(
       ["Pipeline"],
       <div className="space-y-3">
-        <div className="mono text-[8px] text-cyan">STORM // SIX STAGES</div>
+        <div className="mono text-[8px] text-cyan">STORM // SEVEN STAGES</div>
         <div className="flex flex-wrap gap-1.5">
           {stages.map((s, i) => (
             <div key={s} className="flex items-center gap-1">
@@ -195,12 +195,13 @@ export function SystemMock({ kind }: { kind: MockKind }) {
 
   if (kind === "dashboard") {
     return shell(
-      ["Dashboard", "Forge", "Studio", "Wallet"],
+      ["Dashboard", "Wizard", "Forge", "Wallet"],
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan live-dot" />
           <span className="mono text-[8px] text-cyan">LIVE ENGINE</span>
         </div>
+        <div className="text-[10px] text-white/70 font-medium">Welcome back, Operator</div>
         <div className="grid grid-cols-2 gap-2">
           {[
             ["Open jobs", "3"],
@@ -215,6 +216,61 @@ export function SystemMock({ kind }: { kind: MockKind }) {
           ))}
         </div>
       </div>,
+    );
+  }
+
+  if (kind === "wizard") {
+    const stages = ["Brief", "Cast", "World", "Beats", "Voice", "Render", "Ship"];
+    return shell(
+      ["BOT Director"],
+      <div className="space-y-3">
+        <div className="mono text-[8px] text-violet-soft">WIZARD · 7 STAGES</div>
+        <div className="flex flex-wrap gap-1">
+          {stages.map((s, i) => (
+            <div
+              key={s}
+              className="px-1.5 py-1 rounded text-[7px] font-bold border"
+              style={{
+                borderColor: i <= 2 ? "#7C3AED" : i <= 4 ? "#00D9FF" : "#FF7A00",
+                background: i <= 2 ? "#7C3AED22" : i <= 4 ? "#00D9FF22" : "#FF7A0022",
+              }}
+            >
+              {i + 1}.{s}
+            </div>
+          ))}
+        </div>
+        <div className="rounded-md border border-cyan/30 bg-cyan/10 p-2">
+          <div className="mono text-[7px] text-cyan">LIVE ENGINE</div>
+          <div className="text-[9px] text-white/70 mt-1">Blueprint generating · WS /ws/blueprint/:id</div>
+        </div>
+      </div>,
+      "#7C3AED",
+    );
+  }
+
+  if (kind === "sound") {
+    return shell(
+      ["Sound Studio"],
+      <div className="space-y-2">
+        <div className="mono text-[8px] text-orange">VOICE OS</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {["Sync", "Extract", "Mux", "Library"].map((t, i) => (
+            <div
+              key={t}
+              className="rounded-md border border-white/10 p-2 text-[9px] font-bold"
+              style={{
+                borderColor: ["#7C3AED", "#00D9FF", "#FF7A00", "#E5E7EB"][i],
+                color: ["#A78BFA", "#00D9FF", "#FF7A00", "#E5E7EB"][i],
+                background: `${["#7C3AED", "#00D9FF", "#FF7A00", "#E5E7EB"][i]}14`,
+              }}
+            >
+              {t}
+            </div>
+          ))}
+        </div>
+        <div className="text-[8px] text-white/45">Clone / TTS provider optional — Sound Studio owns the surface</div>
+      </div>,
+      "#FF7A00",
     );
   }
 

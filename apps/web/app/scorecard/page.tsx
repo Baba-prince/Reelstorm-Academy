@@ -42,7 +42,7 @@ const LIVE_MAP: Array<{ id: string; area: string; item: string; weight: number; 
   { id: "disk", area: "Infra", item: "Upload volume free space (≥50 GiB)", weight: 4, key: "disk" },
   { id: "s3", area: "Infra", item: "Object storage S3/R2 (not local MinIO)", weight: 8, key: "s3" },
   { id: "auth", area: "Security", item: "Supabase + Google OAuth", weight: 6, key: "auth" },
-            { id: "llm", area: "AI", item: "DashScope LLM (production)", weight: 6, key: "llm" },
+            { id: "llm", area: "AI", item: "Production LLM (DashScope / Ollama)", weight: 6, key: "llm" },
             { id: "stripe", area: "Billing", item: "Stripe live + webhook", weight: 8, key: "prod_stripe" },
             { id: "video", area: "AI", item: "Seedance video (MOCK_VIDEO_GEN=0)", weight: 8, key: "prod_video_gen" },
             { id: "sound", area: "Audio", item: "Sound Studio voice OS", weight: 8, key: "prod_sound_studio" },
@@ -143,7 +143,7 @@ export default function ScorecardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="mono text-[11px] text-cyan mb-2">
-            PRODUCTION BUILD SCORECARD // v1.4 · ffprobe · 1k gates
+            PRODUCTION BUILD SCORECARD // v1.5 · soft-launch · 1k gates
             {apiVersion ? ` · API ${apiVersion}` : ""}
           </div>
           <h1 className="display text-4xl md:text-5xl">

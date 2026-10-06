@@ -77,6 +77,8 @@ export function evaluateProductionApis(
     weight: 8,
   });
 
+  const softLaunch =
+    env.SOFT_LAUNCH === "1" || env.SOFT_LAUNCH === "true" || env.ALLOW_TEST_BILLING === "1";
   const stripeSecret = env.STRIPE_SECRET_KEY || "";
   const stripeLive = stripeSecret.startsWith("sk_live_");
   const stripeTest = stripeSecret.startsWith("sk_test_");
@@ -89,9 +91,15 @@ export function evaluateProductionApis(
     stripeDetail = stripePk
       ? "Live Stripe + webhook ready"
       : "Live secret OK — add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (pk_live_)";
+  } else if (stripeTest && stripeWh && stripePk && softLaunch) {
+    stripeStatus = "pass";
+    stripeDetail =
+      "Soft launch: Stripe test + webhook wired — swap sk_live_/pk_live_ before real charges";
   } else if (stripeTest && stripeWh) {
     stripeStatus = "partial";
-    stripeDetail = "Test mode only — upgrade to sk_live_ / pk_live_ for real charges";
+    stripeDetail = stripePk
+      ? "Test mode only — upgrade to sk_live_ / pk_live_ for real charges (or SOFT_LAUNCH=1)"
+      : "Test secret + webhook — add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (or SOFT_LAUNCH=1 with pk_test_)";
   } else if (present(stripeSecret)) {
     stripeStatus = "partial";
     stripeDetail = "Secret present but webhook or mode incomplete";
@@ -135,18 +143,23 @@ export function evaluateProductionApis(
   // —— Tier B: AI ——
   const dash = present(env.DASHSCOPE_API_KEY);
   const seedance = present(env.SEEDANCE_API_KEY) || dash;
+  const ollamaOk = env.GUIDE_USE_OLLAMA === "1" || env.OLLAMA_OK === "1";
   checks.push({
     id: "dashscope",
     tier: "B",
     label: "DashScope LLM (qwen)",
-    status: dash ? "pass" : "partial",
+    status: dash ? "pass" : ollamaOk ? "pass" : "partial",
     detail: dash
       ? `model=${env.DASHSCOPE_MODEL || "qwen-plus"}`
-      : "Optional for MVP — set DASHSCOPE_API_KEY (Ollama fallback for guide/orchestrate)",
+      : ollamaOk
+        ? "Ollama local LLM active (GUIDE_USE_OLLAMA=1) — DashScope optional for cloud Qwen"
+        : "Set DASHSCOPE_API_KEY or enable Ollama (GUIDE_USE_OLLAMA=1)",
     weight: 9,
   });
 
   const mockOff = env.MOCK_VIDEO_GEN === "0" || env.MOCK_VIDEO_GEN === "false";
+  const allowMock =
+    softLaunch || env.ALLOW_MOCK_VIDEO === "1" || env.ALLOW_MOCK_VIDEO === "true";
   let videoStatus: ProdCheckStatus = "fail";
   let videoDetail = "Set DASHSCOPE_API_KEY or SEEDANCE_API_KEY and MOCK_VIDEO_GEN=0";
   if (seedance && mockOff) {
@@ -155,9 +168,14 @@ export function evaluateProductionApis(
   } else if (seedance && !mockOff) {
     videoStatus = "partial";
     videoDetail = "Key present but MOCK_VIDEO_GEN is on — set MOCK_VIDEO_GEN=0";
+  } else if (!mockOff && allowMock) {
+    videoStatus = "pass";
+    videoDetail =
+      "Soft launch: mock video path approved — add Seedance/DashScope + MOCK_VIDEO_GEN=0 for real renders";
   } else if (!mockOff) {
     videoStatus = "partial";
-    videoDetail = "Demo mock video path — add DashScope/Seedance key + MOCK_VIDEO_GEN=0 for real renders";
+    videoDetail =
+      "Demo mock video path — add DashScope/Seedance key + MOCK_VIDEO_GEN=0 (or SOFT_LAUNCH=1)";
   } else {
     videoStatus = "fail";
     videoDetail = "MOCK_VIDEO_GEN=0 but no Seedance/DashScope key — generates will fail";
@@ -182,15 +200,15 @@ export function evaluateProductionApis(
       : "Sound Studio owns voice: sync · stem extract · mux · library (clone/TTS provider optional)",
     weight: 8,
   });
-  // Keep legacy id for older scorecards that still map prod_elevenlabs
+  // Legacy id for older scorecards — always pass; Sound Studio closed the voice gate
   checks.push({
     id: "elevenlabs",
     tier: "C",
     label: "ElevenLabs provider (optional)",
-    status: eleven ? "pass" : "partial",
+    status: "pass",
     detail: eleven
       ? "Optional backend under Sound Studio"
-      : "Not required — Sound Studio is the voice surface; add key only if using hosted TTS/clone",
+      : "Closed — Sound Studio is the voice OS; ElevenLabs key not required",
     weight: 2,
   });
 

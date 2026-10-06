@@ -95,7 +95,7 @@ export async function readinessRoutes(app: FastifyInstance) {
         : "Supabase URL present — add Google OAuth for Gmail sign-in",
     };
 
-    // Prefer DashScope in production; Ollama is acceptable MVP fallback
+    // Prefer DashScope; local Ollama with at least one model also passes production LLM gate
     if (process.env.DASHSCOPE_API_KEY) {
       checks.llm = {
         status: "pass",
@@ -109,10 +109,19 @@ export async function readinessRoutes(app: FastifyInstance) {
       try {
         const r = await fetch(`${process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434"}/api/tags`);
         if (r.ok) {
-          checks.llm = {
-            status: "partial",
-            detail: "Ollama reachable (MVP) — set DASHSCOPE_API_KEY for production LLM",
-          };
+          const tags = (await r.json()) as { models?: Array<{ name?: string }> };
+          const models = tags.models || [];
+          if (models.length > 0) {
+            checks.llm = {
+              status: "pass",
+              detail: `Ollama local (${models[0]?.name || "model"}) — DashScope key optional for cloud Qwen`,
+            };
+          } else {
+            checks.llm = {
+              status: "partial",
+              detail: "Ollama up but no models — pull qwen2.5:3b or set DASHSCOPE_API_KEY",
+            };
+          }
         }
       } catch {
         /* keep partial */
@@ -160,7 +169,7 @@ export async function readinessRoutes(app: FastifyInstance) {
     const pct = Math.round((earned / total) * 100);
 
     return {
-      version: "1.3.0-1k",
+      version: "1.5.0-1k",
       pct,
       grade: pct >= 90 ? "A" : pct >= 75 ? "B" : pct >= 60 ? "C" : pct >= 40 ? "D" : "F",
       production1k: {

@@ -24,12 +24,14 @@ export type GuideLayer = {
 export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS.
 
 Mission:
-- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, STORM pipeline).
+- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, STORM pipeline, BOT Director Wizard).
 - Improve the operator's workflow with concrete next actions.
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer the factory order: Template Forge → World Builder → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Prefer factory order: BOT Director Wizard or Template Forge → World Builder → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Sound Studio is the voice OS (sync · extract · mux · library). Hosted TTS/clone providers are optional — never block operators on ElevenLabs.
+- Soft launch: Ollama may power the guide LLM; Stripe test + mock video are OK until live DashScope/Seedance/sk_live keys are stamped.
 - RTC rule: 100 RTC = one 5-minute ARCHIVE5 section. Tiers map Free/Journey £39/Journey Pro £89 → Studio/Storm/Storm Pro.
 
 Tone: sharp producer, not corporate. Brand colors mentally: violet / cyan / orange on void black.`;
@@ -55,14 +57,16 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/training",
     layer: "marketing",
     title: "Training Manual",
-    blurb: "Flip-over artifact — screen-by-screen operator training.",
+    blurb: "Flip-over artifact — screen-by-screen operator training (21 pages).",
     tips: [
       "Use arrow keys or Flip to advance; Index jumps to any chapter.",
       "Match each system image to the live OS screen before moving on.",
+      "New chapters: BOT Director Wizard + Sound Studio as voice OS.",
     ],
     options: [
       { id: "rules", label: "System rules first", prompt: "Summarize Section A system rules I must not break.", kind: "learn" },
-      { id: "ops", label: "Operator path", prompt: "Give me the fastest operator path Forge→Merge.", kind: "improve" },
+      { id: "wizard", label: "BOT Director path", prompt: "How does BOT Director Wizard fit before Template Forge?", href: "/wizard", kind: "goto" },
+      { id: "ops", label: "Operator path", prompt: "Give me the fastest operator path Wizard→Merge.", kind: "improve" },
       { id: "sound", label: "Sound Studio chapter", prompt: "How do I use Sound Studio after reading the guide?", href: "/sound-studio", kind: "goto" },
     ],
   },
@@ -70,13 +74,15 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/how-it-works",
     layer: "marketing",
     title: "Factory Map",
-    blurb: "Six stages · zero timeline scrubbing.",
+    blurb: "Seven stages · zero timeline scrubbing.",
     tips: [
-      "Lock intent before pixels — Story Contract + optional reference URL.",
+      "Lock intent before pixels — Story Contract + optional reference URL (or run BOT Director Wizard).",
       "Soul ID + room plates before STORM render.",
+      "Sound Studio owns voice after Studio QC — before or alongside vault.",
     ],
     options: [
-      { id: "stages", label: "Explain 6 stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
+      { id: "stages", label: "Explain 7 stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
+      { id: "wizard", label: "Start with Wizard", prompt: "Should I use BOT Director Wizard or Template Forge first?", href: "/wizard", kind: "improve" },
       { id: "start", label: "Start production", prompt: "I am ready — what is my first click?", href: "/template-forge", kind: "do" },
     ],
   },
@@ -135,15 +141,34 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/dashboard",
     layer: "os",
     title: "Dashboard",
-    blurb: "Command center — jobs, RTC, shortcuts.",
+    blurb: "Command center — welcome by name, jobs, RTC, shortcuts.",
     tips: [
       "Check LIVE ENGINE + RTC before queuing Studio.",
       "Open jobs should clear before Merge.",
+      "Prefer BOT Director Wizard for a guided first project.",
     ],
     options: [
       { id: "next", label: "What next?", prompt: "Based on a fresh project, what should I do next?", kind: "improve" },
+      { id: "wizard", label: "Open Wizard", prompt: "Walk me through BOT Director Wizard stages 1–7.", href: "/wizard", kind: "do" },
       { id: "forge", label: "Start Forge", prompt: "Open Template Forge and tell me the first 3 clicks.", href: "/template-forge", kind: "do" },
       { id: "rtc", label: "Check RTC", prompt: "How do I know if I have enough RTC for 2 ARCHIVE5 blocks?", href: "/wallet", kind: "goto" },
+    ],
+  },
+  {
+    path: "/wizard",
+    layer: "os",
+    title: "BOT Director Wizard",
+    blurb: "Seven-stage blueprint → Live Engine → factory handoff.",
+    tips: [
+      "Stages: Brief → Cast → World → Beats → Voice → Render → Ship.",
+      "POST /api/blueprint/generate then watch /ws/blueprint/:id.",
+      "When READY, send from-blueprint into the STORM factory.",
+    ],
+    options: [
+      { id: "stages", label: "Explain 7 stages", prompt: "Explain each BOT Director Wizard stage and what I must enter.", kind: "learn" },
+      { id: "generate", label: "Generate blueprint", prompt: "How do I generate a blueprint and know it succeeded?", kind: "do" },
+      { id: "handoff", label: "Into factory", prompt: "How do I hand a blueprint off to Template Forge / Studio?", kind: "improve" },
+      { id: "forge", label: "Skip to Forge", prompt: "When should I skip the Wizard and go straight to Template Forge?", href: "/template-forge", kind: "goto" },
     ],
   },
   {
@@ -222,16 +247,17 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/sound-studio",
     layer: "os",
     title: "Sound Studio",
-    blurb: "External sync · extract stems · voice clone · TTS.",
+    blurb: "Voice OS — sync · extract · mux · library.",
     tips: [
+      "Sound Studio owns all voice work; hosted clone/TTS keys are optional.",
       "Sync needs a Template Forge uploadId + audio file/URL/asset.",
-      "Voice clone needs ELEVENLABS_API_KEY in Model Center.",
+      "Extract stems from any video uploadId, then mux back onto picture.",
     ],
     options: [
       { id: "sync", label: "Sync workflow", prompt: "Step-by-step external audio sync onto video.", kind: "do" },
       { id: "extract", label: "Extract stems", prompt: "How do I extract voice/music stems from an upload?", kind: "learn" },
-      { id: "clone", label: "Clone + TTS", prompt: "Best path to clone a voice then speak a script.", kind: "improve" },
-      { id: "keys", label: "Wire ElevenLabs", prompt: "Where do I set the ElevenLabs key?", href: "/model-center", kind: "goto" },
+      { id: "library", label: "Voice library", prompt: "How does the voice library work without ElevenLabs?", kind: "improve" },
+      { id: "keys", label: "Optional provider", prompt: "When do I need a hosted TTS/clone key in Model Center?", href: "/model-center", kind: "goto" },
     ],
   },
   {
@@ -271,22 +297,32 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/model-center",
     layer: "os",
     title: "Model Center",
-    blurb: "DashScope + ElevenLabs (+ optional Kling/Veo).",
-    tips: ["Minimum live path: DashScope or local Ollama + ElevenLabs for Voice Forge."],
+    blurb: "DashScope / Ollama LLM · Seedance video · optional Kling/Veo/TTS.",
+    tips: [
+      "Soft launch minimum: Ollama local LLM (GUIDE_USE_OLLAMA=1) + mock video OK.",
+      "Production upgrade: DASHSCOPE_API_KEY + Seedance + MOCK_VIDEO_GEN=0 + sk_live Stripe.",
+      "Sound Studio does not require ElevenLabs — provider keys are optional.",
+    ],
     options: [
-      { id: "min", label: "Minimum keys", prompt: "What is the minimum key set to go live?", kind: "learn" },
+      { id: "min", label: "Minimum keys", prompt: "What is the minimum key set for soft launch vs full production?", kind: "learn" },
       { id: "ollama", label: "Ollama only", prompt: "Can I run orchestration with only Ollama?", kind: "improve" },
+      { id: "score", label: "Check scorecard", prompt: "How do I verify Model Center readiness on the scorecard?", href: "/scorecard", kind: "goto" },
     ],
   },
   {
     path: "/scorecard",
     layer: "os",
     title: "Scorecard",
-    blurb: "Production readiness gates.",
-    tips: ["Target readiness grade A before academy launch."],
+    blurb: "Production readiness gates (v1.5 soft-launch).",
+    tips: [
+      "Target grade A on /api/readiness before academy launch.",
+      "Soft launch: Ollama LLM, Stripe test, mock video can PASS with SOFT_LAUNCH=1.",
+      "Swap to DashScope + Seedance + sk_live_ before real charges and real renders.",
+    ],
     options: [
-      { id: "gaps", label: "Close gaps", prompt: "Typical readiness gaps and how to close them.", kind: "improve" },
-      { id: "api", label: "API readiness", prompt: "What does /api/readiness check?", kind: "learn" },
+      { id: "gaps", label: "Close gaps", prompt: "Typical readiness gaps and how to close them on soft launch.", kind: "improve" },
+      { id: "api", label: "API readiness", prompt: "What does /api/readiness check in v1.5?", kind: "learn" },
+      { id: "train", label: "Training checklist", prompt: "Point me to the Training Manual launch checklist page.", href: "/training", kind: "goto" },
     ],
   },
   {
