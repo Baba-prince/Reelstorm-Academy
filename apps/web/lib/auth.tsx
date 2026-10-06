@@ -76,15 +76,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    let cancelled = false;
+    const failSafe = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 4000);
+
     sb.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
       setSession(data.session);
-      syncProfile(data.session?.access_token || null).finally(() => setLoading(false));
+      syncProfile(data.session?.access_token || null).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
     });
+
     const { data: sub } = sb.auth.onAuthStateChange((_event, next) => {
       setSession(next);
       void syncProfile(next?.access_token || null);
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(failSafe);
+      sub.subscription.unsubscribe();
+    };
   }, [syncProfile]);
 
   const signInWithGoogle = useCallback(async () => {

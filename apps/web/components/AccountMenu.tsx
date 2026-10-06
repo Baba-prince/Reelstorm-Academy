@@ -11,6 +11,7 @@ export function AccountMenu() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [waited, setWaited] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,7 +22,16 @@ export function AccountMenu() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading) {
+      setWaited(false);
+      return;
+    }
+    const t = window.setTimeout(() => setWaited(true), 2500);
+    return () => window.clearTimeout(t);
+  }, [loading]);
+
+  if (loading && !waited) {
     return (
       <div className="h-9 w-20 rounded-rs border border-white/10 animate-pulse bg-white/5" />
     );
@@ -31,7 +41,7 @@ export function AccountMenu() {
     return (
       <Link
         href="/login"
-        className="inline-flex h-9 px-3 items-center rounded-rs border border-white/10 text-[11px] text-white/60 hover:text-white"
+        className="inline-flex h-9 px-3 items-center rounded-rs border border-cyan/40 bg-cyan/10 text-[11px] text-cyan hover:bg-cyan/20 font-semibold"
       >
         Sign in
       </Link>

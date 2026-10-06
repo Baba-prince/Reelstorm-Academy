@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
-import { AuthProvider, useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 
 function AuthForm({ mode }: { mode: "login" | "signup" }) {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation, loading } =
-    useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/onboarding";
@@ -24,6 +23,7 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setErr("");
     try {
       await signInWithGoogle();
+      // OAuth should navigate away; if it returns without throw, keep busy briefly
     } catch (e) {
       setErr((e as Error).message);
       setBusy(false);
@@ -43,6 +43,7 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
         return;
       }
       router.replace(next);
+      setBusy(false);
       return;
     }
 
@@ -163,8 +164,8 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
         <button
           type="button"
-          disabled={busy || loading}
-          onClick={onGoogle}
+          disabled={busy}
+          onClick={() => void onGoogle()}
           className="w-full h-12 rounded-rs bg-white text-black font-bold text-[14px] flex items-center justify-center gap-3 hover:bg-white/90 transition disabled:opacity-50"
         >
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
@@ -185,7 +186,7 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
               d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l.1.1 6.2 5.2C40.2 36.3 44 31.5 44 24c0-1.3-.1-2.5-.4-3.5z"
             />
           </svg>
-          Continue with Google
+          {busy ? "Redirecting…" : "Continue with Google"}
         </button>
 
         <div className="my-6 flex items-center gap-3 text-white/30 text-[11px] mono">
@@ -275,12 +276,12 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
 }
 
 function Gate({ mode }: { mode: "login" | "signup" }) {
+  // AuthProvider already wraps the app in AppShell — do not nest another
+  // (nested loading state was freezing Continue with Google as disabled).
   return (
-    <AuthProvider>
-      <Suspense fallback={<div className="min-h-screen" />}>
-        <AuthForm mode={mode} />
-      </Suspense>
-    </AuthProvider>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center mono text-sm text-white/40">Loading…</div>}>
+      <AuthForm mode={mode} />
+    </Suspense>
   );
 }
 
