@@ -28,6 +28,8 @@ type AuthCtx = {
   user: RsUser | null;
   loading: boolean;
   token: string | null;
+  /** False when NEXT_PUBLIC_SUPABASE_* missing from the web build */
+  supabaseReady: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>;
   signUpWithEmail: (
@@ -102,9 +104,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [syncProfile]);
 
+  const supabaseReady = typeof window !== "undefined" ? Boolean(getSupabaseBrowser()) : true;
+
   const signInWithGoogle = useCallback(async () => {
     const sb = getSupabaseBrowser();
-    if (!sb) throw new Error("Supabase not configured");
+    if (!sb) {
+      throw new Error(
+        "Supabase not configured — rebuild web with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      );
+    }
     const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await sb.auth.signInWithOAuth({
       provider: "google",
@@ -187,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token:
         session?.access_token ||
         (typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null),
+      supabaseReady,
       signInWithGoogle,
       signInWithEmail,
       signUpWithEmail,
@@ -198,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user,
       loading,
+      supabaseReady,
       signInWithGoogle,
       signInWithEmail,
       signUpWithEmail,

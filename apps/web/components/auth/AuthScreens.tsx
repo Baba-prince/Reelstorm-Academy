@@ -6,7 +6,13 @@ import { FormEvent, Suspense, useState } from "react";
 import { useAuth } from "@/lib/auth";
 
 function AuthForm({ mode }: { mode: "login" | "signup" }) {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    resendConfirmation,
+    supabaseReady,
+  } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/onboarding";
@@ -19,11 +25,16 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [resent, setResent] = useState(false);
 
   async function onGoogle() {
+    if (!supabaseReady) {
+      setErr("Supabase not configured on this deploy. Keys must be baked into the web build.");
+      return;
+    }
     setBusy(true);
     setErr("");
     try {
       await signInWithGoogle();
       // OAuth should navigate away; if it returns without throw, keep busy briefly
+      window.setTimeout(() => setBusy(false), 8000);
     } catch (e) {
       setErr((e as Error).message);
       setBusy(false);
@@ -162,9 +173,16 @@ function AuthForm({ mode }: { mode: "login" | "signup" }) {
             : "Gmail one-tap or email — then a 60-second onboarding into the factory."}
         </p>
 
+        {!supabaseReady && (
+          <div className="mb-4 rounded-rs border border-orange/40 bg-orange/10 px-3 py-2 text-[12px] text-orange">
+            Auth keys missing from this web build — Google / email sign-in cannot start until redeploy
+            with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.
+          </div>
+        )}
+
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !supabaseReady}
           onClick={() => void onGoogle()}
           className="w-full h-12 rounded-rs bg-white text-black font-bold text-[14px] flex items-center justify-center gap-3 hover:bg-white/90 transition disabled:opacity-50"
         >

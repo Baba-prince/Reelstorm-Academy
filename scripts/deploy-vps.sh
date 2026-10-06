@@ -131,8 +131,31 @@ echo "Isolation:"
 grep -E '^(API_PORT|PORT|REDIS_URL|BULLMQ_PREFIX|NEXT_PUBLIC_API_URL|UPLOAD_TMP_DIR|MOCK_VIDEO_GEN|WORKER_CONCURRENCY)=' .env
 REMOTE
 
-echo "==> Install + build (inside $APP_DIR only)"
-ssh_cmd "$VPS" "cd $APP_DIR && npm install && npm run build -w @reelstorm/domain && npm run db:generate && npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss && npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web"
+echo "==> Install + build (inside $APP_DIR only; source .env so NEXT_PUBLIC_* bake into web)"
+ssh_cmd "$VPS" "bash -s" <<REMOTE
+set -euo pipefail
+cd $APP_DIR
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
+npm install
+npm run build -w @reelstorm/domain
+npm run db:generate
+npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss
+npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web
+# Fail loud if Google auth would be dead in production
+if [[ -z "\${NEXT_PUBLIC_SUPABASE_URL:-}" || -z "\${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]]; then
+  echo "ERROR: NEXT_PUBLIC_SUPABASE_URL / ANON_KEY missing from .env — Google login will fail"
+  exit 1
+fi
+ANON_PREFIX=\$(printf '%s' "\$NEXT_PUBLIC_SUPABASE_ANON_KEY" | cut -c1-20)
+if ! grep -Rql "\$ANON_PREFIX" apps/web/.next/static 2>/dev/null; then
+  echo "ERROR: Supabase anon key not found in web static build — NEXT_PUBLIC_* not inlined"
+  exit 1
+fi
+echo "OK: Supabase anon key present in Next static build"
+REMOTE
 
 echo "==> PM2 — restart ONLY ReelStorm apps (leave other projects alone)"
 ssh_cmd "$VPS" "bash -s" <<REMOTE
