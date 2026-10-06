@@ -3,35 +3,34 @@
 **To:** VisaVideos / VisaGuideOS (VSP)  
 **From:** REELSTORM ACADEMY OS  
 **Date:** 2026-10-06  
-**Hosts:** marketing `reelstorm.uk` · app `app.reelstorm.uk`
+**Hosts:** marketing `reelstorm.uk` · app `app.reelstorm.uk` · api `api.reelstorm.uk`  
+**Repo:** https://github.com/Beeplus7/Reelstorm-Academy (`main`)
 
-## Done this session
+## Shipped
 
-1. **Google Auth (Gmail)** — OAuth client `REELSTORM ACADEMY` (VisaguideOS GCP project) wired for:
-   - Origins: `reelstorm.uk`, `app.reelstorm.uk`, `localhost:3000`
-   - Callbacks: `/auth/callback` on those hosts
-   - Sign-in / Sign-up UI + Supabase session exchange
-   - **Action for you:** add Client ID + Secret in Supabase Auth → Providers → Google, and add Supabase callback `https://bytbilbaykzrjofhttyt.supabase.co/auth/v1/callback` to the Google OAuth client redirect URIs.
+1. **Google + email auth** — Gmail OAuth + email/password with **confirmation email required** (branded “Confirm your REELSTORM account”).
+2. **Onboarding** — Storm Passport wizard after confirm.
+3. **Domain split** — `reelstorm.uk` marketing · `app.reelstorm.uk` factory login/content.
+4. **Stripe tiers** — VisaVideos Journey £39 / Journey Pro £89 → Storm / Storm Pro + RTC wallet sync.
+5. **Nollywood + Asia** template packs in Templates Room.
 
-2. **Onboarding wizard** — 5-step Storm Passport (role → region Nollywood/Asia → first ideal → tier interest → factory).
+## Deploy status (IONOS UK `87.106.103.43`)
 
-3. **Domain split** — middleware: marketing site stays on `reelstorm.uk`; factory login/content on `app.reelstorm.uk`.
+- Code **pushed** to GitHub (`e1b19c9` + deploy script).
+- Deploy script ready: `scripts/deploy-vps.sh`
+- **Blocked on SSH:** root password from the IONOS panel was rejected (`Permission denied`).  
+  **Need:** reset root password in IONOS **or** install this SSH public key for passwordless deploy, then rerun the script.
 
-4. **Stripe tiers (VisaVideos sync)** — reused Journey £39 / Journey Pro £89 price IDs:
-   - `price_1TyGgl…` → Storm
-   - `price_1TyGgy…` → Storm Pro  
-   Checkout + webhook updates Prisma `User.tier` + RTC grant (same pattern as passport-paper `create-tier-checkout` / `stripe-tier-webhook`).
+```bash
+export VPS=root@87.106.103.43
+export SSHPASS='…'   # or use ssh-agent
+bash scripts/deploy-vps.sh
+```
 
-5. **Templates** — Nollywood Nigeria + Asia cinema packs live in Templates Room.
+## Ask VSP / ops
 
-## VPS (IONOS UK)
-
-- IP `87.106.103.43` · Ubuntu 24.04 · 6 vCPU / 8GB / 240GB  
-- Point DNS: `reelstorm.uk` + `www` → marketing; `app.reelstorm.uk` → app  
-- **Security:** root password was shared in chat — rotate it in IONOS before production.
-
-## Ask from REELSTORM → VSP
-
-- Confirm Stripe webhook endpoint can point at `https://api.reelstorm.uk/api/billing/stripe-webhook` (or shared) with the Journey tier webhook secret.
-- Confirm Google consent screen test users include the launch producers.
-- Publish Google OAuth out of Testing when ready for public signup.
+1. Unlock VPS SSH (password reset or `authorized_keys`).
+2. Point DNS A → `87.106.103.43` for `reelstorm.uk`, `www`, `app`, `api`.
+3. After API is live, Stripe webhook: `https://api.reelstorm.uk/api/billing/stripe-webhook`.
+4. Google Console: keep Supabase callback  
+   `https://bytbilbaykzrjofhttyt.supabase.co/auth/v1/callback`.
