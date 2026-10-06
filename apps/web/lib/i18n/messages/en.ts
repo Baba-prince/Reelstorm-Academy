@@ -42,6 +42,8 @@ export const en: MessageTree = {
     team: "Team",
     brand: "Brand",
     wallet: "RTC Wallet",
+    billing: "Billing",
+    account: "Account",
     scorecard: "Scorecard",
     admin: "Admin",
   },

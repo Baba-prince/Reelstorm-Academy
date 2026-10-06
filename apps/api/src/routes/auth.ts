@@ -149,6 +149,28 @@ export async function authRoutes(app: FastifyInstance) {
     };
   });
 
+  app.patch("/api/auth/me", async (req, reply) => {
+    const user = await resolveUserFromAuthHeader(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: "Unauthorized" });
+    const body = (req.body || {}) as { name?: string };
+    const name = typeof body.name === "string" ? body.name.trim().slice(0, 80) : undefined;
+    if (name === undefined) return reply.code(400).send({ error: "name required" });
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { name: name || null },
+    });
+    return {
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        avatarUrl: updated.avatarUrl,
+        tier: updated.tier,
+        onboardingCompleted: updated.onboardingCompleted,
+      },
+    };
+  });
+
   app.post("/api/auth/onboarding", async (req, reply) => {
     const user = await resolveUserFromAuthHeader(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: "Unauthorized" });

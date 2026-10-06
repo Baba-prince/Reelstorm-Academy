@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { AccountMenu } from "@/components/AccountMenu";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { useAuth } from "@/lib/auth";
 import { isAdminEmail } from "@reelstorm/domain";
@@ -25,6 +26,8 @@ const NAV = [
   { href: "/team", key: "nav.team" },
   { href: "/brand", key: "nav.brand" },
   { href: "/wallet", key: "nav.wallet" },
+  { href: "/billing", key: "nav.billing" },
+  { href: "/account", key: "nav.account" },
   { href: "/scorecard", key: "nav.scorecard" },
 ] as const;
 
@@ -100,12 +103,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <LanguageSwitcher compact />
-            <Link
-              href="/login"
-              className="hidden sm:inline-flex h-9 px-3 items-center rounded-rs border border-white/10 text-[11px] text-white/60 hover:text-white"
-            >
-              Account
-            </Link>
+            <AccountMenu />
             <span className="mono text-[9px] px-2 py-1 rounded-full bg-orange text-black font-bold">
               STORM OS v1.2
             </span>
