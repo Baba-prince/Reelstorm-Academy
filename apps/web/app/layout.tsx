@@ -17,8 +17,13 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "REELSTORM ACADEMY OS",
-  description: "Production OS Factory — STORM OS. Your story. Your studio. Your empire.",
+  title: "REELSTORM ACADEMY — Production OS Factory",
+  description:
+    "Not a course. A production OS for YouTubers, music artists, and advert outlets. Script or YouTube reference → ARCHIVE5 → 30-min master.",
+  openGraph: {
+    title: "REELSTORM ACADEMY",
+    description: "Your story. Your studio. Your empire.",
+  },
 };
 
 export const dynamic = "force-dynamic";

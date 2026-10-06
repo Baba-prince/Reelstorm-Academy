@@ -7,6 +7,7 @@ export const QUEUES = {
   generateVideo: "generateVideo",
   archiveBlock: "archiveBlock",
   mergeMaster: "mergeMaster",
+  soundStudio: "soundStudio",
 } as const;
 
 export type QueueName = keyof typeof QUEUES;

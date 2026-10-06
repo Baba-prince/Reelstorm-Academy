@@ -42,16 +42,31 @@ enum JobStatus {
   FAILED
 }
 
+enum SubTier {
+  free
+  storm
+  storm_pro
+  network
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  projects  Project[]
-  teamMembers TeamMember[]
-  apiKeys   ApiKey[]
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  name                 String?
+  avatarUrl            String?
+  supabaseId           String?  @unique
+  tier                 SubTier  @default(free)
+  onboardingCompleted  Boolean  @default(false)
+  onboardingJson       Json?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  projects             Project[]
+  teamMembers          TeamMember[]
+  apiKeys              ApiKey[]
+  wallet               RtcWallet?
+  tenantsOwned         Tenant[] @relation("TenantOwner")
 }
 
 model Team {
@@ -94,6 +109,7 @@ model Project {
   rooms       RoomPlate[]
   storyboards StoryboardFrame[]
   masters     MasterCut[]
+  voices      VoiceProfile[]
 }
 
 model VideoUpload {
@@ -225,6 +241,22 @@ model MasterCut {
   project   Project  @relation(fields: [projectId], references: [id])
 }
 
+/// Sound Studio — cloned / library voices for Voice Forge
+model VoiceProfile {
+  id           String   @id @default(cuid())
+  projectId    String?
+  name         String
+  provider     String   @default("elevenlabs")
+  providerVoiceId String?
+  sampleAssetIds String[] @default([])
+  status       String   @default("ready") // pending | cloning | ready | failed
+  error        String?
+  meta         Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  project      Project? @relation(fields: [projectId], references: [id])
+}
+
 model ApiKey {
   id        String   @id @default(cuid())
   userId    String
@@ -248,4 +280,80 @@ model JobRecord {
   progress  Int       @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+/// Academy studio running ReelStorm under their own brand
+model Tenant {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  ownerId       String
+  tier          SubTier  @default(storm_pro)
+  status        String   @default("active") // active | suspended
+  customDomain  String?
+  webhookUrl    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  owner         User     @relation("TenantOwner", fields: [ownerId], references: [id])
+  brand         TenantBrand?
+  wlKeys        WhiteLabelKey[]
+  wallet        RtcWallet?
+}
+
+model TenantBrand {
+  id           String  @id @default(cuid())
+  tenantId     String  @unique
+  productName  String
+  monogram     String  @default("RS")
+  primaryHex   String  @default("#7C3AED")
+  accentHex    String  @default("#00D9FF")
+  ctaHex       String  @default("#FF7A00")
+  bgHex        String  @default("#080808")
+  logoUrl      String?
+  supportEmail String?
+  hideReelstorm Boolean @default(false)
+  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+/// Opaque key for Academy white-label REST API (rs_live_…)
+model WhiteLabelKey {
+  id         String    @id @default(cuid())
+  tenantId   String
+  label      String
+  keyPrefix  String
+  keyHash    String    @unique
+  scopes     String[]  @default(["templates:read", "generate:write", "archive:read"])
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model RtcWallet {
+  id             String   @id @default(cuid())
+  userId         String?  @unique
+  tenantId       String?  @unique
+  balanceRtc     Int      @default(0)
+  lifetimeIn     Int      @default(0)
+  lifetimeOut    Int      @default(0)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  user           User?    @relation(fields: [userId], references: [id])
+  tenant         Tenant?  @relation(fields: [tenantId], references: [id])
+  ledger         RtcLedger[]
+}
+
+model RtcLedger {
+  id          String   @id @default(cuid())
+  walletId    String
+  type        String   // GRANT | PURCHASE | DEBIT_ARCHIVE5 | DEBIT_GENERATE | ADJUST | REFUND
+  amountRtc   Int      // signed: +credit / -debit
+  balanceAfter Int
+  refType     String?
+  refId       String?
+  note        String?
+  createdAt   DateTime @default(now())
+  wallet      RtcWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
 }

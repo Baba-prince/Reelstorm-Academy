@@ -95,3 +95,157 @@ body {
   background-size: 200% 100%;
   animation: progress-shimmer 2s linear infinite;
 }
+
+/* —— Marketing hero motions —— */
+@keyframes hero-pan {
+  0% {
+    transform: scale(1.08) translate3d(-1.5%, 0, 0);
+  }
+  50% {
+    transform: scale(1.12) translate3d(1.5%, -1%, 0);
+  }
+  100% {
+    transform: scale(1.08) translate3d(-1.5%, 0, 0);
+  }
+}
+
+.hero-pan {
+  animation: hero-pan 22s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes hero-draw {
+  from {
+    stroke-dashoffset: 1400;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.hero-draw {
+  stroke-dasharray: 1400;
+  animation: hero-draw 2.8s ease-out forwards;
+}
+
+@keyframes hero-frame-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-frame {
+  opacity: 0;
+  animation: hero-frame-in 0.7s ease-out forwards;
+}
+
+@keyframes hero-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-copy {
+  animation: hero-copy-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+@keyframes pipe-dash {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.pipe-dash {
+  animation: pipe-dash 1.2s linear infinite;
+}
+
+@keyframes pipe-node-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pipe-node {
+  opacity: 0;
+  animation: pipe-node-in 0.55s ease-out forwards;
+}
+
+/* —— Training flip-book artifact —— */
+@keyframes flipNext {
+  0% {
+    transform: rotateY(0deg);
+  }
+  40% {
+    box-shadow: -40px 0 60px rgba(0, 0, 0, 0.45);
+  }
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes flipPrev {
+  0% {
+    transform: rotateY(-180deg);
+  }
+  60% {
+    box-shadow: 40px 0 60px rgba(0, 0, 0, 0.45);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+.animate-flip-next {
+  animation: flipNext 0.65s cubic-bezier(0.6, 0.1, 0.3, 1) forwards;
+}
+
+.animate-flip-prev {
+  animation: flipPrev 0.65s cubic-bezier(0.6, 0.1, 0.3, 1) forwards;
+}
+
+.book-shadow {
+  box-shadow:
+    0 2px 0 rgba(124, 58, 237, 0.35),
+    0 18px 50px rgba(0, 0, 0, 0.55),
+    0 4px 16px rgba(0, 217, 255, 0.08);
+}
+
+.book-leaf {
+  transform-origin: left center;
+}
+
+.paper-texture {
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(124, 58, 237, 0.08), transparent 50%),
+    linear-gradient(180deg, #0c0c0c, #0a0a0a);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-pan,
+  .hero-draw,
+  .hero-frame,
+  .hero-copy,
+  .pipe-dash,
+  .pipe-node,
+  .animate-flip-next,
+  .animate-flip-prev {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

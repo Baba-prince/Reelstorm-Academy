@@ -16,10 +16,12 @@
     "db:generate": "npm run generate -w @reelstorm/db",
     "db:push": "npm run push -w @reelstorm/db",
     "db:migrate": "npm run migrate -w @reelstorm/db",
+    "smoke": "bash scripts/smoke.sh",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@types/node": "^22.13.10",
     "concurrently": "^9.1.2",
     "typescript": "^5.7.3"
   },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { API_URL, WS_URL, api } from "@/lib/api";
 import clsx from "clsx";
 
@@ -45,8 +46,33 @@ export default function TemplateForgePage() {
   const [script, setScript] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [rebuildMsg, setRebuildMsg] = useState<string | null>(null);
+  const [refUrl, setRefUrl] = useState("");
+  const [urlBusy, setUrlBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Poll upload status while fetching web reference (before WS events)
+  useEffect(() => {
+    if (!uploadId) return;
+    const t = setInterval(() => {
+      api<{ upload: { status: string; progressPct: number; progressMsg: string | null; error: string | null; s3Url?: string | null } }>(
+        `/api/upload/video/${uploadId}`,
+      )
+        .then((d) => {
+          if (d.upload.progressMsg || d.upload.error) {
+            setProgress({
+              uploadId,
+              stage: d.upload.status === "FAILED" ? "failed" : d.upload.status.toLowerCase(),
+              percent: d.upload.progressPct,
+              message: d.upload.progressMsg || undefined,
+              error: d.upload.error || undefined,
+            });
+          }
+        })
+        .catch(() => undefined);
+    }, 2000);
+    return () => clearInterval(t);
+  }, [uploadId]);
 
   const loadTemplates = useCallback(() => {
     api<{ templates: Template[] }>("/api/templates")
@@ -110,6 +136,31 @@ export default function TemplateForgePage() {
     }
   }
 
+  async function handleUrlExtract() {
+    const url = refUrl.trim();
+    if (!url) return;
+    setUrlBusy(true);
+    setRebuildMsg(null);
+    setPreviewUrl(null);
+    setProgress({ stage: "uploading", percent: 3, message: "Fetching web reference video…" });
+    try {
+      const data = await api<{ uploadId: string; wsChannel: string }>("/api/upload/video/from-url", {
+        method: "POST",
+        body: JSON.stringify({ url, analyze: true }),
+      });
+      setUploadId(data.uploadId);
+      setProgress({
+        stage: "uploading",
+        percent: 8,
+        message: "Download started — extracting template after analyze…",
+      });
+    } catch (e) {
+      setProgress({ stage: "failed", percent: 0, error: (e as Error).message });
+    } finally {
+      setUrlBusy(false);
+    }
+  }
+
   async function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
@@ -146,16 +197,45 @@ export default function TemplateForgePage() {
   return (
     <div className="space-y-8 forge-in max-w-[1200px]">
       <div>
-        <div className="mono text-[11px] text-violet-soft mb-2">TEMPLATE FORGE v2 // VIDEO UPLOAD</div>
+        <div className="mono text-[11px] text-violet-soft mb-2">TEMPLATE FORGE v2 // UPLOAD + WEB LINK</div>
         <h1 className="display text-4xl md:text-5xl">
           Steal the{" "}
           <span className="bg-empire bg-clip-text text-transparent">style</span>
         </h1>
         <p className="mt-3 text-white/60 max-w-2xl text-[15px] leading-relaxed">
-          Drop a YouTube / music / advert reference (MP4, MOV ≤ 2GB). We extract scene DNA, camera moves,
-          LUTs, character + room plates — then you type a new script and rebuild in that exact style.
+          Drop a file <span className="text-white/90">or paste a YouTube / Vimeo / direct MP4 link</span>.
+          We download the reference, extract scene DNA, camera moves, LUTs, character + room plates —
+          then you type a new script and rebuild in that exact style. Prefer curated ideals? Open{" "}
+          <Link href="/templates-room" className="text-cyan hover:underline">
+            Templates Room
+          </Link>
+          .
         </p>
       </div>
+
+      {/* Web reference URL */}
+      <section className="rounded-rs-xl border border-cyan/25 bg-cyan/5 p-5">
+        <div className="mono text-[11px] text-cyan mb-3">WEB REFERENCE LINK</div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            value={refUrl}
+            onChange={(e) => setRefUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void handleUrlExtract()}
+            placeholder="https://youtube.com/watch?v=…  or  https://cdn.example.com/reel.mp4"
+            className="flex-1 h-12 rounded-rs bg-void border border-white/10 px-4 text-sm focus:outline-none focus:border-cyan/50"
+          />
+          <button
+            onClick={() => void handleUrlExtract()}
+            disabled={urlBusy || !refUrl.trim()}
+            className="h-12 px-6 rounded-rs bg-cyan text-black font-bold text-sm disabled:opacity-40"
+          >
+            {urlBusy ? "Fetching…" : "Extract from URL"}
+          </button>
+        </div>
+        <div className="mono text-[9px] text-white/40 mt-2">
+          YOUTUBE • VIMEO • DIRECT MP4/MOV • yt-dlp powered
+        </div>
+      </section>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div
@@ -204,13 +284,16 @@ export default function TemplateForgePage() {
             {previewUrl ? (
               <video src={previewUrl} controls className="w-full max-h-[320px]" />
             ) : (
-              <div className="text-white/30 text-sm">No video loaded</div>
+              <div className="text-white/30 text-sm px-6 text-center">
+                {refUrl.trim()
+                  ? "Web reference queued — preview appears after local download"
+                  : "No video loaded"}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Analysis progress */}
       <section className="rounded-rs-xl border border-white/[0.08] bg-panel/80 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="mono text-[11px] text-cyan">VIDEO INTELLIGENCE</div>
@@ -218,17 +301,21 @@ export default function TemplateForgePage() {
         </div>
         <div className="h-2 rounded-full bg-white/5 overflow-hidden">
           <div
-            className={clsx("h-full rounded-full transition-all", progress?.stage === "failed" ? "bg-red-500" : "progress-bar")}
+            className={clsx(
+              "h-full rounded-full transition-all",
+              progress?.stage === "failed" ? "bg-red-500" : "progress-bar",
+            )}
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>
         <div className="mt-3 text-sm text-white/70">
-          {progress?.error || progress?.message || "Waiting for upload…"}
+          {progress?.error || progress?.message || "Waiting for upload or web link…"}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          {STAGES.map((s) => {
+          {["uploading", ...STAGES].map((s) => {
             const active = progress?.stage === s;
-            const done = progress ? STAGES.indexOf(progress.stage) > STAGES.indexOf(s) : false;
+            const order = ["uploading", ...STAGES];
+            const done = progress ? order.indexOf(progress.stage) > order.indexOf(s) : false;
             return (
               <span
                 key={s}
@@ -248,7 +335,6 @@ export default function TemplateForgePage() {
         </div>
       </section>
 
-      {/* Template gallery + rebuild */}
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="rounded-rs-xl border border-white/[0.08] bg-deep overflow-hidden">
           <div className="h-12 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel">
@@ -301,3 +387,4 @@ export default function TemplateForgePage() {
     </div>
   );
 }
+

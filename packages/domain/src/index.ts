@@ -186,6 +186,7 @@ export const AnalysisProgressSchema = z.object({
 export type AnalysisProgress = z.infer<typeof AnalysisProgressSchema>;
 
 export const MAX_VIDEO_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
+export const MAX_AUDIO_UPLOAD_BYTES = 200 * 1024 * 1024; // 200MB
 export const ARCHIVE5_BLOCK_SECONDS = 300; // 5 min
 export const ALLOWED_VIDEO_MIME = [
   "video/mp4",
@@ -193,3 +194,20 @@ export const ALLOWED_VIDEO_MIME = [
   "video/x-msvideo",
   "video/webm",
 ] as const;
+export const ALLOWED_AUDIO_MIME = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/wave",
+  "audio/mp4",
+  "audio/m4a",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/ogg",
+  "audio/webm",
+  "audio/flac",
+] as const;
+export * from "./rtc.js";
+export * from "./guide.js";
+export * from "./template-room.js";

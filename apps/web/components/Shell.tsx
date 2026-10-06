@@ -3,22 +3,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/template-forge", label: "Template Forge" },
-  { href: "/world-builder", label: "World Builder" },
-  { href: "/storyboard", label: "Storyboard" },
-  { href: "/studio", label: "Studio" },
-  { href: "/archive-vault", label: "Archive Vault" },
-  { href: "/merge-studio", label: "Merge Studio" },
-  { href: "/model-center", label: "Model Center" },
-  { href: "/team", label: "Team" },
-  { href: "/brand", label: "Brand" },
-];
+  { href: "/dashboard", key: "nav.dashboard" },
+  { href: "/templates-room", key: "nav.templatesRoom" },
+  { href: "/template-forge", key: "nav.templateForge" },
+  { href: "/world-builder", key: "nav.worldBuilder" },
+  { href: "/storyboard", key: "nav.storyboard" },
+  { href: "/studio", key: "nav.studio" },
+  { href: "/sound-studio", key: "nav.soundStudio" },
+  { href: "/archive-vault", key: "nav.archiveVault" },
+  { href: "/merge-studio", key: "nav.mergeStudio" },
+  { href: "/model-center", key: "nav.modelCenter" },
+  { href: "/team", key: "nav.team" },
+  { href: "/brand", key: "nav.brand" },
+  { href: "/wallet", key: "nav.wallet" },
+  { href: "/scorecard", key: "nav.scorecard" },
+] as const;
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <div className="min-h-screen flex">
@@ -32,7 +39,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="mono text-[9px] text-cyan mt-1">ACADEMY OS</div>
           </div>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {NAV.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
@@ -46,21 +53,22 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     : "text-white/60 hover:text-white hover:bg-white/[0.04]",
                 )}
               >
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-white/[0.06]">
+        <div className="p-4 border-t border-white/[0.06] space-y-2">
           <div className="flex items-center gap-2 mono text-[9px] text-cyan">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan live-dot" />
-            LIVE ENGINE
+            {t("common.liveEngine")}
           </div>
+          <div className="mono text-[8px] text-white/35 leading-relaxed">{t("common.guideHint")}</div>
         </div>
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-14 lg:h-16 px-4 lg:px-8 flex items-center justify-between border-b border-white/[0.06] bg-void/60 backdrop-blur-md sticky top-0 z-20">
+        <header className="h-14 lg:h-16 px-4 lg:px-8 flex items-center justify-between border-b border-white/[0.06] bg-void/60 backdrop-blur-md sticky top-0 z-20 gap-3">
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-8 h-8 rounded-[8px] bg-white text-black flex items-center justify-center font-black text-[12px]">
               RS
@@ -68,9 +76,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <span className="display text-[12px]">REELSTORM</span>
           </div>
           <div className="hidden lg:block mono text-[10px] text-white/40 tracking-[0.18em]">
-            SCRIPT • WORLD • STUDIO • ARCHIVE • MERGE
+            {t("shell.pipelineHint")}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
+            <LanguageSwitcher compact />
+            <Link
+              href="/login"
+              className="hidden sm:inline-flex h-9 px-3 items-center rounded-rs border border-white/10 text-[11px] text-white/60 hover:text-white"
+            >
+              Account
+            </Link>
             <span className="mono text-[9px] px-2 py-1 rounded-full bg-orange text-black font-bold">
               STORM OS v1.1
             </span>

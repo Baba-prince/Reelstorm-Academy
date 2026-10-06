@@ -3,6 +3,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ARCHIVE5_BLOCK_SECONDS } from "@reelstorm/domain";
 
+if (process.env.FFMPEG_PATH) {
+  ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
+}
+
 export type ProbeResult = {
   durationSec: number;
   width: number;
@@ -141,6 +145,86 @@ export async function extractFrame(
     ffmpeg(inputPath)
       .seekInput(atSec)
       .frames(1)
+      .on("end", () => resolve())
+      .on("error", reject)
+      .save(outputPath);
+  });
+  return outputPath;
+}
+
+export type AudioFormat = "wav" | "mp3" | "m4a";
+
+/** Extract a single audio track from video or audio source */
+export async function extractAudioTrack(
+  inputPath: string,
+  outputPath: string,
+  format: AudioFormat = "wav",
+): Promise<string> {
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  const codec =
+    format === "mp3" ? "libmp3lame" : format === "m4a" ? "aac" : "pcm_s16le";
+  await new Promise<void>((resolve, reject) => {
+    ffmpeg(inputPath)
+      .noVideo()
+      .audioCodec(codec)
+      .on("end", () => resolve())
+      .on("error", reject)
+      .save(outputPath);
+  });
+  return outputPath;
+}
+
+/**
+ * Sync / mux external audio onto a video.
+ * replace=true drops original audio; false mixes both.
+ * offsetSec shifts the external track relative to video start.
+ */
+export async function muxAudioOntoVideo(
+  videoPath: string,
+  audioPath: string,
+  outputPath: string,
+  opts?: { replace?: boolean; offsetSec?: number },
+): Promise<string> {
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  const replace = opts?.replace !== false;
+  const offset = opts?.offsetSec || 0;
+
+  await new Promise<void>((resolve, reject) => {
+    const cmd = ffmpeg().input(videoPath).input(audioPath);
+    if (offset > 0) {
+      cmd.inputOptions([`-itsoffset`, String(offset)]);
+    }
+    if (replace) {
+      cmd.outputOptions([
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0",
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-shortest",
+      ]);
+    } else {
+      cmd
+        .complexFilter([
+          "[0:a][1:a]amix=inputs=2:duration=shortest:dropout_transition=2[aout]",
+        ])
+        .outputOptions(["-map", "0:v:0", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac"]);
+    }
+    cmd.on("end", () => resolve()).on("error", reject).save(outputPath);
+  });
+  return outputPath;
+}
+
+/** Loudness-normalize audio for voice clone / TTS beds */
+export async function normalizeAudio(inputPath: string, outputPath: string): Promise<string> {
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await new Promise<void>((resolve, reject) => {
+    ffmpeg(inputPath)
+      .audioFilters("loudnorm=I=-16:TP=-1.5:LRA=11")
+      .audioCodec("pcm_s16le")
       .on("end", () => resolve())
       .on("error", reject)
       .save(outputPath);
