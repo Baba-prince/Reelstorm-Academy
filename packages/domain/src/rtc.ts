@@ -68,12 +68,21 @@ export const TIER_PRICE_GBP: Record<Tier, number> = {
 
 /** Monthly RTC allowance — sell SETS, meter in minutes */
 export const TIER_MONTHLY_RTC: Record<Tier, number> = {
-  free: 1, // 1 min test · 480p · watermark · no download
+  free: 1, // 1 min free demo · 480p · watermark · no download
   storm: 15, // 3 sets × 5 min · 720p only
   storm_pro: 25, // 5 sets · 1080p unlocked (hero)
   premium_pro: 50, // 10 sets · 1080p native + DNA upload
   network: 200, // default WL pool; overridable per tenant
 };
+
+/** System free-demo bank — 4600 RTC funnel into Premium */
+export const FREE_DEMO_RTC = 1;
+export const SYSTEM_BANK_ID = "reelstorm-system-bank";
+export const SYSTEM_BANK_TOTAL_RTC = 4600;
+export const SYSTEM_BANK_TOTAL_SETS = 920;
+export const SYSTEM_BANK_RTC_PER_SET = 5;
+/** Sunk cost basis for System Bank reporting ($/RTC) */
+export const SYSTEM_BANK_COST_PER_RTC = 1.93;
 
 /** Finished 5-min sets included (Free = partial test minute, not a full set) */
 export const TIER_MONTHLY_SETS: Record<Tier, number> = {

@@ -37,6 +37,7 @@ export async function adminRoutes(app: FastifyInstance) {
       vouchersRedeemed,
       recentLedger,
       tierGroups,
+      systemBank,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.rtcWallet.aggregate({
@@ -55,6 +56,10 @@ export async function adminRoutes(app: FastifyInstance) {
         },
       }),
       prisma.user.groupBy({ by: ["tier"], _count: true }),
+      (async () => {
+        const { ensureSystemBank, systemBankPublic } = await import("../lib/system-bank.js");
+        return systemBankPublic(await ensureSystemBank());
+      })(),
     ]);
 
     const systemBalanceRtc = walletsAgg._sum.balanceRtc ?? 0;
@@ -74,6 +79,7 @@ export async function adminRoutes(app: FastifyInstance) {
         vouchersOpen,
         vouchersRedeemed,
       },
+      systemBank,
       tiers: Object.fromEntries(tierGroups.map((g) => [g.tier, g._count])),
       recentLedger: recentLedger.map((l) => ({
         id: l.id,

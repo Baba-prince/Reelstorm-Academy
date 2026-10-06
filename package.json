@@ -18,6 +18,8 @@
     "db:migrate": "npm run migrate -w @reelstorm/db",
     "smoke": "bash scripts/smoke.sh",
     "worker:fetch-intros": "node --import tsx scripts/fetch-intros.mjs",
+    "db:seed-system-bank": "npx tsx scripts/seedSystemBank.ts",
+    "db:allocate-free-demos": "npx tsx scripts/allocateFreeDemoToAllUsers.ts",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

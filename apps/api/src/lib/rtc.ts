@@ -19,6 +19,12 @@ export function mintWhiteLabelKey(): { raw: string; prefix: string; hash: string
 export async function ensureUserWallet(userId: string, tier: Tier = "free") {
   let wallet = await prisma.rtcWallet.findUnique({ where: { userId } });
   if (!wallet) {
+    if (tier === "free") {
+      const { grantFreeDemoFromBank } = await import("./system-bank.js");
+      await grantFreeDemoFromBank(userId);
+      wallet = await prisma.rtcWallet.findUniqueOrThrow({ where: { userId } });
+      return wallet;
+    }
     const grant = TIER_MONTHLY_RTC[tier] ?? TIER_MONTHLY_RTC.free;
     wallet = await prisma.rtcWallet.create({
       data: {
@@ -35,6 +41,19 @@ export async function ensureUserWallet(userId: string, tier: Tier = "free") {
         },
       },
     });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { rtcBalance: grant },
+    });
+  } else if (tier === "free") {
+    // Ensure free-demo flag + bank allocation for existing zero-balance free users
+    try {
+      const { grantFreeDemoFromBank } = await import("./system-bank.js");
+      await grantFreeDemoFromBank(userId);
+      wallet = (await prisma.rtcWallet.findUnique({ where: { userId } })) || wallet;
+    } catch {
+      /* bank may be exhausted — keep wallet as-is */
+    }
   }
   return wallet;
 }

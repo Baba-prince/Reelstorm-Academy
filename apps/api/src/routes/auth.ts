@@ -74,12 +74,24 @@ async function upsertFromSupabase(sb: {
       name: sb.name || email.split("@")[0],
       avatarUrl: sb.avatar || null,
       supabaseId: sb.sub,
+      tier: "free",
+      rtcBalance: 1,
+      freeDemoUsed: false,
     },
     update: {
       supabaseId: sb.sub,
       name: sb.name || undefined,
       avatarUrl: sb.avatar || undefined,
     },
+  }).then(async (user) => {
+    // First-time (or returning) free users get 1 RTC from SystemBank
+    try {
+      const { ensureUserWallet } = await import("../lib/rtc.js");
+      await ensureUserWallet(user.id, (user.tier as "free") || "free");
+    } catch {
+      /* non-fatal — wallet can be created on next /wallet call */
+    }
+    return prisma.user.findUniqueOrThrow({ where: { id: user.id } });
   });
 }
 
@@ -102,11 +114,18 @@ export async function authRoutes(app: FastifyInstance) {
     const email = body.email || "producer@reelstorm.academy";
     const user = await prisma.user.upsert({
       where: { email },
-      create: { email, name: body.name || "Producer" },
+      create: { email, name: body.name || "Producer", tier: "free", rtcBalance: 1 },
       update: { name: body.name || undefined },
     });
+    try {
+      const { ensureUserWallet } = await import("../lib/rtc.js");
+      await ensureUserWallet(user.id, "free");
+    } catch {
+      /* ignore */
+    }
+    const fresh = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     return reply.send({
-      user,
+      user: fresh,
       token: Buffer.from(JSON.stringify({ sub: user.id, email: user.email, mode: "dev" })).toString(
         "base64url",
       ),

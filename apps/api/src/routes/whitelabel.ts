@@ -331,17 +331,83 @@ export async function billingRoutes(app: FastifyInstance) {
       authed ||
       (await prisma.user.upsert({
         where: { email },
-        create: { email, name: "Producer", tier: "free" },
+        create: { email, name: "Producer", tier: "free", rtcBalance: 1 },
         update: {},
       }));
     const { ensureUserWallet } = await import("../lib/rtc.js");
+    const {
+      ensureSystemBank,
+      systemBankPublic,
+      grantFreeDemoFromBank,
+    } = await import("../lib/system-bank.js");
+    try {
+      await grantFreeDemoFromBank(user.id);
+    } catch {
+      /* bank may be empty */
+    }
     const wallet = await ensureUserWallet(user.id, user.tier as never);
+    const fresh = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const bank = await ensureSystemBank();
+    const rtcBalance = wallet.balanceRtc;
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        tier: user.tier,
-        onboardingCompleted: user.onboardingCompleted,
+        id: fresh.id,
+        email: fresh.email,
+        tier: fresh.tier,
+        onboardingCompleted: fresh.onboardingCompleted,
+        freeDemoUsed: fresh.freeDemoUsed,
+        freeDemoGrantedAt: fresh.freeDemoGrantedAt,
+      },
+      rtcBalance,
+      freeDemo: {
+        granted: Boolean(fresh.freeDemoGrantedAt),
+        used: fresh.freeDemoUsed,
+        amountRtc: 1,
+        expiresAt: null,
+      },
+      systemBank: systemBankPublic(bank),
+      canGenerate: rtcBalance >= 1,
+      wallet: {
+        balanceRtc: rtcBalance,
+        archive5Remaining: blocksFromRtc(rtcBalance),
+        rtcPerArchive5: RTC_PER_ARCHIVE5,
+      },
+    };
+  });
+
+  /** Alias for deliverable path — same payload as /api/billing/wallet */
+  app.get("/api/user/wallet", async (req, reply) => {
+    const { resolveUserFromAuthHeader } = await import("./auth.js");
+    const authed = await resolveUserFromAuthHeader(req.headers.authorization);
+    if (!authed) return reply.code(401).send({ error: "Unauthorized" });
+    const { ensureUserWallet } = await import("../lib/rtc.js");
+    const {
+      ensureSystemBank,
+      systemBankPublic,
+      grantFreeDemoFromBank,
+    } = await import("../lib/system-bank.js");
+    try {
+      await grantFreeDemoFromBank(authed.id);
+    } catch {
+      /* ignore */
+    }
+    const wallet = await ensureUserWallet(authed.id, authed.tier as never);
+    const fresh = await prisma.user.findUniqueOrThrow({ where: { id: authed.id } });
+    const bank = await ensureSystemBank();
+    return {
+      rtcBalance: wallet.balanceRtc,
+      freeDemo: {
+        granted: Boolean(fresh.freeDemoGrantedAt),
+        used: fresh.freeDemoUsed,
+        amountRtc: 1,
+        expiresAt: null,
+      },
+      systemBank: systemBankPublic(bank),
+      canGenerate: wallet.balanceRtc >= 1,
+      user: {
+        id: fresh.id,
+        email: fresh.email,
+        tier: fresh.tier,
       },
       wallet: {
         balanceRtc: wallet.balanceRtc,
@@ -349,6 +415,34 @@ export async function billingRoutes(app: FastifyInstance) {
         rtcPerArchive5: RTC_PER_ARCHIVE5,
       },
     };
+  });
+
+  /** POST /api/billing/use-free-demo — spend 1 RTC free demo */
+  app.post("/api/billing/use-free-demo", async (req, reply) => {
+    const { resolveUserFromAuthHeader } = await import("./auth.js");
+    const user = await resolveUserFromAuthHeader(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: "Unauthorized" });
+    try {
+      const { consumeFreeDemo } = await import("../lib/system-bank.js");
+      const result = await consumeFreeDemo(user.id);
+      return {
+        ...result,
+        upgrade: {
+          headline: "Free demo used! Unlock Archive5 + download",
+          basic: { tier: "storm", price: "$49", rtc: 15 },
+          premium: { tier: "storm_pro", price: "$99", rtc: 25 },
+        },
+      };
+    } catch (e) {
+      return reply.code(400).send({ error: (e as Error).message });
+    }
+  });
+
+  /** GET /api/billing/system-bank — public funnel stats */
+  app.get("/api/billing/system-bank", async () => {
+    const { ensureSystemBank, systemBankPublic } = await import("../lib/system-bank.js");
+    const bank = await ensureSystemBank();
+    return { systemBank: systemBankPublic(bank) };
   });
 
   app.post("/api/billing/grant-monthly", async (req, reply) => {

@@ -62,7 +62,7 @@ function detectPlatform(url: string): string | null {
 }
 
 function WizardInner() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [step, setStep] = useState(0);
   const [stages, setStages] = useState<Stage[]>([]);
   const [idea, setIdea] = useState("");
@@ -79,6 +79,10 @@ function WizardInner() {
   const [voNote, setVoNote] = useState<string | null>(null);
   const [refUploadId, setRefUploadId] = useState<string | null>(null);
   const [refStatus, setRefStatus] = useState<string | null>(null);
+  const [rtcBalance, setRtcBalance] = useState<number | null>(null);
+  const [freeDemoUsed, setFreeDemoUsed] = useState(false);
+  const [freeDemoGranted, setFreeDemoGranted] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const name = useMemo(() => {
     const raw = (user?.name || user?.email || "Producer").split(/[\s@._-]/)[0];
@@ -87,6 +91,32 @@ function WizardInner() {
 
   const platform = useMemo(() => (refUrl.trim() ? detectPlatform(refUrl.trim()) : null), [refUrl]);
   const canGenerate = idea.trim().length > 0 || looksLikeUrl(refUrl);
+  const demoAvailable =
+    Boolean(freeDemoGranted && !freeDemoUsed && (user?.tier === "free" || !user?.tier) && (rtcBalance ?? 0) === 1);
+  const usedCount = freeDemoUsed ? 1 : 0;
+
+  useEffect(() => {
+    async function loadWallet() {
+      try {
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const { getApiBase } = await import("@/lib/api");
+        const res = await fetch(`${getApiBase()}/api/billing/wallet`, { headers });
+        if (!res.ok) return;
+        const d = (await res.json()) as {
+          rtcBalance?: number;
+          wallet?: { balanceRtc: number };
+          freeDemo?: { granted: boolean; used: boolean };
+        };
+        setRtcBalance(d.rtcBalance ?? d.wallet?.balanceRtc ?? null);
+        setFreeDemoGranted(Boolean(d.freeDemo?.granted));
+        setFreeDemoUsed(Boolean(d.freeDemo?.used));
+      } catch {
+        /* ignore */
+      }
+    }
+    void loadWallet();
+  }, [token, user?.email]);
 
   useEffect(() => {
     api<{ stages: Stage[] }>("/api/blueprint/stages")
@@ -207,6 +237,24 @@ function WizardInner() {
           ? "Blueprint locked — reference DNA extracting in LIVE ENGINE"
           : "Blueprint locked — walk the stages",
       );
+
+      // Spend free demo RTC after successful blueprint (1-min funnel)
+      if (demoAvailable && token) {
+        try {
+          const { getApiBase } = await import("@/lib/api");
+          const burn = await fetch(`${getApiBase()}/api/billing/use-free-demo`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (burn.ok) {
+            setFreeDemoUsed(true);
+            setRtcBalance(0);
+            setShowUpgrade(true);
+          }
+        } catch {
+          /* non-fatal */
+        }
+      }
     } catch (e) {
       setMsg((e as Error).message);
     } finally {
@@ -261,11 +309,60 @@ function WizardInner() {
             Idea and/or YouTube · TikTok · Instagram · Facebook · X link in — Movie Blueprint out. Reference DNA
             feeds the factory.
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="mono text-[10px] px-2.5 py-1 rounded-full border border-cyan/40 bg-cyan/10 text-cyan">
+              FREE DEMO: 1 RTC (1 min) — {usedCount}/1 used
+            </span>
+            {rtcBalance !== null && (
+              <span className="mono text-[10px] px-2.5 py-1 rounded-full border border-white/15 text-white/55">
+                Balance {rtcBalance} RTC
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-[12px] text-white/45 max-w-xl">
+            {demoAvailable
+              ? "You have a 1-min free demo. Use it to generate your first scene. Upgrade to Premium for 25 mins."
+              : freeDemoUsed
+                ? "Free demo used — unlock Basic ($49 / 15 min) or Premium ($99 / 25 min) to keep directing."
+                : "Sign in to claim your 1-min free demo from the System Bank."}
+          </p>
         </div>
         <Link href="/dashboard" className="mono text-[11px] text-white/40 hover:text-cyan">
           ← Factory floor
         </Link>
       </div>
+
+      {showUpgrade && (
+        <div className="rounded-rs-xl border border-orange/40 bg-orange/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="display text-lg text-orange">Free demo used!</div>
+            <p className="text-sm text-white/70 mt-1">
+              Get 15 mins for $49 or 25 mins for $99 — unlock Archive5 + download.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/wallet?upgrade=storm"
+              className="h-11 px-4 inline-flex items-center rounded-rs bg-violet text-white text-sm font-bold"
+            >
+              Unlock Archive5 — $49
+            </Link>
+            <Link
+              href="/wallet?upgrade=storm_pro"
+              className="h-11 px-4 inline-flex items-center rounded-rs bg-orange text-black text-sm font-bold"
+            >
+              Premium 25 mins — $99
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowUpgrade(false)}
+              className="h-11 px-3 text-xs text-white/50"
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[220px_1fr_280px] gap-4 flex-1 min-h-0">
         <aside className="rounded-rs-xl border border-white/[0.08] bg-deep p-3 space-y-1">
@@ -366,10 +463,17 @@ function WizardInner() {
                   ? refUrl.trim()
                     ? "Pulling reference + directing…"
                     : "Directing…"
-                  : refUrl.trim()
-                    ? "Generate from idea + link"
-                    : "Generate blueprint"}
+                  : demoAvailable
+                    ? "Use Free Demo (1 RTC) → Generate 1-min preview"
+                    : refUrl.trim()
+                      ? "Generate from idea + link"
+                      : "Generate blueprint"}
               </button>
+              {demoAvailable && (
+                <div className="mono text-[9px] text-white/40">
+                  480p watermarked · no download · burns your 1 RTC free demo
+                </div>
+              )}
             </div>
           )}
 

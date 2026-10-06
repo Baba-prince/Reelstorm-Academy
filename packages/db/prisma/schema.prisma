@@ -57,6 +57,10 @@ model User {
   avatarUrl            String?
   supabaseId           String?  @unique
   tier                 SubTier  @default(free)
+  /// Denormalized mirror of wallet.balanceRtc for free-demo funnel (source of truth remains RtcWallet)
+  rtcBalance           Int      @default(1)
+  freeDemoUsed         Boolean  @default(false)
+  freeDemoGrantedAt    DateTime?
   onboardingCompleted  Boolean  @default(false)
   onboardingJson       Json?
   stripeCustomerId     String?
@@ -427,4 +431,17 @@ model GiftVoucher {
   createdAt   DateTime  @default(now())
 
   @@index([redeemedAt])
+}
+
+/// Singleton pool for 1-RTC free demos (4600 RTC = 920 × 5-min sets)
+model SystemBank {
+  id            String   @id @default("reelstorm-system-bank")
+  totalRTC      Int      @default(4600)
+  usedRTC       Int      @default(0)
+  remainingRTC  Int      @default(4600)
+  totalSets     Int      @default(920)
+  rtcPerSet     Int      @default(5)
+  costBasis     Float    @default(1.93)
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 }
