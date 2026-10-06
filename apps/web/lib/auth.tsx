@@ -104,7 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [syncProfile]);
 
-  const supabaseReady = typeof window !== "undefined" ? Boolean(getSupabaseBrowser()) : true;
+  const supabaseReady = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
 
   const signInWithGoogle = useCallback(async () => {
     const sb = getSupabaseBrowser();
