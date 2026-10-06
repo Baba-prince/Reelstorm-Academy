@@ -108,25 +108,46 @@ export async function fetchViralMetadata(url: string): Promise<ViralMeta> {
       const caps = j.subtitles || j.automatic_captions || {};
       const en =
         caps.en || caps["en-US"] || caps["en-GB"] || Object.values(caps)[0] || [];
-      const capUrl = en.find((c) => c.url)?.url;
+      const capUrl =
+        en.find((c) => c.url && String(c.url).includes("json3"))?.url ||
+        en.find((c) => c.url)?.url;
       if (capUrl) {
         try {
           const capRes = await fetch(capUrl, { signal: AbortSignal.timeout(15_000) });
           if (capRes.ok) {
             const raw = await capRes.text();
-            const lines = raw
-              .split("\n")
-              .map((l) => l.trim())
-              .filter(
-                (l) =>
-                  l &&
-                  !l.startsWith("WEBVTT") &&
-                  !l.startsWith("NOTE") &&
-                  !/^\d+$/.test(l) &&
-                  !l.includes("-->") &&
-                  !l.startsWith("{"),
-              );
-            if (lines.length > 3) transcriptHint = lines.join(" ").slice(0, 8000);
+            let text = "";
+            if (raw.trim().startsWith("{")) {
+              try {
+                const j3 = JSON.parse(raw) as {
+                  events?: Array<{ segs?: Array<{ utf8?: string }> }>;
+                };
+                text = (j3.events || [])
+                  .flatMap((e) => e.segs || [])
+                  .map((s) => s.utf8 || "")
+                  .join(" ")
+                  .replace(/\s+/g, " ")
+                  .trim();
+              } catch {
+                /* fall through */
+              }
+            }
+            if (!text) {
+              const lines = raw
+                .split("\n")
+                .map((l) => l.trim())
+                .filter(
+                  (l) =>
+                    l &&
+                    !l.startsWith("WEBVTT") &&
+                    !l.startsWith("NOTE") &&
+                    !/^\d+$/.test(l) &&
+                    !l.includes("-->") &&
+                    !l.startsWith("{"),
+                );
+              text = lines.join(" ");
+            }
+            if (text.length > 20) transcriptHint = text.slice(0, 8000);
           }
         } catch {
           /* keep description */
