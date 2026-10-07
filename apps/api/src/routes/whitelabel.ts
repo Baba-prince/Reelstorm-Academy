@@ -546,13 +546,48 @@ export async function billingRoutes(app: FastifyInstance) {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as {
-        metadata?: { userId?: string; reelstormTier?: string };
+        metadata?: {
+          userId?: string;
+          reelstormTier?: string;
+          product?: string;
+          studioPlan?: string;
+        };
         client_reference_id?: string | null;
         subscription?: string | null;
         customer?: string | null;
       };
       const userId = session.metadata?.userId || session.client_reference_id;
       if (!userId) return { received: true, skipped: "no_user_id" };
+
+      // ReelStorm Studio desktop subscription
+      if (session.metadata?.product === "studio") {
+        const planRaw = session.metadata.studioPlan || "pro";
+        const plan =
+          planRaw === "starter" ||
+          planRaw === "pro" ||
+          planRaw === "agency" ||
+          planRaw === "unlimited"
+            ? planRaw
+            : "pro";
+        const { handleStudioStripeCheckout } = await import("./license.js");
+        const issued = await handleStudioStripeCheckout({
+          userId,
+          plan,
+          subscriptionId: typeof session.subscription === "string" ? session.subscription : null,
+        });
+        // Plaintext key is issued once — client should fetch via regenerate or email hook later
+        return {
+          received: true,
+          product: "studio",
+          userId,
+          plan,
+          licenseId: issued.license.id,
+          keyPrefix: issued.license.keyPrefix,
+          // Do not put plaintextKey in webhook response logs long-term; available for email worker
+          plaintextKey: issued.plaintextKey,
+        };
+      }
+
       const tierRaw = session.metadata?.reelstormTier;
       const tier =
         tierRaw === "premium_pro" || tierRaw === "storm_pro" || tierRaw === "storm"
@@ -581,17 +616,34 @@ export async function billingRoutes(app: FastifyInstance) {
     const subscription = event.data.object as {
       id: string;
       status: string;
-      metadata?: { userId?: string };
+      metadata?: { userId?: string; product?: string; studioPlan?: string };
       customer?: string;
       items?: { data?: Array<{ price?: { id?: string } }> };
     };
     const userId = subscription.metadata?.userId;
     if (!userId) return { received: true, skipped: "no_user_id" };
 
+    if (subscription.metadata?.product === "studio") {
+      const { handleStudioSubscriptionUpdate } = await import("./license.js");
+      const lic = await handleStudioSubscriptionUpdate({
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        userId,
+      });
+      return { received: true, product: "studio", userId, licenseId: lic?.id, status: lic?.status };
+    }
+
     if (event.type === "customer.subscription.deleted" || !["active", "trialing"].includes(subscription.status)) {
       await prisma.user.update({
         where: { id: userId },
         data: { tier: "free", stripeSubscriptionId: null },
+      });
+      // Also cancel any Studio licenses on this subscription id
+      const { handleStudioSubscriptionUpdate } = await import("./license.js");
+      await handleStudioSubscriptionUpdate({
+        subscriptionId: subscription.id,
+        status: "canceled",
+        userId,
       });
       return { received: true, userId, tier: "free" };
     }

@@ -77,6 +77,7 @@ model User {
   ytChannels           YtChannel[]
   ytScripts            YtScript[]
   contentCalendar      ContentCalendarEntry[]
+  studioLicenses       StudioLicense[]
 }
 
 model Team {
@@ -599,4 +600,78 @@ model ContentCalendarEntry {
   script          YtScript? @relation(fields: [scriptId], references: [id])
 
   @@index([userId, date])
+}
+
+/// ReelStorm Studio (desktop) — centralized minute control; user's GPU does compute
+enum StudioPlan {
+  free
+  starter
+  pro
+  agency
+  unlimited
+}
+
+enum StudioLicenseStatus {
+  active
+  past_due
+  canceled
+  revoked
+  limit_reached
+}
+
+model StudioLicense {
+  id                   String              @id @default(cuid())
+  userId               String
+  /// SHA-256 of full license JWT (never store plaintext key)
+  keyHash              String              @unique
+  /// Display only e.g. RSTUDIO-…XXXX
+  keyPrefix            String
+  plan                 StudioPlan          @default(starter)
+  monthlyLimit         Int
+  usedThisMonth        Float               @default(0)
+  devicesAllowed       Int                 @default(1)
+  stripeSubscriptionId String?
+  stripePriceId        String?
+  status               StudioLicenseStatus @default(active)
+  jwtVersion           Int                 @default(1)
+  periodStart          DateTime            @default(now())
+  expiresAt            DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devices              StudioDevice[]
+  usageLogs            StudioUsageLog[]
+
+  @@index([userId, status])
+  @@index([stripeSubscriptionId])
+}
+
+model StudioDevice {
+  id                 String    @id @default(cuid())
+  licenseId          String
+  fingerprint        String
+  deviceName         String?
+  /// SHA-256 of current activated_token (short-lived)
+  activatedTokenHash String?
+  activatedAt        DateTime  @default(now())
+  lastSeenAt         DateTime  @default(now())
+  revoked            Boolean   @default(false)
+  license            StudioLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, fingerprint])
+  @@index([fingerprint])
+}
+
+model StudioUsageLog {
+  id            String   @id @default(cuid())
+  licenseId     String
+  deviceId      String?
+  minutes       Float
+  videoHash     String?
+  promptHash    String?
+  offlineQueued Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  license       StudioLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([licenseId, createdAt])
 }

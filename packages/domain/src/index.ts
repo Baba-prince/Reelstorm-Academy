@@ -219,3 +219,4 @@ export * from "./admin.js";
 export * from "./yt-hooks.js";
 export * from "./yt-os.js";
 export * from "./clone.js";
+export * from "./studio.js";

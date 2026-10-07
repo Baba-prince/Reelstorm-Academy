@@ -178,10 +178,24 @@ function AccountInner() {
           </Link>
           <Link
             href="/pricing"
-            className="rounded-rs border border-white/10 p-4 hover:border-cyan/40 transition-colors sm:col-span-2"
+            className="rounded-rs border border-white/10 p-4 hover:border-cyan/40 transition-colors"
           >
             <div className="font-semibold text-sm">Upgrade plan</div>
             <div className="text-[11px] text-white/45 mt-1">Storm · Storm Pro · Premium</div>
+          </Link>
+          <Link
+            href="/settings/studio"
+            className="rounded-rs border border-white/10 p-4 hover:border-cyan/40 transition-colors"
+          >
+            <div className="font-semibold text-sm">ReelStorm Studio</div>
+            <div className="text-[11px] text-white/45 mt-1">Desktop license · devices · minutes</div>
+          </Link>
+          <Link
+            href="/download"
+            className="rounded-rs border border-white/10 p-4 hover:border-cyan/40 transition-colors sm:col-span-2"
+          >
+            <div className="font-semibold text-sm">Download Studio</div>
+            <div className="text-[11px] text-white/45 mt-1">Your GPU · our central minute meter</div>
           </Link>
         </div>
       </section>

@@ -9,12 +9,12 @@ export async function wsRoutes(app: FastifyInstance) {
     const channel = `analysis:${uploadId}`;
     const sub = redisConnection().duplicate();
 
-    sub.subscribe(channel).catch((err) => {
+    sub.subscribe(channel).catch((err: unknown) => {
       app.log.error(err);
       socket.send(JSON.stringify({ stage: "failed", percent: 0, error: "subscribe failed" }));
     });
 
-    sub.on("message", (_ch, message) => {
+    sub.on("message", (_ch: string, message: string) => {
       socket.send(message);
     });
 
@@ -45,11 +45,11 @@ export async function wsRoutes(app: FastifyInstance) {
     const { blueprintId } = req.params as { blueprintId: string };
     const channel = `blueprint:${blueprintId}`;
     const sub = redisConnection().duplicate();
-    sub.subscribe(channel).catch((err) => {
+    sub.subscribe(channel).catch((err: unknown) => {
       app.log.error(err);
       socket.send(JSON.stringify({ stage: "failed", percent: 0, error: "subscribe failed" }));
     });
-    sub.on("message", (_ch, message) => {
+    sub.on("message", (_ch: string, message: string) => {
       socket.send(message);
     });
     socket.send(

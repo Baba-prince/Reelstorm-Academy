@@ -22,6 +22,8 @@
     "worker:fetch-intros": "node --import tsx scripts/fetch-intros.mjs",
     "db:seed-system-bank": "npx tsx scripts/seedSystemBank.ts",
     "db:allocate-free-demos": "npx tsx scripts/allocateFreeDemoToAllUsers.ts",
+    "studio:build": "npm run build:main -w @reelstorm/desktop && npm run build:ui -w @reelstorm/desktop",
+
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

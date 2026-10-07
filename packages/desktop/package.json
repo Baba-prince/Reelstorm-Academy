@@ -1,0 +1,25 @@
+{
+  "name": "@reelstorm/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ReelStorm Studio — local GPU generation with central minute control",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "electron .",
+    "build:main": "tsc -p tsconfig.electron.json",
+    "build:ui": "vite build",
+    "build:studio": "npm run build:main && npm run build:ui && electron-builder --config electron-builder.yml",
+    "typecheck": "tsc -p tsconfig.electron.json --noEmit"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "systeminformation": "^5.23.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.0"
+  }
+}

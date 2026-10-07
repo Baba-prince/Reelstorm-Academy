@@ -1,0 +1,30 @@
+appId: com.reelstorm.studio
+productName: ReelStorm Studio
+copyright: Copyright © REELSTORM ACADEMY
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+extraResources:
+  - from: resources/README-WEIGHTS.md
+    to: README-WEIGHTS.md
+publish:
+  provider: github
+  owner: Beeplus7
+  repo: Reelstorm-Academy
+mac:
+  category: public.app-category.video
+  target:
+    - dmg
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

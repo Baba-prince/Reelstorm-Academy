@@ -19,11 +19,15 @@ export function bullPrefix(): string {
   return process.env.BULLMQ_PREFIX || "reelstorm";
 }
 
-let connection: IORedis | null = null;
+// ioredis default export typing breaks under NodeNext — runtime is fine
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let connection: any = null;
 
 export function redisConnection() {
   if (!connection) {
-    connection = new IORedis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Redis = IORedis as any;
+    connection = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
       maxRetriesPerRequest: null,
     });
   }
