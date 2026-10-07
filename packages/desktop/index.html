@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data: https:; media-src 'self' https: blob:; connect-src 'self' https://api.reelstorm.uk https://app.reelstorm.uk https:;"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ReelStorm Studio</title>
@@ -113,15 +113,18 @@
         font-family: ui-monospace, monospace;
         font-size: 12px;
       }
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
-      <div class="brand">REELSTORM STUDIO · OPTION 2 · YOUR GPU · OUR MINUTES</div>
-      <h1>Generate on your PC.</h1>
+      <div class="brand">REELSTORM STUDIO · 120MB THIN · GPU SAVER</div>
+      <h1>Thin client. Fat saver.</h1>
       <p class="sub">
-        SkyReels V2 runs locally. Minutes are metered centrally — cancel Stripe and the app stops.
-        License key is never stored after activation.
+        This ~120MB app calls api.reelstorm.uk — SkyReels 4.2GB stays on RunPod. Minutes metered
+        centrally. Cancel Stripe and generate stops. License key never stored after activation.
       </p>
 
       <div class="card" id="stats">
@@ -144,13 +147,14 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-top: 0">Local generate</h3>
+        <h3 style="margin-top: 0">Generate on saver</h3>
         <label>Prompt</label>
         <textarea id="prompt" rows="4" placeholder="Nollywood night market · slow dolly · neon rain"></textarea>
         <label>Duration (seconds)</label>
-        <input id="dur" type="number" min="5" max="60" value="10" />
-        <button class="primary" id="btnGen">Generate (report minutes)</button>
+        <input id="dur" type="number" min="5" max="120" value="60" />
+        <button class="primary" id="btnGen">Generate (~5 min on 4090)</button>
         <div id="genMsg"></div>
+        <video id="preview" class="hidden" controls style="width:100%;margin-top:12px;border-radius:10px;background:#000"></video>
       </div>
     </div>
     <script type="module" src="/src/ui.ts"></script>

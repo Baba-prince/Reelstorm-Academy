@@ -199,8 +199,9 @@ export function hashText(s: string) {
 }
 
 /**
- * Local SkyReels generate stub — wires to ComfyUI/SkyReels binary when installed.
- * Always reports usage to central API before returning success.
+ * Thin client generate — proxies to VPS → RunPod saver.
+ * 4.2GB SkyReels weights never download to the desktop (~120MB installer only).
+ * Minute metering is done server-side inside /api/generate (source of truth).
  */
 export async function generateLocal(prompt: string, durationSec: number) {
   if (!store.get("activatedToken")) throw new Error("Activate license first");
@@ -208,24 +209,47 @@ export async function generateLocal(prompt: string, durationSec: number) {
   const minutes = Math.max(durationSec / 60, 1 / 60);
   if (store.get("remaining") < minutes) throw new Error("Monthly limit reached — upgrade in dashboard");
 
-  // Pre-check with central (source of truth)
   try {
     await heartbeat();
   } catch (e) {
     if (isOfflineBlocked()) throw e;
-    // allow within grace if heartbeat fails transiently
   }
 
-  // TODO: spawn ComfyUI / SkyReels DF 1.3B when weights present
-  // For now produce a placeholder path so license metering can be tested end-to-end
-  const outPath = `local-stub-${Date.now()}.mp4`;
-  await new Promise((r) => setTimeout(r, 800));
+  const fingerprint = await ensureFingerprint();
+  const res = await fetch(`${getApiBase()}/api/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${store.get("activatedToken")}`,
+    },
+    body: JSON.stringify({
+      prompt,
+      duration: durationSec,
+      fingerprint,
+      engine: "studio",
+    }),
+  });
+  const out = (await res.json()) as {
+    error?: string;
+    r2_url?: string;
+    minutes?: number;
+    remaining?: number;
+    engine?: string;
+    note?: string;
+  };
+  if (!res.ok) throw new Error(out.error || res.statusText);
+  if (!out.r2_url) throw new Error("Saver returned no r2_url");
 
-  await reportUsage(minutes, hashText(outPath), hashText(prompt));
+  store.set("remaining", out.remaining ?? store.get("remaining") - minutes);
+  store.set("usedLocal", store.get("usedLocal") + (out.minutes ?? minutes));
+  store.set("lastHeartbeatAt", Date.now());
+
   return {
-    path: outPath,
-    minutes,
-    engine: "skyreels-v2-1.3b-stub",
-    note: "Weights not installed — stub render. Download SkyReels pack on first real generate.",
+    path: out.r2_url,
+    r2_url: out.r2_url,
+    minutes: out.minutes ?? minutes,
+    remaining: out.remaining ?? store.get("remaining"),
+    engine: out.engine || "SkyReels-V2-DF-1.3B-540P-saver",
+    note: out.note || "Rendered on GPU saver — 0 MB engine on this PC",
   };
 }

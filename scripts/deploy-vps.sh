@@ -126,6 +126,8 @@ set_kv UPLOAD_TMP_DIR $APP_DIR/tmp/uploads
 set_kv MOCK_VIDEO_GEN 0
 set_kv WORKER_CONCURRENCY 8
 set_kv VIDEO_PROVIDER auto
+# Live RunPod GPU saver (SkyReels weights on volume — 0MB to users)
+set_kv RUNPOD_SAVER_URL https://xuvnute41511og-8000.proxy.runpod.net/generate
 mkdir -p $APP_DIR/tmp/uploads
 echo "Isolation:"
 grep -E '^(API_PORT|PORT|REDIS_URL|BULLMQ_PREFIX|NEXT_PUBLIC_API_URL|UPLOAD_TMP_DIR|MOCK_VIDEO_GEN|WORKER_CONCURRENCY)=' .env

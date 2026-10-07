@@ -669,6 +669,8 @@ model StudioUsageLog {
   minutes       Float
   videoHash     String?
   promptHash    String?
+  /// R2 public URL when generated via GPU saver (0MB web / thin desktop)
+  outputUrl     String?
   offlineQueued Boolean  @default(false)
   createdAt     DateTime @default(now())
   license       StudioLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)

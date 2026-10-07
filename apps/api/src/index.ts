@@ -33,6 +33,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { cloneRoutes } from "./routes/clone.js";
 import { ytOsRoutes } from "./routes/yt-os.js";
 import { licenseRoutes } from "./routes/license.js";
+import { studioGenerateRoutes } from "./routes/studio-generate.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";
@@ -128,6 +129,7 @@ async function main() {
   await cloneRoutes(app);
   await ytOsRoutes(app);
   await licenseRoutes(app);
+  await studioGenerateRoutes(app);
 
   await app.listen({ port: PORT, host: HOST });
   app.log.info(`REELSTORM API on http://${HOST}:${PORT}`);

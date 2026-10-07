@@ -113,8 +113,18 @@ export async function generateRoutes(app: FastifyInstance) {
       templateId?: string;
       script?: string;
       vibe?: string;
+      prompt?: string;
+      license_key?: string;
+      fingerprint?: string;
+      duration?: number;
+      engine?: string;
     };
-    if (!body.projectId) return reply.code(400).send({ error: "projectId required" });
+    // Studio saver path (0MB web / 120MB desktop) — same URL, different body
+    const { isStudioGenerateBody, handleStudioGenerate } = await import("./studio-generate.js");
+    if (isStudioGenerateBody(body) || (body.prompt && !body.projectId)) {
+      return handleStudioGenerate(req, reply);
+    }
+    if (!body.projectId) return reply.code(400).send({ error: "projectId required (factory) or prompt (studio saver)" });
     const job = await enqueue("generateVideo", {
       projectId: body.projectId,
       templateId: body.templateId,

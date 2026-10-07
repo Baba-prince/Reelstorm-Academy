@@ -30,8 +30,8 @@ export async function hardwareFingerprint(): Promise<string> {
   }
 
   const macs = Object.values(networkInterfaces())
-    .flat()
-    .filter((n): n is NonNullable<typeof n> => Boolean(n) && !n.internal && Boolean(n.mac))
+    .flatMap((list) => list ?? [])
+    .filter((n) => !n.internal && Boolean(n.mac))
     .map((n) => n.mac)
     .sort()
     .join(",");

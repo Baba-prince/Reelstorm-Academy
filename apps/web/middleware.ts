@@ -42,6 +42,9 @@ const APP_ONLY_PREFIXES = [
   "/scorecard",
   "/admin",
   "/projects",
+  "/generate",
+  "/download",
+  "/settings",
 ];
 
 function isAppPath(pathname: string) {

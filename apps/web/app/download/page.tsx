@@ -82,15 +82,15 @@ function DownloadInner() {
       <MarketingNav variant="solid" />
       <section className="px-5 md:px-8 pt-16 md:pt-24 pb-20">
         <div className="mx-auto max-w-[960px]">
-          <div className="mono text-[11px] text-cyan mb-3">REELSTORM STUDIO · OPTION 2</div>
+          <div className="mono text-[11px] text-cyan mb-3">REELSTORM STUDIO · 120MB THIN · SAVER ENGINE</div>
           <h1 className="display text-[clamp(2.4rem,7vw,4.5rem)] leading-[0.92]">
-            Your GPU.
+            120MB app.
             <br />
-            <span className="text-white/40">Our minutes.</span>
+            <span className="text-white/40">4.2GB stays on saver.</span>
           </h1>
           <p className="mt-5 text-white/55 text-[16px] max-w-[540px] leading-relaxed">
-            Desktop app runs SkyReels V2 on your RTX. License is hardware-locked, heartbeats hourly,
-            and Stripe controls MRR — no perpetual cracked key.
+            Thin desktop (or 0MB web) talks to VPS license control; SkyReels runs on RunPod RTX 4090.
+            Hardware-locked seats, hourly heartbeat, Stripe cancel → block. No video API key.
           </p>
 
           <div className="mt-10 flex flex-wrap gap-3">
@@ -98,8 +98,14 @@ function DownloadInner() {
               href="https://github.com/Beeplus7/Reelstorm-Academy/releases"
               className="h-12 px-6 inline-flex items-center rounded-rs bg-orange text-black font-bold"
             >
-              Download Studio (GitHub Releases)
+              Download Studio (~120MB)
             </a>
+            <Link
+              href="/generate"
+              className="h-12 px-6 inline-flex items-center rounded-rs border border-cyan/40 text-cyan font-medium"
+            >
+              Generate in browser (0MB)
+            </Link>
             <Link
               href="/settings/studio"
               className="h-12 px-6 inline-flex items-center rounded-rs border border-white/20 font-medium"

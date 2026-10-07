@@ -1,11 +1,13 @@
-# SkyReels weights
+# Weights — NOT in the installer
 
-Weights are **not** bundled in the installer (~8GB).
+The desktop app is a **~120MB thin client**. SkyReels V2 DF 1.3B-540P (~4.2GB) lives on the **RunPod saver**:
 
-On first generate, Studio downloads the quantized SkyReels V2 1.3B-540P pack from:
+- Pod: `xuvnute41511og`
+- Path: `/workspace/skyreels-1.3b-4.2GB`
+- Volume: `reelstorm-weights` (70GB)
 
-`STUDIO_WEIGHTS_URL` (default: your R2 public URL)
+Generate always goes:
 
-Verify SHA-256 before extract. Place under:
+`Studio → api.reelstorm.uk/api/generate → RunPod /generate → R2 URL`
 
-`{userData}/weights/skyreels-1.3b/`
+Do **not** download weights onto user PCs. See `docs/FINAL_ARCH_0MB_WEB_120MB_DESKTOP_VIA_SAVER.md`.

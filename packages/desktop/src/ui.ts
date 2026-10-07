@@ -8,7 +8,10 @@ type StudioApi = {
     offlineBlocked: boolean;
   }>;
   activate: (email: string, key: string) => Promise<unknown>;
-  generate: (prompt: string, durationSec: number) => Promise<{ path: string; minutes: number; note?: string }>;
+  generate: (
+    prompt: string,
+    durationSec: number,
+  ) => Promise<{ path: string; r2_url?: string; minutes: number; remaining?: number; note?: string }>;
   openDashboard: () => Promise<void>;
 };
 
@@ -64,7 +67,14 @@ document.getElementById("btnGen")?.addEventListener("click", async () => {
     const dur = Number((document.getElementById("dur") as HTMLInputElement).value || 10);
     const out = await api.generate(prompt, dur);
     msg.className = "ok";
-    msg.textContent = `Done · ${out.minutes.toFixed(2)} min reported · ${out.path}${out.note ? " · " + out.note : ""}`;
+    msg.textContent = `Done · ${out.minutes.toFixed(2)} min · ${out.r2_url || out.path}${out.note ? " · " + out.note : ""}`;
+    if (out.r2_url) {
+      const v = document.getElementById("preview") as HTMLVideoElement | null;
+      if (v) {
+        v.src = out.r2_url;
+        v.classList.remove("hidden");
+      }
+    }
     await refresh();
   } catch (e) {
     msg.className = "err";

@@ -64,7 +64,8 @@ export async function licenseRoutes(app: FastifyInstance) {
   /** Public plan catalog */
   app.get("/api/studio/plans", async () => ({
     plans: Object.values(STUDIO_PLANS),
-    engine: "SkyReels V2 DF 1.3B-540P (user GPU) · Pixabay intros $0 · central minute meter",
+    engine:
+      "SkyReels V2 DF 1.3B-540P on GPU saver (0MB web / 120MB desktop) · Pixabay intros $0 · central minute meter",
   }));
 
   /** Authenticated: list my licenses + devices */
