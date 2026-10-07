@@ -61,7 +61,8 @@ OUTPUT_DIR = Path(
     os.getenv("COMFY_OUTPUT")
     or f"{os.getenv('RUNPOD_VOLUME_PATH', '/workspace')}/ComfyUI/output"
 )
-MOCK = os.getenv("MOCK_GENERATE", "0") == "1"
+# MOCK only when explicitly enabled — SSL/R2 failures must not silently look like success
+MOCK = os.getenv("MOCK_GENERATE", "0") == "1" or os.getenv("ALLOW_MOCK", "0") == "1"
 R2_BUCKET = os.getenv("R2_BUCKET_VIDEOS") or os.getenv("R2_BUCKET") or "reelstorm-videos"
 R2_PUBLIC = (os.getenv("R2_PUBLIC_URL") or "https://videos.reelstorm.uk").rstrip("/")
 POD_ID = os.getenv("RUNPOD_POD_ID", "xuvnute4l51iog")
