@@ -59,8 +59,8 @@ export async function ensureRedis(): Promise<string> {
   const url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 
   try {
-    const IORedis = (await import("ioredis")).default;
-    const probe = new IORedis(url, {
+    const IORedisMod = (await import("ioredis")).default as any;
+    const probe = new IORedisMod(url, {
       maxRetriesPerRequest: 1,
       connectTimeout: 800,
       lazyConnect: true,

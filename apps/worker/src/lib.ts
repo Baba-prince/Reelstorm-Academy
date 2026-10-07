@@ -2,11 +2,14 @@ import IORedis from "ioredis";
 import { prisma } from "@reelstorm/db";
 import type { AnalysisProgress } from "@reelstorm/domain";
 
-let connection: IORedis | null = null;
+// ioredis default export typing breaks under NodeNext — runtime is fine
+const Redis = IORedis as any;
+
+let connection: any = null;
 
 export function redis() {
   if (!connection) {
-    connection = new IORedis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
+    connection = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
       maxRetriesPerRequest: null,
     });
   }
