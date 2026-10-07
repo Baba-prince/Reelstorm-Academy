@@ -68,6 +68,15 @@ export const STUDIO_LICENSE_PREFIX = "RSTUDIO";
 export const STUDIO_ACTIVATED_TOKEN_TTL_SEC = 7 * 24 * 3600; // 7 days
 export const STUDIO_OFFLINE_GRACE_HOURS = 72;
 export const STUDIO_OVERAGE_USD_PER_MIN = 0.1;
+/** Free trial never moves to a second machine — minutes stay on first fingerprint */
+export const STUDIO_FREE_DEVICE_TRANSFERS = 0;
+/** Paid starter may transfer once per billing period after deactivate */
+export const STUDIO_STARTER_DEVICE_TRANSFERS = 1;
+export const STUDIO_MIN_FINGERPRINT_LEN = 16;
+
+export function isDeviceLockedPlan(plan: StudioPlanId): boolean {
+  return plan === "free";
+}
 
 export function studioPlanFromStripePrice(priceId: string): StudioPlanId | null {
   if (!priceId) return null;

@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@reelstorm/db";
 import {
+  assertFingerprintMatch,
+  bindOrRejectDevice,
   parseActivatedToken,
   parseLicenseKey,
   remainingMinutes,
@@ -33,18 +35,19 @@ function saverUrl(): string {
 }
 
 /**
- * Resolve Studio license from:
+ * Resolve Studio license + bind device seat (free trial locked to first fingerprint).
  * 1) activated Bearer token (desktop)
  * 2) RSTUDIO- license_key + fingerprint
- * 3) signed-in user with an active Studio license (web 0MB)
+ * 3) signed-in user + browser fingerprint (web 0MB)
  */
 async function resolveStudioLicense(req: FastifyRequest, body: GenBody) {
   const fingerprint = (body.fingerprint || "").trim().toLowerCase();
   const activated = parseActivatedToken(req.headers.authorization || "");
 
   if (activated) {
-    if (fingerprint && fingerprint !== activated.fingerprint) {
-      return { error: "Fingerprint mismatch", status: 403 as const };
+    if (fingerprint) {
+      const err = assertFingerprintMatch(activated.fingerprint, fingerprint);
+      if (err) return { error: err.error, status: err.status as 403, code: err.code };
     }
     let license = await prisma.studioLicense.findUnique({ where: { id: activated.licenseId } });
     if (!license) return { error: "License missing", status: 401 as const };
@@ -57,15 +60,34 @@ async function resolveStudioLicense(req: FastifyRequest, body: GenBody) {
         revoked: false,
       },
     });
-    if (!device) return { error: "Device revoked or unknown", status: 403 as const };
+    if (!device) {
+      return {
+        error: "Device revoked or unknown — free trial cannot burn on a new machine",
+        status: 403 as const,
+        code: "device_change_detected",
+      };
+    }
+    // Re-assert lock (covers admin unlock edge cases)
+    if (license.lockedFingerprint && license.lockedFingerprint !== activated.fingerprint) {
+      return {
+        error: "Device change detected — license locked to another machine",
+        status: 403 as const,
+        code: "free_trial_locked",
+      };
+    }
     return { license, deviceId: device.id, fingerprint: activated.fingerprint };
+  }
+
+  if (!fingerprint || fingerprint.length < 16) {
+    return {
+      error: "Stable device fingerprint required (min 16 chars) — regenerating browser storage won't unlock a new free trial",
+      status: 400 as const,
+      code: "fingerprint_invalid",
+    };
   }
 
   const licenseKey = (body.license_key || "").trim();
   if (licenseKey) {
-    if (!fingerprint || fingerprint.length < 8) {
-      return { error: "fingerprint required with license_key", status: 400 as const };
-    }
     const payload = parseLicenseKey(licenseKey);
     if (!payload) return { error: "Invalid or expired license key", status: 401 as const };
     let license = await prisma.studioLicense.findUnique({ where: { keyHash: sha256Hex(licenseKey) } });
@@ -74,10 +96,18 @@ async function resolveStudioLicense(req: FastifyRequest, body: GenBody) {
       return { error: "License key was regenerated", status: 401 as const };
     }
     license = (await resetBillingPeriodIfNeeded(license.id)) || license;
-    return { license, deviceId: null as string | null, fingerprint };
+    const bound = await bindOrRejectDevice({
+      licenseId: license.id,
+      fingerprint,
+      deviceName: "Web / thin client",
+    });
+    if (!bound.ok) {
+      return { error: bound.error, status: bound.status, code: bound.code };
+    }
+    return { license: bound.license, deviceId: bound.device.id, fingerprint };
   }
 
-  // Web session: use first active license for signed-in user
+  // Web session: bind browser fingerprint to seat (same free-trial lock)
   const user = await resolveUserFromAuthHeader(req.headers.authorization);
   if (user) {
     let license = await prisma.studioLicense.findFirst({
@@ -91,11 +121,15 @@ async function resolveStudioLicense(req: FastifyRequest, body: GenBody) {
       };
     }
     license = (await resetBillingPeriodIfNeeded(license.id)) || license;
-    return {
-      license,
-      deviceId: null as string | null,
-      fingerprint: fingerprint || `web:${user.id}`,
-    };
+    const bound = await bindOrRejectDevice({
+      licenseId: license.id,
+      fingerprint,
+      deviceName: "Web browser",
+    });
+    if (!bound.ok) {
+      return { error: bound.error, status: bound.status, code: bound.code };
+    }
+    return { license: bound.license, deviceId: bound.device.id, fingerprint };
   }
 
   return { error: "license_key + fingerprint, activated token, or sign-in required", status: 401 as const };

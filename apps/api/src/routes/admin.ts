@@ -222,6 +222,42 @@ export async function adminRoutes(app: FastifyInstance) {
     };
   });
 
+  /**
+   * POST /api/admin/studio-licenses/:id/unlock-device
+   * Support-only: clear free-trial device lock so user can activate a replacement machine.
+   * Does NOT restore burned minutes.
+   */
+  app.post("/api/admin/studio-licenses/:id/unlock-device", async (req, reply) => {
+    const gate = await requireAdmin(req.headers.authorization);
+    if (!gate.ok) return reply.code(gate.status).send({ error: gate.error });
+    const { id } = req.params as { id: string };
+    const body = (req.body || {}) as { revokeDevices?: boolean };
+    await prisma.studioDevice.updateMany({
+      where: { licenseId: id },
+      data: { revoked: true, activatedTokenHash: null },
+    });
+    const license = await prisma.studioLicense.update({
+      where: { id },
+      data: {
+        lockedFingerprint: null,
+        deviceTransferCount: 0,
+      },
+    });
+    return {
+      ok: true,
+      license: {
+        id: license.id,
+        plan: license.plan,
+        lockedFingerprint: null,
+        deviceTransferCount: 0,
+      },
+      warning:
+        body.revokeDevices === false
+          ? "Lock cleared"
+          : "Lock cleared + all devices revoked — user must re-activate. Minutes unchanged.",
+    };
+  });
+
   /** GET /api/admin/users?q=&limit= */
   app.get("/api/admin/users", async (req, reply) => {
     const gate = await requireAdmin(req.headers.authorization);

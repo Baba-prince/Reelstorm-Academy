@@ -630,6 +630,10 @@ model StudioLicense {
   monthlyLimit         Int
   usedThisMonth        Float               @default(0)
   devicesAllowed       Int                 @default(1)
+  /// First activated hardware fingerprint — free trial is locked to this device
+  lockedFingerprint    String?
+  /// How many times a NEW fingerprint was approved (paid plans only; free stays 0)
+  deviceTransferCount  Int                 @default(0)
   stripeSubscriptionId String?
   stripePriceId        String?
   status               StudioLicenseStatus @default(active)
@@ -644,6 +648,7 @@ model StudioLicense {
 
   @@index([userId, status])
   @@index([stripeSubscriptionId])
+  @@index([lockedFingerprint])
 }
 
 model StudioDevice {

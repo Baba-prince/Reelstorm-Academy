@@ -3,12 +3,15 @@ import { prisma } from "@reelstorm/db";
 import {
   STUDIO_OFFLINE_GRACE_HOURS,
   STUDIO_PLANS,
+  isDeviceLockedPlan,
   type StudioPlanId,
   maskStudioKey,
   stripePriceForStudioPlan,
 } from "@reelstorm/domain";
 import { resolveUserFromAuthHeader } from "./auth.js";
 import {
+  assertFingerprintMatch,
+  bindOrRejectDevice,
   issueStudioLicense,
   mintActivatedToken,
   parseActivatedToken,
@@ -43,7 +46,10 @@ function publicLicense(lic: {
   keyPrefix: string;
   expiresAt: Date | null;
   periodStart: Date;
+  lockedFingerprint?: string | null;
+  deviceTransferCount?: number;
 }) {
+  const plan = lic.plan as StudioPlanId;
   return {
     id: lic.id,
     plan: lic.plan,
@@ -57,6 +63,9 @@ function publicLicense(lic: {
     expiresAt: lic.expiresAt,
     periodStart: lic.periodStart,
     offlineGraceHours: STUDIO_OFFLINE_GRACE_HOURS,
+    deviceLocked: isDeviceLockedPlan(plan),
+    lockedFingerprint: lic.lockedFingerprint ? lic.lockedFingerprint.slice(0, 8) + "…" : null,
+    deviceTransferCount: lic.deviceTransferCount ?? 0,
   };
 }
 
@@ -168,29 +177,23 @@ export async function licenseRoutes(app: FastifyInstance) {
     }
 
     license = (await resetBillingPeriodIfNeeded(license.id)) as typeof license;
-    license = await prisma.studioLicense.findUniqueOrThrow({
-      where: { id: license.id },
-      include: { user: true, devices: { where: { revoked: false } } },
-    });
 
-    const existing = license.devices.find((d) => d.fingerprint === fingerprint);
-    if (!existing && license.devices.length >= license.devicesAllowed) {
-      return reply.code(403).send({
-        error: "Device limit reached — deactivate a device in app.reelstorm.uk/settings/studio",
+    const bound = await bindOrRejectDevice({
+      licenseId: license.id,
+      fingerprint,
+      deviceName: body.device_name || "Studio PC",
+    });
+    if (!bound.ok) {
+      return reply.code(bound.status).send({
+        error: bound.error,
+        code: bound.code,
+        lockedFingerprint: bound.lockedFingerprint,
         devicesAllowed: license.devicesAllowed,
+        plan: license.plan,
       });
     }
 
-    let device =
-      existing ||
-      (await prisma.studioDevice.create({
-        data: {
-          licenseId: license.id,
-          fingerprint,
-          deviceName: (body.device_name || "Studio PC").slice(0, 80),
-        },
-      }));
-
+    let device = bound.device;
     const { token, tokenHash } = mintActivatedToken({
       licenseId: license.id,
       deviceId: device.id,
@@ -208,11 +211,16 @@ export async function licenseRoutes(app: FastifyInstance) {
       },
     });
 
+    const fresh = await prisma.studioLicense.findUniqueOrThrow({ where: { id: license.id } });
     return {
       activated_token: token,
-      license: publicLicense(license),
+      license: publicLicense(fresh),
       device: { id: device.id, deviceName: device.deviceName },
-      message: "Activated — store activated_token in OS keychain only; full license key is not retained",
+      deviceLocked: isDeviceLockedPlan(fresh.plan as StudioPlanId),
+      isNewDevice: bound.isNewDevice,
+      message: bound.isNewDevice
+        ? "Activated on this machine — free trial stays locked here"
+        : "Activated — store activated_token in OS keychain only; full license key is not retained",
     };
   });
 
@@ -269,9 +277,8 @@ export async function licenseRoutes(app: FastifyInstance) {
     if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 120) {
       return reply.code(400).send({ error: "minutes must be 0–120" });
     }
-    if (body.fingerprint && body.fingerprint !== activated.fingerprint) {
-      return reply.code(403).send({ error: "Fingerprint mismatch" });
-    }
+    const fpErr = assertFingerprintMatch(activated.fingerprint, body.fingerprint);
+    if (fpErr) return reply.code(fpErr.status).send({ error: fpErr.error, code: fpErr.code });
 
     let license = await prisma.studioLicense.findUnique({ where: { id: activated.licenseId } });
     if (!license) return reply.code(401).send({ error: "License missing" });
@@ -279,6 +286,21 @@ export async function licenseRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: `License ${license.status}` });
     }
     license = (await resetBillingPeriodIfNeeded(license.id)) || license;
+
+    const device = await prisma.studioDevice.findFirst({
+      where: {
+        id: activated.deviceId,
+        licenseId: license.id,
+        fingerprint: activated.fingerprint,
+        revoked: false,
+      },
+    });
+    if (!device) {
+      return reply.code(403).send({
+        error: "Device revoked or unknown — free trial cannot burn on a new machine",
+        code: "device_change_detected",
+      });
+    }
 
     const rem = remainingMinutes(license);
     if (rem <= 0) {
@@ -345,9 +367,15 @@ export async function licenseRoutes(app: FastifyInstance) {
         revoked: false,
       },
     });
-    if (!device) return reply.code(403).send({ error: "Device revoked" });
-    if (body.fingerprint && body.fingerprint !== activated.fingerprint) {
-      return reply.code(403).send({ error: "Fingerprint mismatch" });
+    if (!device) {
+      return reply.code(403).send({
+        error: "Device revoked — activate again on the original machine",
+        code: "device_change_detected",
+      });
+    }
+    if (body.fingerprint) {
+      const err = assertFingerprintMatch(activated.fingerprint, body.fingerprint);
+      if (err) return reply.code(err.status).send({ error: err.error, code: err.code });
     }
 
     // Optional Stripe subscription liveness check
@@ -406,7 +434,7 @@ export async function licenseRoutes(app: FastifyInstance) {
     };
   });
 
-  /** Deactivate a device (frees slot) */
+  /** Deactivate a device (frees active slot — free trial stays fingerprint-locked) */
   app.post("/api/license/devices/:id/deactivate", async (req, reply) => {
     const user = await resolveUserFromAuthHeader(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: "Sign in required" });
@@ -422,7 +450,21 @@ export async function licenseRoutes(app: FastifyInstance) {
       where: { id },
       data: { revoked: true, activatedTokenHash: null },
     });
-    return { ok: true };
+    // Ensure lockedFingerprint remains so free trial cannot hop machines
+    if (!device.license.lockedFingerprint) {
+      await prisma.studioLicense.update({
+        where: { id: device.licenseId },
+        data: { lockedFingerprint: device.fingerprint },
+      });
+    }
+    const locked = isDeviceLockedPlan(device.license.plan as StudioPlanId);
+    return {
+      ok: true,
+      deviceLocked: locked,
+      warning: locked
+        ? "Device signed out — free trial is still locked to this machine. Upgrade to move."
+        : "Device deactivated — you may activate another seat within your plan limit",
+    };
   });
 
   /** Regenerate license key (invalidates old JWT version) */

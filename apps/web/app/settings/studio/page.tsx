@@ -25,6 +25,9 @@ type License = {
   keyPrefix: string;
   maskedKey: string;
   expiresAt: string | null;
+  deviceLocked?: boolean;
+  lockedFingerprint?: string | null;
+  deviceTransferCount?: number;
   devices: Device[];
 };
 
@@ -120,7 +123,8 @@ function StudioSettingsInner() {
         </Link>
         <h1 className="display text-4xl mt-4 mb-2">Studio license</h1>
         <p className="text-white/50 text-sm mb-8">
-          Hardware-locked seats · central minute meter · full key never stored after activation.
+          Hardware-locked seats · free trial stays on the first machine · central minute meter · key
+          never stored after activation.
         </p>
 
         {msg && <div className="mb-4 text-cyan text-sm">{msg}</div>}
@@ -168,9 +172,19 @@ function StudioSettingsInner() {
                 </div>
               </div>
 
+              {l.deviceLocked && (
+                <p className="mt-3 text-[12px] text-orange/90 border border-orange/25 rounded-rs px-3 py-2">
+                  Free trial locked to device {l.lockedFingerprint || "first activated"}. Signing out
+                  does not unlock another PC — upgrade Studio to transfer seats.
+                </p>
+              )}
+
               <div className="mt-5">
                 <div className="text-[12px] text-white/40 mb-2">
                   Devices ({l.devices.length}/{l.devicesAllowed})
+                  {typeof l.deviceTransferCount === "number" && l.deviceTransferCount > 0
+                    ? ` · transfers used ${l.deviceTransferCount}`
+                    : ""}
                 </div>
                 <ul className="space-y-2">
                   {l.devices.map((d) => (

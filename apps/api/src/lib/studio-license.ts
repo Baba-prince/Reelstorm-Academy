@@ -2,8 +2,12 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { prisma } from "@reelstorm/db";
 import {
   STUDIO_ACTIVATED_TOKEN_TTL_SEC,
+  STUDIO_FREE_DEVICE_TRANSFERS,
   STUDIO_LICENSE_PREFIX,
+  STUDIO_MIN_FINGERPRINT_LEN,
   STUDIO_PLANS,
+  STUDIO_STARTER_DEVICE_TRANSFERS,
+  isDeviceLockedPlan,
   type StudioPlanId,
   maskStudioKey,
 } from "@reelstorm/domain";
@@ -237,7 +241,189 @@ export async function resetBillingPeriodIfNeeded(licenseId: string) {
       usedThisMonth: 0,
       periodStart: new Date(),
       expiresAt: next,
+      // Starter gets one transfer budget refreshed with the billing period
+      deviceTransferCount: lic.plan === "starter" ? 0 : lic.deviceTransferCount,
       status: lic.status === "limit_reached" ? "active" : lic.status,
     },
   });
+}
+
+export type DeviceBindError = {
+  ok: false;
+  status: 400 | 403;
+  error: string;
+  code:
+    | "fingerprint_invalid"
+    | "device_change_detected"
+    | "device_limit"
+    | "free_trial_locked"
+    | "transfer_exhausted";
+  lockedFingerprint?: string;
+};
+
+export type DeviceBindOk = {
+  ok: true;
+  device: {
+    id: string;
+    fingerprint: string;
+    deviceName: string | null;
+    revoked: boolean;
+  };
+  license: Awaited<ReturnType<typeof prisma.studioLicense.findUniqueOrThrow>>;
+  isNewDevice: boolean;
+};
+
+function normalizeFingerprint(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+function maxTransfersForPlan(plan: StudioPlanId): number {
+  if (isDeviceLockedPlan(plan)) return STUDIO_FREE_DEVICE_TRANSFERS;
+  if (plan === "starter") return STUDIO_STARTER_DEVICE_TRANSFERS;
+  // pro+ : transfers = devicesAllowed - 1 (can rotate within seat count via deactivate)
+  return 99;
+}
+
+/**
+ * Bind fingerprint to license seat.
+ * Free trial: permanently locked to first fingerprint (even after deactivate).
+ * Detects device change and refuses to burn minutes on a new machine.
+ */
+export async function bindOrRejectDevice(opts: {
+  licenseId: string;
+  fingerprint: string;
+  deviceName?: string;
+}): Promise<DeviceBindOk | DeviceBindError> {
+  const fingerprint = normalizeFingerprint(opts.fingerprint);
+  if (!fingerprint || fingerprint.length < STUDIO_MIN_FINGERPRINT_LEN) {
+    return {
+      ok: false,
+      status: 400,
+      error: `fingerprint required (min ${STUDIO_MIN_FINGERPRINT_LEN} chars)`,
+      code: "fingerprint_invalid",
+    };
+  }
+
+  let license = await prisma.studioLicense.findUniqueOrThrow({
+    where: { id: opts.licenseId },
+    include: { devices: true },
+  });
+  const plan = license.plan as StudioPlanId;
+
+  const sameFp = license.devices.find((d) => d.fingerprint === fingerprint);
+  if (sameFp && !sameFp.revoked) {
+    return { ok: true, device: sameFp, license, isNewDevice: false };
+  }
+
+  // Re-activate previously revoked same fingerprint (same machine) — always OK
+  if (sameFp && sameFp.revoked) {
+    const device = await prisma.studioDevice.update({
+      where: { id: sameFp.id },
+      data: {
+        revoked: false,
+        lastSeenAt: new Date(),
+        deviceName: (opts.deviceName || sameFp.deviceName || "Studio").slice(0, 80),
+      },
+    });
+    if (!license.lockedFingerprint) {
+      license = await prisma.studioLicense.update({
+        where: { id: license.id },
+        data: { lockedFingerprint: fingerprint },
+        include: { devices: true },
+      });
+    }
+    return { ok: true, device, license, isNewDevice: false };
+  }
+
+  // NEW fingerprint
+  if (license.lockedFingerprint && license.lockedFingerprint !== fingerprint) {
+    if (isDeviceLockedPlan(plan)) {
+      return {
+        ok: false,
+        status: 403,
+        error:
+          "Device change detected — free trial is locked to the first activated machine. Upgrade Studio to move seats.",
+        code: "free_trial_locked",
+        lockedFingerprint: license.lockedFingerprint.slice(0, 8) + "…",
+      };
+    }
+    const maxT = maxTransfersForPlan(plan);
+    if (license.deviceTransferCount >= maxT) {
+      return {
+        ok: false,
+        status: 403,
+        error: "Device transfer limit reached for this billing period — wait for renewal or upgrade",
+        code: "transfer_exhausted",
+        lockedFingerprint: license.lockedFingerprint.slice(0, 8) + "…",
+      };
+    }
+  }
+
+  // Also lock free if ANY historical device exists with different fingerprint
+  if (isDeviceLockedPlan(plan) && license.devices.some((d) => d.fingerprint !== fingerprint)) {
+    return {
+      ok: false,
+      status: 403,
+      error:
+        "Device change detected — free trial minutes stay on the original device. Upgrade to transfer.",
+      code: "device_change_detected",
+      lockedFingerprint: (license.lockedFingerprint || license.devices[0]?.fingerprint || "").slice(0, 8) + "…",
+    };
+  }
+
+  const activeCount = license.devices.filter((d) => !d.revoked).length;
+  if (activeCount >= license.devicesAllowed) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Device limit reached — deactivate a seat in /settings/studio (free trial cannot add another)",
+      code: "device_limit",
+    };
+  }
+
+  const isTransfer =
+    Boolean(license.lockedFingerprint) && license.lockedFingerprint !== fingerprint;
+
+  const device = await prisma.studioDevice.create({
+    data: {
+      licenseId: license.id,
+      fingerprint,
+      deviceName: (opts.deviceName || "Studio").slice(0, 80),
+    },
+  });
+
+  license = await prisma.studioLicense.update({
+    where: { id: license.id },
+    data: {
+      lockedFingerprint: license.lockedFingerprint || fingerprint,
+      deviceTransferCount: isTransfer ? license.deviceTransferCount + 1 : license.deviceTransferCount,
+    },
+    include: { devices: true },
+  });
+
+  return { ok: true, device, license, isNewDevice: true };
+}
+
+/** Require fingerprint match on every metered action */
+export function assertFingerprintMatch(
+  expected: string,
+  provided: string | undefined,
+): DeviceBindError | null {
+  if (!provided) {
+    return {
+      ok: false,
+      status: 400,
+      error: "fingerprint required — device change cannot be verified",
+      code: "fingerprint_invalid",
+    };
+  }
+  if (normalizeFingerprint(provided) !== normalizeFingerprint(expected)) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Device change detected — fingerprint mismatch. Re-activate on this machine or upgrade.",
+      code: "device_change_detected",
+    };
+  }
+  return null;
 }
