@@ -20,6 +20,19 @@ type Overview = {
     introsCached: number;
     vouchersOpen: number;
     vouchersRedeemed: number;
+    studioLicenses?: number;
+    studioActive?: number;
+    studioDevices?: number;
+    studioMinutesUsed?: number;
+    cloneJobs?: number;
+    ytScripts?: number;
+  };
+  systemBank?: {
+    total: number;
+    remaining: number;
+    used: number;
+    costBasis: number;
+    funnelHint?: string;
   };
   tiers: Record<string, number>;
   recentLedger: Array<{
@@ -30,6 +43,22 @@ type Overview = {
     email: string | null;
     createdAt: string;
   }>;
+};
+
+type StudioLicenseRow = {
+  id: string;
+  email: string;
+  name: string | null;
+  plan: string;
+  status: string;
+  keyPrefix: string;
+  monthlyLimit: number;
+  usedThisMonth: number;
+  remaining: number;
+  devicesAllowed: number;
+  devices: Array<{ id: string; deviceName: string | null; lastSeenAt: string }>;
+  expiresAt: string | null;
+  createdAt: string;
 };
 
 type AdminUser = {
@@ -69,10 +98,12 @@ function AdminInner() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [studioLicenses, setStudioLicenses] = useState<StudioLicenseRow[]>([]);
   const [q, setQ] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [studioPlaintext, setStudioPlaintext] = useState<string | null>(null);
 
   const [giftEmail, setGiftEmail] = useState("");
   const [giftAmount, setGiftAmount] = useState("50");
@@ -80,6 +111,8 @@ function AdminInner() {
   const [voucherAmount, setVoucherAmount] = useState("25");
   const [voucherNote, setVoucherNote] = useState("");
   const [voucherDays, setVoucherDays] = useState("30");
+  const [studioEmail, setStudioEmail] = useState("");
+  const [studioPlan, setStudioPlan] = useState("pro");
 
   const headers = useCallback((): HeadersInit => {
     const h: Record<string, string> = { "Content-Type": "application/json" };
@@ -90,12 +123,13 @@ function AdminInner() {
   const loadAll = useCallback(async () => {
     if (!token) return;
     setErr("");
-    const [oRes, uRes, vRes] = await Promise.all([
+    const [oRes, uRes, vRes, sRes] = await Promise.all([
       fetch(`${getApiBase()}/api/admin/overview`, { headers: headers() }),
       fetch(`${getApiBase()}/api/admin/users?limit=80${q ? `&q=${encodeURIComponent(q)}` : ""}`, {
         headers: headers(),
       }),
       fetch(`${getApiBase()}/api/admin/vouchers`, { headers: headers() }),
+      fetch(`${getApiBase()}/api/admin/studio-licenses`, { headers: headers() }),
     ]);
     if (oRes.status === 401 || oRes.status === 403) {
       setErr("Admin access denied — this console is locked to the Captain email.");
@@ -115,6 +149,10 @@ function AdminInner() {
     if (vRes.ok) {
       const vj = await vRes.json();
       setVouchers(vj.vouchers || []);
+    }
+    if (sRes.ok) {
+      const sj = await sRes.json();
+      setStudioLicenses(sj.licenses || []);
     }
   }, [token, headers, q]);
 
@@ -198,6 +236,73 @@ function AdminInner() {
     }
   }
 
+  async function issueStudio(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg("");
+    setErr("");
+    setStudioPlaintext(null);
+    try {
+      const res = await fetch(`${getApiBase()}/api/admin/studio-licenses/issue`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ email: studioEmail.trim(), plan: studioPlan }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Issue failed");
+      setStudioPlaintext(j.plaintextKey || null);
+      setMsg(`Studio ${j.license.plan} issued → ${j.email} (${j.license.keyPrefix})`);
+      setStudioEmail("");
+      await loadAll();
+    } catch (ex) {
+      setErr((ex as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revokeStudio(id: string) {
+    if (!confirm("Revoke this Studio license and all devices?")) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch(`${getApiBase()}/api/admin/studio-licenses/${id}/revoke`, {
+        method: "POST",
+        headers: headers(),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Revoke failed");
+      setMsg(`License revoked: ${id.slice(0, 8)}…`);
+      await loadAll();
+    } catch (ex) {
+      setErr((ex as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function regenStudio(id: string) {
+    if (!confirm("Regenerate key? Old keys and device tokens stop working.")) return;
+    setBusy(true);
+    setErr("");
+    setStudioPlaintext(null);
+    try {
+      const res = await fetch(`${getApiBase()}/api/admin/studio-licenses/${id}/regenerate`, {
+        method: "POST",
+        headers: headers(),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Regenerate failed");
+      setStudioPlaintext(j.plaintextKey || null);
+      setMsg("New Studio key minted — copy now");
+      await loadAll();
+    } catch (ex) {
+      setErr((ex as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) {
     return <div className="mono text-cyan text-sm">Loading session…</div>;
   }
@@ -238,10 +343,11 @@ function AdminInner() {
     <div className="space-y-8 max-w-6xl">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="mono text-[10px] text-cyan tracking-[0.2em]">CAPTAIN // SYSTEM OS</div>
+          <div className="mono text-[10px] text-cyan tracking-[0.2em]">CAPTAIN // STORM OS · YT-OS · STUDIO</div>
           <h1 className="display text-3xl md:text-4xl mt-1">Admin dashboard</h1>
           <p className="text-white/50 text-sm mt-2">
             Locked to <span className="mono text-cyan">{overview?.lockedTo || DEFAULT_ADMIN_EMAIL}</span>
+            {" · "}gifts · vouchers · Studio licenses · SystemBank
           </p>
         </div>
         <button
@@ -266,17 +372,49 @@ function AdminInner() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label="Registered users" value={s?.registeredUsers ?? "—"} />
         <Stat
-          label="System RTC balance"
+          label="Wallet RTC pool"
           value={s?.systemBalanceRtc ?? "—"}
-          sub={s ? `${s.systemArchive5Remaining} ARCHIVE5 sets · ${s.rtcPerArchive5} RTC/set` : undefined}
+          sub={s ? `${s.systemArchive5Remaining} ARCHIVE5 · ${s.rtcPerArchive5} RTC/set` : undefined}
+        />
+        <Stat
+          label="SystemBank demos"
+          value={overview?.systemBank ? `${overview.systemBank.remaining}` : "—"}
+          sub={
+            overview?.systemBank
+              ? `${overview.systemBank.used} used / ${overview.systemBank.total} · $${overview.systemBank.costBasis}/RTC basis`
+              : undefined
+          }
+        />
+        <Stat
+          label="Pixabay intros"
+          value={s?.introsCached ?? "—"}
+          sub={s ? `Clone jobs ${s.cloneJobs ?? 0} · YT scripts ${s.ytScripts ?? 0}` : undefined}
+        />
+        <Stat
+          label="Studio licenses"
+          value={s?.studioLicenses ?? "—"}
+          sub={
+            s
+              ? `${s.studioActive ?? 0} active · ${s.studioDevices ?? 0} devices · ${Math.round(s.studioMinutesUsed ?? 0)} min used`
+              : undefined
+          }
         />
         <Stat label="Projects" value={s?.projects ?? "—"} />
         <Stat
-          label="Intro cache"
-          value={s?.introsCached ?? "—"}
-          sub={s ? `Vouchers open ${s.vouchersOpen} · redeemed ${s.vouchersRedeemed}` : undefined}
+          label="Vouchers"
+          value={s?.vouchersOpen ?? "—"}
+          sub={s ? `${s.vouchersRedeemed} redeemed` : undefined}
+        />
+        <Stat
+          label="Lifetime in / out"
+          value={`${s?.lifetimeInRtc ?? 0}`}
+          sub={`out ${s?.lifetimeOutRtc ?? 0}`}
         />
       </div>
+
+      {overview?.systemBank?.funnelHint && (
+        <p className="mono text-[10px] text-white/35">{overview.systemBank.funnelHint}</p>
+      )}
 
       {overview?.tiers && (
         <div className="flex flex-wrap gap-2">
@@ -285,13 +423,27 @@ function AdminInner() {
               {tier}: {n}
             </span>
           ))}
-          <span className="mono text-[10px] px-2.5 py-1 rounded-full border border-white/10 text-white/40">
-            lifetime in {s?.lifetimeInRtc ?? 0} · out {s?.lifetimeOutRtc ?? 0}
-          </span>
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      {studioPlaintext && (
+        <div className="rounded-rs border border-orange/40 bg-orange/10 p-4">
+          <div className="mono text-[10px] text-orange mb-2">STUDIO KEY — COPY ONCE</div>
+          <code className="text-[11px] break-all select-all">{studioPlaintext}</code>
+          <button
+            type="button"
+            className="mt-2 block text-xs text-white/50 hover:text-white"
+            onClick={() => {
+              void navigator.clipboard.writeText(studioPlaintext);
+              setMsg("Studio key copied");
+            }}
+          >
+            Copy to clipboard
+          </button>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-3 gap-6">
         <form onSubmit={giftCredits} className="rounded-rs border border-white/10 bg-white/[0.02] p-5 space-y-3">
           <h2 className="display text-xl">Gift RTC credits</h2>
           <p className="text-white/45 text-xs">Direct wallet credit to a registered (or new) user email.</p>
@@ -362,7 +514,106 @@ function AdminInner() {
             Mint voucher
           </button>
         </form>
+
+        <form onSubmit={issueStudio} className="rounded-rs border border-cyan/20 bg-cyan/5 p-5 space-y-3">
+          <h2 className="display text-xl">Issue Studio license</h2>
+          <p className="text-white/45 text-xs">
+            Desktop Option 2 — user GPU · central minutes. Key shown once.
+          </p>
+          <input
+            className="w-full h-10 px-3 rounded-rs bg-void border border-white/10 text-sm"
+            placeholder="user@email.com"
+            value={studioEmail}
+            onChange={(e) => setStudioEmail(e.target.value)}
+            required
+          />
+          <select
+            className="w-full h-10 px-3 rounded-rs bg-void border border-white/10 text-sm"
+            value={studioPlan}
+            onChange={(e) => setStudioPlan(e.target.value)}
+          >
+            {["free", "starter", "pro", "agency", "unlimited"].map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={busy}
+            className="h-10 px-4 rounded-rs bg-cyan text-black text-sm font-semibold disabled:opacity-50"
+          >
+            Issue license
+          </button>
+        </form>
       </div>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="display text-xl">Studio licenses</h2>
+          <Link href="/download" className="mono text-[10px] text-cyan hover:underline">
+            /download →
+          </Link>
+        </div>
+        <div className="overflow-x-auto rounded-rs border border-white/10">
+          <table className="w-full text-left text-sm">
+            <thead className="mono text-[9px] text-white/40 border-b border-white/10">
+              <tr>
+                <th className="px-3 py-2">User</th>
+                <th className="px-3 py-2">Plan</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Minutes</th>
+                <th className="px-3 py-2">Devices</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studioLicenses.map((l) => (
+                <tr key={l.id} className="border-b border-white/[0.06]">
+                  <td className="px-3 py-2">
+                    <div className="font-medium">{l.name || "—"}</div>
+                    <div className="mono text-[10px] text-white/45">{l.email}</div>
+                    <div className="mono text-[9px] text-white/30">{l.keyPrefix}</div>
+                  </td>
+                  <td className="px-3 py-2 mono text-[11px] capitalize">{l.plan}</td>
+                  <td className="px-3 py-2 mono text-[11px] text-cyan">{l.status}</td>
+                  <td className="px-3 py-2 mono text-[11px]">
+                    {Math.round(l.remaining * 10) / 10}/{l.monthlyLimit}
+                  </td>
+                  <td className="px-3 py-2 mono text-[11px]">
+                    {l.devices.length}/{l.devicesAllowed}
+                  </td>
+                  <td className="px-3 py-2 space-x-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void regenStudio(l.id)}
+                      className="text-[11px] text-cyan hover:underline"
+                    >
+                      Regen
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || l.status === "revoked"}
+                      onClick={() => void revokeStudio(l.id)}
+                      className="text-[11px] text-orange hover:underline"
+                    >
+                      Revoke
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!studioLicenses.length && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-white/40 text-center">
+                    No Studio licenses yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-3 justify-between">

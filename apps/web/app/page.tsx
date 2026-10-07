@@ -34,16 +34,16 @@ export default function LandingPage() {
                   {t("marketing.ctaForge")}
                 </Link>
                 <Link
+                  href="/download"
+                  className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-cyan/40 text-cyan font-medium text-[14px] md:text-[15px] hover:bg-cyan/10 transition"
+                >
+                  {t("marketing.ctaStudio")}
+                </Link>
+                <Link
                   href="/tools/clone"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-white/20 text-white font-medium text-[14px] md:text-[15px] hover:bg-white/[0.05] transition"
                 >
                   {t("marketing.ctaClone")}
-                </Link>
-                <Link
-                  href="/training"
-                  className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-white/20 text-white font-medium text-[14px] md:text-[15px] hover:bg-white/[0.05] transition"
-                >
-                  {t("marketing.ctaTraining")}
                 </Link>
               </div>
             </div>
@@ -174,6 +174,62 @@ export default function LandingPage() {
             >
               {t("marketing.cloneCta")}
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ReelStorm Studio */}
+      <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan/10 via-transparent to-orange/10" />
+        <div className="relative mx-auto max-w-[1280px] grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div>
+            <div className="mono text-[11px] text-cyan mb-3">{t("marketing.studioEyebrow")}</div>
+            <h2 className="display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95]">
+              {t("marketing.studioTitle")}
+              <br />
+              <span className="text-white/40">{t("marketing.studioTitleMuted")}</span>
+            </h2>
+            <p className="mt-4 text-white/55 text-[15px] leading-relaxed max-w-[420px]">
+              {t("marketing.studioBody")}
+            </p>
+            <Link
+              href="/download"
+              className="mt-8 inline-flex h-12 px-6 items-center rounded-rs bg-cyan text-black font-bold text-[14px]"
+            >
+              {t("marketing.studioCta")}
+            </Link>
+          </div>
+          <div className="relative aspect-[4/3] rounded-rs-xl border border-white/[0.08] bg-[#0A0A0A] overflow-hidden">
+            <svg viewBox="0 0 480 360" className="w-full h-full" aria-hidden>
+              <rect width="480" height="360" fill="#0A0A0A" />
+              <text x="32" y="48" fill="#00D9FF" fontSize="11" fontFamily="monospace" letterSpacing="2">
+                RTX LOCAL · CENTRAL METER · HEARTBEAT
+              </text>
+              {[
+                { y: 90, label: "ACTIVATE LICENSE", w: 220 },
+                { y: 140, label: "SKYREELS ON YOUR GPU", w: 280 },
+                { y: 190, label: "REPORT MINUTES → API", w: 260 },
+                { y: 240, label: "CANCEL STRIPE → BLOCK", w: 250 },
+              ].map((row, i) => (
+                <g key={row.label}>
+                  <rect
+                    x="32"
+                    y={row.y}
+                    width={row.w}
+                    height="36"
+                    rx="8"
+                    fill="#151515"
+                    stroke={i === 1 ? "#00D9FF" : "rgba(255,255,255,0.1)"}
+                  />
+                  <text x="48" y={row.y + 23} fill="rgba(255,255,255,0.75)" fontSize="12" fontFamily="monospace">
+                    {row.label}
+                  </text>
+                </g>
+              ))}
+              <text x="32" y="330" fill="rgba(255,255,255,0.35)" fontSize="10" fontFamily="monospace">
+                $0 GPU COGS TO REELSTORM · MRR INTACT
+              </text>
+            </svg>
           </div>
         </div>
       </section>
@@ -326,6 +382,9 @@ export default function LandingPage() {
             </Link>
             <Link href="/yt-os" className="hover:text-white">
               YT-OS
+            </Link>
+            <Link href="/download" className="hover:text-white">
+              Studio
             </Link>
             <Link href="/tools/clone" className="hover:text-white">
               Clone

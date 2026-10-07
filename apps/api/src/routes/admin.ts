@@ -38,6 +38,12 @@ export async function adminRoutes(app: FastifyInstance) {
       recentLedger,
       tierGroups,
       systemBank,
+      studioLicenses,
+      studioActive,
+      studioDevices,
+      studioMinutesUsed,
+      cloneJobs,
+      ytScripts,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.rtcWallet.aggregate({
@@ -60,6 +66,15 @@ export async function adminRoutes(app: FastifyInstance) {
         const { ensureSystemBank, systemBankPublic } = await import("../lib/system-bank.js");
         return systemBankPublic(await ensureSystemBank());
       })(),
+      prisma.studioLicense.count().catch(() => 0),
+      prisma.studioLicense.count({ where: { status: "active" } }).catch(() => 0),
+      prisma.studioDevice.count({ where: { revoked: false } }).catch(() => 0),
+      prisma.studioLicense
+        .aggregate({ _sum: { usedThisMonth: true } })
+        .then((a) => Number(a._sum.usedThisMonth ?? 0))
+        .catch(() => 0),
+      prisma.cloneJob.count().catch(() => 0),
+      prisma.ytScript.count().catch(() => 0),
     ]);
 
     const systemBalanceRtc = walletsAgg._sum.balanceRtc ?? 0;
@@ -78,6 +93,12 @@ export async function adminRoutes(app: FastifyInstance) {
         introsCached,
         vouchersOpen,
         vouchersRedeemed,
+        studioLicenses,
+        studioActive,
+        studioDevices,
+        studioMinutesUsed,
+        cloneJobs,
+        ytScripts,
       },
       systemBank,
       tiers: Object.fromEntries(tierGroups.map((g) => [g.tier, g._count])),
@@ -90,6 +111,114 @@ export async function adminRoutes(app: FastifyInstance) {
         email: l.wallet.user?.email ?? null,
         createdAt: l.createdAt,
       })),
+    };
+  });
+
+  /** GET /api/admin/studio-licenses */
+  app.get("/api/admin/studio-licenses", async (req, reply) => {
+    const gate = await requireAdmin(req.headers.authorization);
+    if (!gate.ok) return reply.code(gate.status).send({ error: gate.error });
+
+    const licenses = await prisma.studioLicense.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 80,
+      include: {
+        user: { select: { email: true, name: true } },
+        devices: { where: { revoked: false }, select: { id: true, deviceName: true, lastSeenAt: true } },
+      },
+    });
+
+    return {
+      licenses: licenses.map((l) => ({
+        id: l.id,
+        email: l.user.email,
+        name: l.user.name,
+        plan: l.plan,
+        status: l.status,
+        keyPrefix: l.keyPrefix,
+        monthlyLimit: l.monthlyLimit,
+        usedThisMonth: Number(l.usedThisMonth),
+        remaining: Math.max(0, l.monthlyLimit - Number(l.usedThisMonth)),
+        devicesAllowed: l.devicesAllowed,
+        devices: l.devices,
+        expiresAt: l.expiresAt,
+        createdAt: l.createdAt,
+      })),
+    };
+  });
+
+  /** POST /api/admin/studio-licenses/issue */
+  app.post("/api/admin/studio-licenses/issue", async (req, reply) => {
+    const gate = await requireAdmin(req.headers.authorization);
+    if (!gate.ok) return reply.code(gate.status).send({ error: gate.error });
+
+    const body = (req.body || {}) as { email?: string; plan?: string };
+    const email = (body.email || "").trim().toLowerCase();
+    const planRaw = (body.plan || "pro").trim();
+    const plan =
+      planRaw === "free" ||
+      planRaw === "starter" ||
+      planRaw === "pro" ||
+      planRaw === "agency" ||
+      planRaw === "unlimited"
+        ? planRaw
+        : null;
+    if (!email || !plan) {
+      return reply.code(400).send({ error: "email + plan (free|starter|pro|agency|unlimited) required" });
+    }
+
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: { email, name: email.split("@")[0], tier: "free", rtcBalance: 0 },
+      });
+    }
+
+    const { issueStudioLicense } = await import("../lib/studio-license.js");
+    const { license, plaintextKey } = await issueStudioLicense({ userId: user.id, plan });
+    return {
+      ok: true,
+      license: {
+        id: license.id,
+        plan: license.plan,
+        keyPrefix: license.keyPrefix,
+        monthlyLimit: license.monthlyLimit,
+        status: license.status,
+      },
+      plaintextKey,
+      warning: "Shown once — copy for the user now",
+      email: user.email,
+    };
+  });
+
+  /** POST /api/admin/studio-licenses/:id/revoke */
+  app.post("/api/admin/studio-licenses/:id/revoke", async (req, reply) => {
+    const gate = await requireAdmin(req.headers.authorization);
+    if (!gate.ok) return reply.code(gate.status).send({ error: gate.error });
+    const { id } = req.params as { id: string };
+    const license = await prisma.studioLicense.update({
+      where: { id },
+      data: { status: "revoked" },
+    });
+    await prisma.studioDevice.updateMany({
+      where: { licenseId: id },
+      data: { revoked: true, activatedTokenHash: null },
+    });
+    return { ok: true, license: { id: license.id, status: license.status } };
+  });
+
+  /** POST /api/admin/studio-licenses/:id/regenerate */
+  app.post("/api/admin/studio-licenses/:id/regenerate", async (req, reply) => {
+    const gate = await requireAdmin(req.headers.authorization);
+    if (!gate.ok) return reply.code(gate.status).send({ error: gate.error });
+    const { id } = req.params as { id: string };
+    const { regenerateStudioLicense } = await import("../lib/studio-license.js");
+    const { license, plaintextKey } = await regenerateStudioLicense(id);
+    return {
+      ok: true,
+      license: { id: license.id, keyPrefix: license.keyPrefix, jwtVersion: license.jwtVersion },
+      plaintextKey,
+      warning: "Shown once — old keys invalidated",
     };
   });
 

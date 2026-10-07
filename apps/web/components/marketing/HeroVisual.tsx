@@ -36,17 +36,17 @@ export function HeroVisual() {
 
         {/* Soft capability marks — not hero clutter; atmospheric only */}
         <text x="48" y="120" fill="rgba(0,217,255,0.35)" fontSize="11" fontFamily="monospace" letterSpacing="3">
-          YT-OS · 11 SKILLS
+          YT-OS · STUDIO · YOUR GPU
         </text>
         <text x="48" y="142" fill="rgba(255,122,0,0.4)" fontSize="11" fontFamily="monospace" letterSpacing="3">
-          CLONE · PIXABAY PRIMARY
+          CLONE · PIXABAY · CENTRAL MINUTES
         </text>
 
         {[
           { x: 160, label: "IDEA" },
           { x: 380, label: "LINK" },
           { x: 600, label: "DNA" },
-          { x: 820, label: "REMAKE" },
+          { x: 820, label: "LOCAL" },
           { x: 1040, label: "VAULT" },
           { x: 1260, label: "MERGE" },
         ].map(({ x, label }, i) => (

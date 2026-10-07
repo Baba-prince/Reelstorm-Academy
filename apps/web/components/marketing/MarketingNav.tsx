@@ -8,10 +8,10 @@ import { useT } from "@/lib/i18n/I18nProvider";
 
 const LINKS = [
   { href: "/how-it-works", key: "nav.howItWorks" },
-  { href: "/training", key: "nav.training" },
-  { href: "/producers", key: "nav.producers" },
+  { href: "/download", key: "nav.studio" },
   { href: "/pricing", key: "nav.pricing" },
-  { href: "/white-label", key: "nav.whiteLabel" },
+  { href: "/producers", key: "nav.producers" },
+  { href: "/training", key: "nav.training" },
   { href: "/developers", key: "nav.api" },
 ] as const;
 
