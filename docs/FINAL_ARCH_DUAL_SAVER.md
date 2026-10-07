@@ -15,7 +15,7 @@ User
     · Axios/fetch → RUNPOD_SAVER_URL  (600s timeout)
          │
          ▼
-  SAVER 2 — RunPod GPU  ·  pod xuvnute41511og  ·  RTX 4090
+  SAVER 2 — RunPod GPU  ·  pod xuvnute4l51iog  ·  RTX 4090
   Volume reelstorm-weights 70GB @ /workspace
     · FastAPI :8000  infra/runpod/api/server.py
     · ComfyUI  RUNPOD_COMFYUI_INTERNAL (default 127.0.0.1:8188)
@@ -35,9 +35,9 @@ User
 | Piece | Value |
 |-------|--------|
 | VPS | IONOS · API 4017 · Web 3017 |
-| Pod | `xuvnute41511og` — **reuse** (do not create new) |
+| Pod | `xuvnute4l51iog` — **reuse** (do not create new) |
 | Volume | `reelstorm-weights` 70GB → `/workspace` |
-| Saver URL | `https://xuvnute41511og-8000.proxy.runpod.net/generate` |
+| Saver URL | `https://xuvnute4l51iog-8000.proxy.runpod.net/generate` |
 
 ## Env blocks (both machines)
 
@@ -54,7 +54,7 @@ See `.env.example` and `infra/runpod/env.dual-saver.example`.
 ## Pod bootstrap (on live volume)
 
 ```bash
-# Jupyter terminal on xuvnute41511og
+# Jupyter terminal on xuvnute4l51iog
 cp /workspace/reelstorm-os/infra/runpod/env.dual-saver.example /workspace/.env
 # paste LIVE R2_* keys into /workspace/.env
 bash /workspace/reelstorm-os/infra/runpod/setup-pod.sh

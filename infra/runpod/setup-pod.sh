@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run INSIDE LIVE pod xuvnute41511og only (volume reelstorm-weights @ /workspace).
+# Run INSIDE LIVE pod xuvnute4l51iog only (volume reelstorm-weights @ /workspace).
 # DO NOT create a new volume or pod.
 set -euo pipefail
 
@@ -93,7 +93,7 @@ chmod +x /workspace/api/start.sh
 
 echo "==> Next"
 echo "  1) Edit /workspace/.env — paste LIVE R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-echo "  2) Expose HTTP 8000 on pod xuvnute41511og"
+echo "  2) Expose HTTP 8000 on pod xuvnute4l51iog"
 echo "  3) bash /workspace/api/start.sh"
 echo "  4) curl -s http://127.0.0.1:8000/health"
-echo "  5) VPS RUNPOD_SAVER_URL=https://xuvnute41511og-8000.proxy.runpod.net/generate"
+echo "  5) VPS RUNPOD_SAVER_URL=https://xuvnute4l51iog-8000.proxy.runpod.net/generate"

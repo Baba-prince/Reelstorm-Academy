@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ReelStorm Dual Saver — FastAPI on LIVE pod xuvnute41511og :8000
+ReelStorm Dual Saver — FastAPI on LIVE pod xuvnute4l51iog :8000
 
 SAVER 1 (R2): videos (+ optional weights backup) — creds from /workspace/.env
 SAVER 2 (this pod): SkyReels weights at /workspace/skyreels-1.3b-4.2GB → VRAM
@@ -64,7 +64,7 @@ OUTPUT_DIR = Path(
 MOCK = os.getenv("MOCK_GENERATE", "0") == "1"
 R2_BUCKET = os.getenv("R2_BUCKET_VIDEOS") or os.getenv("R2_BUCKET") or "reelstorm-videos"
 R2_PUBLIC = (os.getenv("R2_PUBLIC_URL") or "https://videos.reelstorm.uk").rstrip("/")
-POD_ID = os.getenv("RUNPOD_POD_ID", "xuvnute41511og")
+POD_ID = os.getenv("RUNPOD_POD_ID", "xuvnute4l51iog")
 
 
 class GenerateBody(BaseModel):

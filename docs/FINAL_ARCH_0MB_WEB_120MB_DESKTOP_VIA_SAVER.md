@@ -8,8 +8,8 @@ User
   └─→ [DESKTOP] ~120MB  Electron /download
 Both → POST https://api.reelstorm.uk/api/generate
          ↓  VPS validates RSTUDIO license + remaining minutes
-         ↓  Proxy → https://xuvnute41511og-8000.proxy.runpod.net/generate
-                  [GPU SAVER · pod xuvnute41511og · RTX 4090]
+         ↓  Proxy → https://xuvnute4l51iog-8000.proxy.runpod.net/generate
+                  [GPU SAVER · pod xuvnute4l51iog · RTX 4090]
                   /workspace/skyreels-1.3b-4.2GB  (Network Volume 70GB)
          ↓  Upload MP4 → R2 reelstorm-videos
          ↓  Return { r2_url, remaining }
@@ -21,16 +21,16 @@ Both → video player (R2 URL). Minute meter = Supabase StudioLicense.usedThisMo
 | Plane | Where | Role |
 |-------|--------|------|
 | Control | VPS `/opt/reelstorm-os` · API 4017 · Web 3017 | License JWT, heartbeat, usage, `/api/generate` proxy |
-| GPU | RunPod **xuvnute41511og** · EU-RO-1 · RTX 4090 | SkyReels inference |
+| GPU | RunPod **xuvnute4l51iog** · EU-RO-1 · RTX 4090 | SkyReels inference |
 | Volume | **reelstorm-weights** 70GB @ `/workspace` | 4.2GB checkpoint + ComfyUI |
 | Output | R2 `reelstorm-videos` | Public MP4 URLs |
 
-**Do not** create a new volume/pod — use `xuvnute41511og` + existing 70GB volume.
+**Do not** create a new volume/pod — use `xuvnute4l51iog` + existing 70GB volume.
 
 ## Env (VPS)
 
 ```bash
-RUNPOD_SAVER_URL=https://xuvnute41511og-8000.proxy.runpod.net/generate
+RUNPOD_SAVER_URL=https://xuvnute4l51iog-8000.proxy.runpod.net/generate
 STUDIO_LICENSE_SECRET=…
 # R2 creds also on the pod for direct upload
 ```
@@ -38,7 +38,7 @@ STUDIO_LICENSE_SECRET=…
 ## Pod setup
 
 ```bash
-# Jupyter / SSH on xuvnute41511og
+# Jupyter / SSH on xuvnute4l51iog
 bash /workspace/reelstorm-os/infra/runpod/setup-pod.sh
 # expose HTTP 8000, set R2_* , then:
 bash /workspace/api/start.sh

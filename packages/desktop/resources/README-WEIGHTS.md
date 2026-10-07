@@ -2,7 +2,7 @@
 
 The desktop app is a **~120MB thin client**. SkyReels V2 DF 1.3B-540P (~4.2GB) lives on the **RunPod saver**:
 
-- Pod: `xuvnute41511og`
+- Pod: `xuvnute4l51iog`
 - Path: `/workspace/skyreels-1.3b-4.2GB`
 - Volume: `reelstorm-weights` (70GB)
 

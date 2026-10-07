@@ -99,7 +99,7 @@ function GenerateInner() {
       </header>
 
       <main className="mx-auto max-w-[720px] px-5 py-12 md:py-16">
-        <div className="mono text-[11px] text-cyan mb-3">0 MB WEB · GPU SAVER · POD xuvnute41511og</div>
+        <div className="mono text-[11px] text-cyan mb-3">0 MB WEB · GPU SAVER · POD xuvnute4l51iog</div>
         <h1 className="display text-[clamp(2rem,5vw,3rem)] leading-[0.95]">
           Generate on the saver.
           <br />

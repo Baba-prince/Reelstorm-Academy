@@ -29,7 +29,7 @@ function saverUrl(): string {
   // Canonical: RUNPOD_SAVER_URL. Alias: SAVER_URL (common nano mistake).
   let fromEnv = (process.env.RUNPOD_SAVER_URL || process.env.SAVER_URL || "").trim();
   if (!fromEnv) {
-    const pod = (process.env.RUNPOD_POD_ID || "xuvnute41511og").trim();
+    const pod = (process.env.RUNPOD_POD_ID || "xuvnute4l51iog").trim();
     const port = (process.env.RUNPOD_SAVER_PORT || "8000").trim();
     return `https://${pod}-${port}.proxy.runpod.net/generate`;
   }
@@ -259,7 +259,7 @@ export async function studioGenerateRoutes(app: FastifyInstance) {
   /** Health of saver proxy (no license) */
   app.get("/api/studio/saver-health", async (_req, reply) => {
     const base = saverUrl().replace(/\/generate$/, "");
-    const pod = (process.env.RUNPOD_POD_ID || "xuvnute41511og").trim();
+    const pod = (process.env.RUNPOD_POD_ID || "xuvnute4l51iog").trim();
     try {
       const r = await fetch(`${base}/health`, { signal: AbortSignal.timeout(12_000) });
       const text = await r.text();
