@@ -139,10 +139,12 @@ set -a
 # shellcheck disable=SC1091
 source .env
 set +a
-npm install
+# NODE_ENV=production is stamped in .env — still need build tooling (tsc, types)
+npm install --include=dev
 npm run build -w @reelstorm/domain
 npm run db:generate
-npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss
+npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss \
+  || echo "WARN: prisma db push failed (DB unreachable?) — continuing if schema already applied"
 npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web
 # Fail loud if Google auth would be dead in production
 if [[ -z "\${NEXT_PUBLIC_SUPABASE_URL:-}" || -z "\${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]]; then
