@@ -33,7 +33,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { cloneRoutes } from "./routes/clone.js";
 import { ytOsRoutes } from "./routes/yt-os.js";
 import { licenseRoutes } from "./routes/license.js";
-import { studioGenerateRoutes } from "./routes/studio-generate.js";
+import { studioGenerateRoutes } from "./routes/generate.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";

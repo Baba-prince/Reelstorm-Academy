@@ -24,10 +24,12 @@ function hashPrompt(prompt: string) {
 }
 
 function saverUrl(): string {
-  return (
-    process.env.RUNPOD_SAVER_URL ||
-    "https://xuvnute41511og-8000.proxy.runpod.net/generate"
-  ).replace(/\/$/, "");
+  const fromEnv = (process.env.RUNPOD_SAVER_URL || "").trim();
+  if (!fromEnv) {
+    const pod = (process.env.RUNPOD_POD_ID || "xuvnute41511og").trim();
+    return `https://${pod}-8000.proxy.runpod.net/generate`;
+  }
+  return fromEnv.replace(/\/$/, "");
 }
 
 /**

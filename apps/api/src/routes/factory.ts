@@ -120,7 +120,7 @@ export async function generateRoutes(app: FastifyInstance) {
       engine?: string;
     };
     // Studio saver path (0MB web / 120MB desktop) — same URL, different body
-    const { isStudioGenerateBody, handleStudioGenerate } = await import("./studio-generate.js");
+    const { isStudioGenerateBody, handleStudioGenerate } = await import("./generate.js");
     if (isStudioGenerateBody(body) || (body.prompt && !body.projectId)) {
       return handleStudioGenerate(req, reply);
     }

@@ -1,41 +1,70 @@
 #!/usr/bin/env python3
 """
-ReelStorm GPU Saver — FastAPI on RunPod pod xuvnute41511og :8000
+ReelStorm Dual Saver — FastAPI on LIVE pod xuvnute41511og :8000
 
-Weights live on the Network Volume at /workspace/skyreels-1.3b-4.2GB (0 MB to users).
-ComfyUI listens on localhost:8188. This wrapper:
-  POST /generate {prompt, duration} → ComfyUI workflow → R2 upload → {r2_url, duration}
+SAVER 1 (R2): videos (+ optional weights backup) — creds from /workspace/.env
+SAVER 2 (this pod): SkyReels weights at /workspace/skyreels-1.3b-4.2GB → VRAM
 
-Env:
-  COMFY_URL=http://127.0.0.1:8188
-  R2_ENDPOINT / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_BUCKET_VIDEOS
-  R2_PUBLIC_URL=https://videos.reelstorm.uk
-  SKYREELS_CKPT=/workspace/skyreels-1.3b-4.2GB
-  MOCK_GENERATE=1  # return stub without Comfy (smoke)
+NEVER hardcode secrets. Load:
+  /workspace/.env  (RunPod)
+  or process env injected by start.sh
+
+POST /generate {prompt, duration}
+  → ComfyUI 127.0.0.1:8188 (or RUNPOD_COMFYUI_INTERNAL)
+  → upload mp4 to R2_BUCKET_VIDEOS
+  → { r2_url, duration, engine }
 """
 
 from __future__ import annotations
 
-import json
 import os
 import time
 import uuid
 from pathlib import Path
 from typing import Any
 
+# Load /workspace/.env before reading os.environ
+def _load_dotenv(path: Path) -> None:
+    if not path.is_file():
+        return
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        k = k.strip()
+        v = v.strip().strip('"').strip("'")
+        if k and k not in os.environ:
+            os.environ[k] = v
+
+
+_load_dotenv(Path("/workspace/.env"))
+_load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 import boto3
 import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="ReelStorm Saver", version="1.0.0")
+app = FastAPI(title="ReelStorm Dual Saver", version="1.1.0")
 
-COMFY = os.getenv("COMFY_URL", "http://127.0.0.1:8188").rstrip("/")
-CKPT_DIR = Path(os.getenv("SKYREELS_CKPT", "/workspace/skyreels-1.3b-4.2GB"))
-OUTPUT_DIR = Path(os.getenv("COMFY_OUTPUT", "/workspace/ComfyUI/output"))
+COMFY = (
+    os.getenv("RUNPOD_COMFYUI_INTERNAL")
+    or os.getenv("COMFY_URL")
+    or "http://127.0.0.1:8188"
+).rstrip("/")
+CKPT_DIR = Path(
+    os.getenv("SKYREELS_CKPT")
+    or f"{os.getenv('RUNPOD_VOLUME_PATH', '/workspace')}/skyreels-1.3b-4.2GB"
+)
+OUTPUT_DIR = Path(
+    os.getenv("COMFY_OUTPUT")
+    or f"{os.getenv('RUNPOD_VOLUME_PATH', '/workspace')}/ComfyUI/output"
+)
 MOCK = os.getenv("MOCK_GENERATE", "0") == "1"
-R2_BUCKET = os.getenv("R2_BUCKET_VIDEOS", os.getenv("R2_BUCKET", "reelstorm-videos"))
-R2_PUBLIC = os.getenv("R2_PUBLIC_URL", "https://videos.reelstorm.uk").rstrip("/")
+R2_BUCKET = os.getenv("R2_BUCKET_VIDEOS") or os.getenv("R2_BUCKET") or "reelstorm-videos"
+R2_PUBLIC = (os.getenv("R2_PUBLIC_URL") or "https://videos.reelstorm.uk").rstrip("/")
+POD_ID = os.getenv("RUNPOD_POD_ID", "xuvnute41511og")
 
 
 class GenerateBody(BaseModel):
@@ -43,12 +72,36 @@ class GenerateBody(BaseModel):
     duration: int = Field(default=60, ge=5, le=180)
 
 
-def r2_client():
-    endpoint = os.getenv("R2_ENDPOINT") or os.getenv("S3_ENDPOINT")
-    key = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("S3_ACCESS_KEY_ID") or os.getenv("R2_KEY")
-    secret = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("S3_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET")
+def _r2_creds() -> tuple[str, str, str]:
+    endpoint = os.getenv("R2_ENDPOINT") or os.getenv("S3_ENDPOINT") or ""
+    # Derive from account id if needed
+    if not endpoint and os.getenv("R2_ACCOUNT_ID"):
+        endpoint = f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com"
+    key = (
+        os.getenv("R2_ACCESS_KEY_ID")
+        or os.getenv("R2_KEY")
+        or os.getenv("S3_ACCESS_KEY_ID")
+        or ""
+    )
+    secret = (
+        os.getenv("R2_SECRET_ACCESS_KEY")
+        or os.getenv("R2_SECRET")
+        or os.getenv("S3_SECRET_ACCESS_KEY")
+        or ""
+    )
     if not endpoint or not key or not secret:
-        raise HTTPException(503, "R2 credentials missing on saver (R2_ENDPOINT / KEY / SECRET)")
+        raise HTTPException(
+            503,
+            "R2 creds missing in /workspace/.env — need R2_ENDPOINT (or R2_ACCOUNT_ID), "
+            "R2_ACCESS_KEY_ID (or R2_KEY), R2_SECRET_ACCESS_KEY (or R2_SECRET)",
+        )
+    if "127.0.0.1" in endpoint or "minio" in key.lower():
+        raise HTTPException(503, "Refusing MinIO/local S3_* — set real Cloudflare R2_* on saver")
+    return endpoint, key, secret
+
+
+def r2_client():
+    endpoint, key, secret = _r2_creds()
     return boto3.client(
         "s3",
         endpoint_url=endpoint,
@@ -59,8 +112,6 @@ def r2_client():
 
 
 def skyreels_workflow(prompt: str, frames: int) -> dict[str, Any]:
-    """Minimal ComfyUI API graph — adjust node IDs once SkyReels custom node is installed."""
-    # 97 frames ≈ 540P DF clip; scale loosely with duration (cap 97 for 1.3B pack)
     frames = min(max(frames, 16), 97)
     return {
         "3": {
@@ -105,7 +156,6 @@ def skyreels_workflow(prompt: str, frames: int) -> dict[str, Any]:
                 "save_output": True,
             },
         },
-        "_meta": {"frames": frames, "engine": "SkyReels-V2-DF-1.3B-540P"},
     }
 
 
@@ -137,7 +187,7 @@ def comfy_wait(prompt_id: str, timeout_sec: int = 600) -> Path:
                             return p
                 for img in node_out.get("images") or []:
                     fname = img.get("filename")
-                    if fname and fname.endswith(".mp4"):
+                    if fname and str(fname).endswith(".mp4"):
                         p = OUTPUT_DIR / fname
                         if p.exists():
                             return p
@@ -161,16 +211,25 @@ def upload_r2(local: Path) -> str:
 def health():
     weights_ok = CKPT_DIR.exists()
     comfy_ok = False
+    r2_ok = False
     try:
         comfy_ok = requests.get(f"{COMFY}/system_stats", timeout=3).status_code == 200
     except Exception:
         pass
+    try:
+        _r2_creds()
+        r2_ok = True
+    except HTTPException:
+        r2_ok = False
     return {
         "ok": True,
-        "pod": "xuvnute41511og",
+        "pod": POD_ID,
         "weights": str(CKPT_DIR),
         "weights_present": weights_ok,
         "comfy": comfy_ok,
+        "comfy_url": COMFY,
+        "r2_configured": r2_ok,
+        "r2_bucket": R2_BUCKET,
         "mock": MOCK,
     }
 
@@ -178,26 +237,26 @@ def health():
 @app.post("/generate")
 def generate(body: GenerateBody):
     frames = min(97, max(16, int(body.duration * 97 / 60)))
-    if MOCK or not CKPT_DIR.exists():
-        # Smoke path — no GPU burn; still validates R2 when creds present
-        stub = OUTPUT_DIR / f"stub-{uuid.uuid4().hex}.mp4"
+    if MOCK:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        stub.write_bytes(b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 256)
-        try:
-            url = upload_r2(stub)
-        except HTTPException:
-            url = f"{R2_PUBLIC}/videos/mock-{uuid.uuid4().hex}.mp4"
+        stub = OUTPUT_DIR / f"stub-{uuid.uuid4().hex}.mp4"
+        stub.write_bytes(b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 512)
+        url = upload_r2(stub)
         return {
             "r2_url": url,
             "duration": body.duration,
             "engine": "mock-stub",
-            "note": "MOCK_GENERATE or weights missing — replace with real Comfy run",
+            "note": "MOCK_GENERATE=1 — set 0 after SkyReels workflow validated",
             "cost_usd_est": 0.057,
         }
 
+    if not CKPT_DIR.exists():
+        raise HTTPException(
+            503,
+            f"Weights missing at {CKPT_DIR} — run setup-pod.sh on volume (do not create new volume)",
+        )
+
     graph = skyreels_workflow(body.prompt, frames)
-    # strip meta before Comfy
-    graph.pop("_meta", None)
     pid = comfy_queue(graph)
     video = comfy_wait(pid, timeout_sec=600)
     url = upload_r2(video)
@@ -205,11 +264,13 @@ def generate(body: GenerateBody):
         "r2_url": url,
         "duration": body.duration,
         "engine": "SkyReels-V2-DF-1.3B-540P",
-        "cost_usd_est": round(0.69 * (body.duration / 60) / 12, 4),
+        "frames": frames,
+        "cost_usd_est": round(0.74 * (body.duration / 60) / 12, 4),
     }
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
