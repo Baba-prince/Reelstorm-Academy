@@ -26,12 +26,17 @@ function hashPrompt(prompt: string) {
 }
 
 function saverUrl(): string {
-  const fromEnv = (process.env.RUNPOD_SAVER_URL || "").trim();
+  // Canonical: RUNPOD_SAVER_URL. Alias: SAVER_URL (common nano mistake).
+  let fromEnv = (process.env.RUNPOD_SAVER_URL || process.env.SAVER_URL || "").trim();
   if (!fromEnv) {
     const pod = (process.env.RUNPOD_POD_ID || "xuvnute41511og").trim();
-    return `https://${pod}-8000.proxy.runpod.net/generate`;
+    const port = (process.env.RUNPOD_SAVER_PORT || "8000").trim();
+    return `https://${pod}-${port}.proxy.runpod.net/generate`;
   }
-  return fromEnv.replace(/\/$/, "");
+  fromEnv = fromEnv.replace(/\/$/, "");
+  // Allow base URL without /generate
+  if (!fromEnv.endsWith("/generate")) fromEnv = `${fromEnv}/generate`;
+  return fromEnv;
 }
 
 /**

@@ -17,6 +17,16 @@ pm2 start bash --name reelstorm-api -- -lc \
   "cd $APP_DIR && set -a && source .env && set +a && export API_PORT=4017 API_HOST=127.0.0.1 && npm run start -w @reelstorm/api"
 pm2 save >/dev/null
 
+# Show which saver URL will be used (after source)
+(
+  set -a
+  # shellcheck disable=SC1091
+  source "$APP_DIR/.env"
+  set +a
+  echo "RUNPOD_SAVER_URL=${RUNPOD_SAVER_URL:-}"
+  echo "SAVER_URL=${SAVER_URL:-}"
+)
+
 echo "Waiting for http://127.0.0.1:4017/health …"
 ok=0
 for i in $(seq 1 20); do
