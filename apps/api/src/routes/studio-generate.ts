@@ -277,7 +277,7 @@ export async function studioGenerateRoutes(app: FastifyInstance) {
           health,
           hint:
             r.status === 404
-              ? `RunPod proxy 404 — pod must be RUNNING and HTTP port 8000 exposed in RunPod UI (Connect → HTTP services). Local curl on the pod is not enough. Pod=${pod}`
+              ? `RunPod proxy 404 — pod must be RUNNING and this HTTP port must appear under Connect → HTTP services (proxy URL port must match). Local curl on the pod is not enough. Pod=${pod}`
               : "Saver returned non-OK status",
         };
       }
@@ -287,7 +287,7 @@ export async function studioGenerateRoutes(app: FastifyInstance) {
         ok: false,
         saver: base,
         error: (e as Error).message,
-        hint: `Cannot reach RunPod proxy. Confirm pod ${pod} is up and port 8000 is exposed. Do not run pm2 on the pod — pm2 is VPS-only.`,
+        hint: `Cannot reach RunPod proxy. Confirm pod ${pod} is up and the HTTP port in RUNPOD_SAVER_URL is exposed. Do not run pm2 on the pod — pm2 is VPS-only.`,
       });
     }
   });
