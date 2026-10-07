@@ -254,12 +254,36 @@ export async function studioGenerateRoutes(app: FastifyInstance) {
   /** Health of saver proxy (no license) */
   app.get("/api/studio/saver-health", async (_req, reply) => {
     const base = saverUrl().replace(/\/generate$/, "");
+    const pod = (process.env.RUNPOD_POD_ID || "xuvnute41511og").trim();
     try {
-      const r = await fetch(`${base}/health`, { signal: AbortSignal.timeout(8_000) });
-      const j = await r.json().catch(() => ({}));
-      return { ok: r.ok, saver: base, health: j };
+      const r = await fetch(`${base}/health`, { signal: AbortSignal.timeout(12_000) });
+      const text = await r.text();
+      let health: unknown = {};
+      try {
+        health = JSON.parse(text);
+      } catch {
+        health = { raw: text.slice(0, 200) };
+      }
+      if (!r.ok) {
+        return {
+          ok: false,
+          saver: base,
+          httpStatus: r.status,
+          health,
+          hint:
+            r.status === 404
+              ? `RunPod proxy 404 — pod must be RUNNING and HTTP port 8000 exposed in RunPod UI (Connect → HTTP services). Local curl on the pod is not enough. Pod=${pod}`
+              : "Saver returned non-OK status",
+        };
+      }
+      return { ok: true, saver: base, httpStatus: r.status, health };
     } catch (e) {
-      return reply.code(502).send({ ok: false, saver: base, error: (e as Error).message });
+      return reply.code(502).send({
+        ok: false,
+        saver: base,
+        error: (e as Error).message,
+        hint: `Cannot reach RunPod proxy. Confirm pod ${pod} is up and port 8000 is exposed. Do not run pm2 on the pod — pm2 is VPS-only.`,
+      });
     }
   });
 }
