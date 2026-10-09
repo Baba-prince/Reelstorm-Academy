@@ -34,6 +34,7 @@ import { cloneRoutes } from "./routes/clone.js";
 import { ytOsRoutes } from "./routes/yt-os.js";
 import { licenseRoutes } from "./routes/license.js";
 import { studioGenerateRoutes } from "./routes/generate.js";
+import { studioSetRoutes } from "./routes/studio-set.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";
@@ -112,6 +113,7 @@ async function main() {
   await templateRoomRoutes(app); // before /api/templates/:id
   await templateRoutes(app);
   await worldRoutes(app);
+  await studioSetRoutes(app);
   await storyboardRoutes(app);
   await generateRoutes(app);
   await archiveRoutes(app);

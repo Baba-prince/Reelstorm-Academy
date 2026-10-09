@@ -28,6 +28,7 @@ export const yo: MessageTree = {
     dashboard: "Dasibọ́ọ̀dù",
     templatesRoom: "Yàrá Àwọn Àpẹẹrẹ",
     templateForge: "Ilé Ìṣẹ̀dá Àpẹẹrẹ",
+    studioSet: "Studio Set",
     worldBuilder: "Olùkọ́ Ayé",
     storyboard: "Pátákó Ìtàn",
     studio: "Sitúdíò",

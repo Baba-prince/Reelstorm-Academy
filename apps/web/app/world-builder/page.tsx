@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 
 export default function WorldBuilderPage() {
@@ -42,8 +43,28 @@ export default function WorldBuilderPage() {
         <div className="mono text-[11px] text-violet mb-2">ARCHITECTUM // WORLD BUILDER</div>
         <h1 className="display text-4xl">Perfect Room + Soul ID</h1>
         <p className="mt-3 text-white/60">
-          Lock character face (4 angles) and room plates (Wide / Medium / OSH / Close) before a single pixel moves.
+          Legacy quick lock. Prefer{" "}
+          <Link href="/studio-set" className="text-cyan underline-offset-2 hover:underline">
+            Full Studio Set
+          </Link>{" "}
+          for multi-angle courtroom packs, artist import from URL, prompt imagery, and AI camera guide.
         </p>
+      </div>
+
+      <div className="rounded-rs-xl border border-cyan/25 bg-cyan/5 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="mono text-[10px] text-cyan">RECOMMENDED</div>
+          <div className="font-bold mt-1">Full Studio Set — Room · Artist · Imagery</div>
+          <p className="text-xs text-white/50 mt-1">
+            Seed Courtroom Drama, import cast from image/video links, Apply to Director when readiness is green.
+          </p>
+        </div>
+        <Link
+          href={projectId ? `/studio-set` : "/studio-set"}
+          className="h-10 px-4 rounded-rs bg-cyan text-black text-sm font-bold grid place-items-center shrink-0"
+        >
+          Open Studio Set
+        </Link>
       </div>
 
       <div className="rounded-rs-xl border border-white/[0.08] bg-panel p-6 space-y-4">

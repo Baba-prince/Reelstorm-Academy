@@ -1,8 +1,19 @@
 # REELSTORM ACADEMY OS — Production Build Scorecard
 
-**Version:** v1.5 (smoke + production API scripts closed)  
-**Live UI:** `/scorecard`  
+**Version:** v1.6 (Full Studio Set layer)  
+**Live UI:** `/scorecard` · `/studio-set`  
+**Artifact view:** [`artifacts/project-scorecard.html`](artifacts/project-scorecard.html) — full scorecard + architecture + system tiers (A/B/C/infra)  
 **API probe:** `GET /api/readiness` → `production1k`
+
+## Gaps closed in v1.6
+
+| Gap | Fix |
+|-----|-----|
+| World Builder stub plates only | Full Studio Set — Room · Artist · Imagery |
+| No multi-angle courtroom / set design | Courtroom Drama seed pack + prompt plate generate |
+| No artist import from URL | `POST /api/studio-set/artists/import` (image/video) |
+| Weak Director feed | Apply to Director → Soul + RoomPlate + Blueprint.worldBible.studioSet |
+| No camera coach for amateurs | STORM Guide layers on `/studio-set` |
 
 ## Gaps closed in v1.5
 

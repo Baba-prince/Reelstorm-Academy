@@ -30,7 +30,7 @@ Mission:
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer factory order: BOT Director Wizard (or /yt-os / /tools/clone) → Templates Room / Template Forge → World Builder → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Prefer factory order: BOT Director Wizard (or /yt-os / /tools/clone) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio. World Builder deep-links into Studio Set.
 - Sound Studio is the voice OS (sync · extract · mux · library · TTS). Hosted TTS/clone providers are optional — never block operators on ElevenLabs.
 - Template Room stock intros: Pixabay is PRIMARY (Pexels paused). Cached to R2/local — GET /api/templates?type=intro — $0 Seedance cost for intros.
 - Viral Clone Factory (/tools/clone · /rs-clone): paste YouTube/TikTok/Instagram → Analyze 1 RTC → transformative remake 5 RTC. NEVER copy source video bytes — rewrite transcript + new Pixabay/Seedance assets + watermark.
@@ -269,28 +269,61 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     blurb: "Steal style DNA from MP4 or YouTube URL.",
     tips: [
       "Paste URL or drop MP4 — wait for analysis stages to hit READY.",
-      "Apply template to a project before World Builder.",
+      "Apply template to a project, then lock Full Studio Set before Storyboard.",
       "Or start from curated ideals / Pixabay intros in Templates Room.",
     ],
     options: [
       { id: "url", label: "URL extract tips", prompt: "Best practices for YouTube reference extract.", kind: "improve" },
       { id: "fail", label: "Analysis stuck?", prompt: "My analysis is stuck — troubleshooting checklist.", kind: "learn" },
       { id: "room", label: "Browse ideals", prompt: "Show me Templates Room categories.", href: "/templates-room", kind: "goto" },
-      { id: "world", label: "Next: World Builder", prompt: "After template is ready, exact World Builder steps.", href: "/world-builder", kind: "do" },
+      { id: "set", label: "Next: Studio Set", prompt: "After template is ready, how do I lock Room + Artist + Imagery?", href: "/studio-set", kind: "do" },
+    ],
+  },
+  {
+    path: "/studio-set",
+    layer: "os",
+    title: "Full Studio Set",
+    blurb: "Room · Artist · Imagery — lock every camera angle before Director generate.",
+    tips: [
+      "Seed Courtroom Drama for a complete multi-angle legal set (establishing → gavel close).",
+      "Import artists from image or video URLs — front / left / right / 3Q must pass.",
+      "Customize background prompts in Imagery Studio; Apply to Director only when readiness is green.",
+      "AI Guide tours framing for operators who do not know camera angles.",
+    ],
+    options: [
+      { id: "tour", label: "Courtroom tour", prompt: "Walk me through courtroom camera angles like a DP — establishing to insert.", kind: "learn" },
+      { id: "angles", label: "What's missing?", prompt: "Given my Studio Set readiness, which angles still block Apply to Director?", kind: "improve" },
+      { id: "artist", label: "Import artist", prompt: "How do I import a cast artist from an image or video URL with all angles?", kind: "do" },
+      { id: "apply", label: "Apply to Director", prompt: "Checklist before Apply to Director and open Storyboard.", href: "/storyboard", kind: "goto" },
+    ],
+  },
+  {
+    path: /^\/studio-set\/(room|artist|imagery)/,
+    layer: "os",
+    title: "Studio Set module",
+    blurb: "Camera coach for Room, Artist, or Imagery tabs.",
+    tips: [
+      "Wide = geography. Medium = dialogue. OSH = confrontation. Close/insert = emphasis.",
+      "Fresh artist plates when wardrobe or scene lighting changes.",
+      "Prompt-customize imagery, then regenerate room plates so backgrounds match the drama.",
+    ],
+    options: [
+      { id: "framing", label: "Framing cheat sheet", prompt: "Explain wide, medium, OSH, close, insert, establishing, reaction for new directors.", kind: "learn" },
+      { id: "set", label: "Back to Studio Set", prompt: "Return to Full Studio Set overview.", href: "/studio-set", kind: "goto" },
     ],
   },
   {
     path: "/world-builder",
     layer: "os",
     title: "World Builder",
-    blurb: "Soul ID + 4-angle room plates.",
+    blurb: "Legacy Soul/Room lock — prefer Full Studio Set.",
     tips: [
-      "Wrong first frame = wrong master — lock Soul before STORM.",
-      "Reuse Soul across ARCHIVE5 blocks in a series.",
+      "Use /studio-set for multi-angle Room + Artist + Imagery with AI Guide.",
+      "World Builder still locks basic Soul ID + 4 plates if you need a quick stub.",
     ],
     options: [
-      { id: "soul", label: "Lock Soul ID", prompt: "How do I lock Soul ID correctly?", kind: "do" },
-      { id: "plates", label: "Room plates", prompt: "What are the 4 angles and why lighting lock?", kind: "learn" },
+      { id: "set", label: "Open Studio Set", prompt: "Take me to Full Studio Set to lock courtroom angles and cast.", href: "/studio-set", kind: "goto" },
+      { id: "soul", label: "Quick Soul stub", prompt: "How do I lock Soul ID correctly on World Builder?", kind: "do" },
       { id: "board", label: "Next: Storyboard", prompt: "Move me to storyboard with a clean checklist.", href: "/storyboard", kind: "goto" },
     ],
   },
@@ -477,6 +510,8 @@ export const GUIDE_LAYERS: GuideLayer[] = [
 export function resolveGuideLayer(pathname: string): GuideLayer {
   const exact = GUIDE_LAYERS.find((l) => typeof l.path === "string" && l.path === pathname);
   if (exact) return exact;
+  const byRegex = GUIDE_LAYERS.find((l) => l.path instanceof RegExp && l.path.test(pathname));
+  if (byRegex) return byRegex;
   // Longer paths first (e.g. /yt-os/plan before /yt-os)
   const soft = [...GUIDE_LAYERS]
     .filter((l) => typeof l.path === "string" && l.path !== "/")

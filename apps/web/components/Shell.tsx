@@ -16,6 +16,7 @@ const NAV = [
   { href: "/dashboard", key: "nav.dashboard" },
   { href: "/templates-room", key: "nav.templatesRoom" },
   { href: "/template-forge", key: "nav.templateForge" },
+  { href: "/studio-set", key: "nav.studioSet" },
   { href: "/world-builder", key: "nav.worldBuilder" },
   { href: "/storyboard", key: "nav.storyboard" },
   { href: "/studio", key: "nav.studio" },

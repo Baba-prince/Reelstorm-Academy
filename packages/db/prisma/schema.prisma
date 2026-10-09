@@ -122,6 +122,91 @@ model Project {
   masters     MasterCut[]
   voices      VoiceProfile[]
   blueprints  Blueprint[]
+  studioSets  StudioSet[]
+}
+
+/// Full Studio Set — Room + Artist + Imagery lock before Director generate
+model StudioSet {
+  id               String          @id @default(cuid())
+  projectId        String
+  title            String          @default("Studio Set")
+  status           String          @default("draft") // draft | building | ready | applied
+  completenessPct  Int             @default(0)
+  seedPackId       String?
+  appliedAt        DateTime?
+  meta             Json            @default("{}")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  project          Project         @relation(fields: [projectId], references: [id])
+  rooms            SceneSet[]
+  artists          ArtistProfile[]
+  imagery          ImageryPack[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+}
+
+/// Studio Room — multi-angle scene background / location set
+model SceneSet {
+  id              String    @id @default(cuid())
+  studioSetId     String
+  name            String
+  locationKind    String    @default("generic")
+  requiredAngles  String[]  @default(["establishing", "wide", "medium", "osh", "close"])
+  platesJson      Json      @default("{}")
+  promptDna       String?
+  lightingNotes   String?
+  lut             String?
+  locked          Boolean   @default(false)
+  seedPackId      String?
+  roomPlateId     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  studioSet       StudioSet @relation(fields: [studioSetId], references: [id], onDelete: Cascade)
+
+  @@index([studioSetId])
+}
+
+/// Artist Studio — cast/character multi-angle identity (extends Soul)
+model ArtistProfile {
+  id              String    @id @default(cuid())
+  studioSetId     String
+  soulId          String?
+  name            String
+  role            String    @default("lead")
+  wardrobeNotes   String?
+  bodyNotes       String?
+  requiredAngles  String[]  @default(["front", "left", "right", "threeQuarter"])
+  platesJson      Json      @default("{}")
+  importSource    String    @default("manual") // upload | image_url | video_url | manual | seed
+  importUrl       String?
+  locked          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  studioSet       StudioSet @relation(fields: [studioSetId], references: [id], onDelete: Cascade)
+
+  @@index([studioSetId])
+  @@index([soulId])
+}
+
+/// Imagery Studio — style/aesthetic pack, prompt-customizable backgrounds
+model ImageryPack {
+  id                String    @id @default(cuid())
+  studioSetId       String
+  name              String
+  stylePreset       String
+  aesthetic         String?
+  prompt            String
+  customizedPrompt  String?
+  sceneSetId        String?
+  lut               String?
+  mood              String[]  @default([])
+  locked            Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  studioSet         StudioSet @relation(fields: [studioSetId], references: [id], onDelete: Cascade)
+
+  @@index([studioSetId])
 }
 
 /// BOT Director Wizard — Movie Blueprint feed for the factory

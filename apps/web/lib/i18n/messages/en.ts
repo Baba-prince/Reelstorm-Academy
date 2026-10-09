@@ -33,6 +33,7 @@ export const en: MessageTree = {
     studio: "Studio",
     templatesRoom: "Templates Room",
     templateForge: "Template Forge",
+    studioSet: "Studio Set",
     worldBuilder: "World Builder",
     storyboard: "Storyboard",
     soundStudio: "Sound Studio",

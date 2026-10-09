@@ -1,0 +1,88 @@
+{
+  "project": "REELSTORM ACADEMY OS",
+  "version": "v1.6",
+  "updated": "2026-10-09",
+  "live_ui": "/scorecard",
+  "studio_set_ui": "/studio-set",
+  "artifact": "artifacts/project-scorecard.html",
+  "api_probe": "GET /api/readiness → production1k",
+  "architecture": {
+    "model": "dual_saver",
+    "clients": {
+      "web": { "mb": 0, "host": "app.reelstorm.uk" },
+      "desktop": { "mb": 120, "path": "packages/desktop" }
+    },
+    "planes": {
+      "control": "VPS /opt/reelstorm-os · Fastify + Next + BullMQ",
+      "studio_set": "Room · Artist · Imagery · AI Guide · Apply to Director",
+      "compute": "RunPod xuvnute4l51iog · RTX 4090 · SkyReels 4.2GB",
+      "storage": "Cloudflare R2 reelstorm-videos + Supabase + Redis db17"
+    },
+    "pipeline": [
+      "SCRIPT",
+      "TEMPLATES",
+      "STUDIO SET",
+      "STORYBOARD",
+      "STORM ENGINE",
+      "ARCHIVE VAULT",
+      "MERGE STUDIO"
+    ]
+  },
+  "studio_set": {
+    "seed_pack": "courtroom_drama",
+    "routes": [
+      "POST /api/studio-set",
+      "POST /api/studio-set/rooms",
+      "POST /api/studio-set/rooms/:id/generate",
+      "POST /api/studio-set/artists/import",
+      "POST /api/studio-set/imagery",
+      "GET /api/studio-set/:id/readiness",
+      "POST /api/studio-set/:id/apply-to-director"
+    ]
+  },
+  "system_tiers": {
+    "A": {
+      "name": "Platform",
+      "checks": [
+        "supabase",
+        "google_oauth",
+        "stripe",
+        "redis_config",
+        "object_storage"
+      ]
+    },
+    "B": {
+      "name": "AI / Media",
+      "checks": [
+        "dashscope",
+        "video_gen",
+        "sound_studio",
+        "ffmpeg",
+        "ffprobe"
+      ]
+    },
+    "C": {
+      "name": "Optional",
+      "checks": ["elevenlabs", "kling", "veo", "intro_cache"],
+      "hard_blocks_grade": false
+    },
+    "infra": {
+      "name": "Scale",
+      "checks": ["worker_concurrency", "disk", "smoke_scripts"]
+    }
+  },
+  "scorecard_static": [
+    { "id": "brand", "area": "Brand", "weight": 4, "status": "pass" },
+    { "id": "pages", "area": "Frontend", "weight": 6, "status": "pass" },
+    { "id": "forgeUi", "area": "Differentiator", "weight": 8, "status": "pass" },
+    { "id": "onboard", "area": "Frontend", "weight": 4, "status": "pass" },
+    { "id": "tests", "area": "Quality", "weight": 3, "status": "pass" }
+  ],
+  "grades": {
+    "A": { "min": 90, "label": "SHIP-READY" },
+    "B": { "min": 75, "label": "BETA-READY" },
+    "C": { "min": 60, "label": "LOCAL MVP" },
+    "D": { "min": 40, "label": "SCAFFOLD" },
+    "F": { "min": 0, "label": "BLOCKED" }
+  }
+}

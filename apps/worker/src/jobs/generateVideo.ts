@@ -16,7 +16,18 @@ export async function generateVideoJob(job: Job<GenerateVideoPayload>) {
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    include: { template: true, soulIds: true, rooms: true, storyboards: true },
+    include: {
+      template: true,
+      soulIds: true,
+      rooms: true,
+      storyboards: true,
+      studioSets: {
+        where: { status: "applied" },
+        orderBy: { appliedAt: "desc" },
+        take: 1,
+        include: { rooms: true, artists: true, imagery: true },
+      },
+    },
   });
   if (!project) throw new Error("Project not found");
 
@@ -25,14 +36,23 @@ export async function generateVideoJob(job: Job<GenerateVideoPayload>) {
       ? await prisma.videoTemplate.findUnique({ where: { id: templateId } })
       : project.template) || null;
 
+  const studioSet = project.studioSets[0] || null;
   const script = job.data.script || project.script || "";
-  const style = template?.stylePreset || "STORM Signature";
+  const style =
+    studioSet?.imagery[0]?.stylePreset ||
+    template?.stylePreset ||
+    "STORM Signature";
+  const imageryPrompt =
+    studioSet?.imagery[0]?.customizedPrompt ||
+    studioSet?.imagery[0]?.prompt ||
+    studioSet?.rooms[0]?.promptDna ||
+    "";
 
   const promptPlan = await orchestrate([
     {
       role: "system",
       content:
-        "You are STORM Engine. Given a script and a style template, produce a concise video generation prompt. Keep Soul ID and room consistency.",
+        "You are STORM Engine. Given a script, Full Studio Set (room plates + artist souls + imagery), and a style template, produce a concise video generation prompt. Keep Soul ID and room/set consistency across angles.",
     },
     {
       role: "user",
@@ -40,18 +60,60 @@ export async function generateVideoJob(job: Job<GenerateVideoPayload>) {
         script,
         vibe,
         stylePreset: style,
+        imageryPrompt,
         template: template?.templateJson,
-        soulIds: project.soulIds.map((s) => s.name),
-        rooms: project.rooms.map((r) => r.name),
+        studioSet: studioSet
+          ? {
+              id: studioSet.id,
+              rooms: studioSet.rooms.map((r) => ({
+                name: r.name,
+                plates: r.platesJson,
+                promptDna: r.promptDna,
+              })),
+              artists: studioSet.artists.map((a) => ({
+                name: a.name,
+                role: a.role,
+                plates: a.platesJson,
+                soulId: a.soulId,
+              })),
+            }
+          : null,
+        soulIds: project.soulIds.map((s) => ({
+          name: s.name,
+          faceHash: s.faceHash,
+          front: s.frontKey,
+          left: s.leftKey,
+          right: s.rightKey,
+          threeQ: s.threeQKey,
+        })),
+        rooms: project.rooms.map((r) => ({
+          id: r.id,
+          name: r.name,
+          wide: r.wideKey,
+          medium: r.mediumKey,
+          osh: r.oshKey,
+          close: r.closeKey,
+        })),
       }),
     },
-  ]).catch(() => `Generate ${style} video for: ${script.slice(0, 500)}`);
+  ]).catch(
+    () =>
+      `Generate ${style} video for: ${script.slice(0, 400)}${imageryPrompt ? ` · set: ${imageryPrompt.slice(0, 200)}` : ""}`,
+  );
+
+  const appliedSoulId = studioSet?.artists.find((a) => a.soulId)?.soulId;
+  const lockedSoul =
+    (appliedSoulId &&
+      project.soulIds.find((s) => s.id === appliedSoulId)?.faceHash) ||
+    project.soulIds[0]?.faceHash;
+  const lockedRoom =
+    studioSet?.rooms[0]?.roomPlateId || project.rooms[0]?.id;
 
   const result = await generateVideoRouted({
     prompt: promptPlan,
     templateId: template?.id,
-    soulIdRef: project.soulIds[0]?.faceHash,
-    roomRef: project.rooms[0]?.id,
+    soulIdRef: lockedSoul,
+    roomRef: lockedRoom,
     durationSec: 5,
   });
 

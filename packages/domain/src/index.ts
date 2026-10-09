@@ -63,7 +63,9 @@ export const SceneBeatSchema = z.object({
   startSec: z.number(),
   endSec: z.number(),
   cameraMove: CameraMoveSchema.default("static"),
-  framing: z.enum(["wide", "medium", "osh", "close"]).default("medium"),
+  framing: z
+    .enum(["wide", "medium", "osh", "close", "insert", "establishing", "reaction"])
+    .default("medium"),
   transition: z.string().default("cut"),
   dialogue: z.string().optional(),
   notes: z.string().optional(),
@@ -114,6 +116,10 @@ export const AssetTypeSchema = z.enum([
   "videoTemplate",
   "soulId",
   "roomPlate",
+  "sceneSet",
+  "artistPlate",
+  "imageryPack",
+  "studioSet",
   "archive5",
   "block",
   "master",
@@ -155,6 +161,7 @@ export const PipelineStageSchema = z.enum([
   "analyze",
   "template",
   "worldBuilder",
+  "studioSet",
   "storyboard",
   "generate",
   "compose",
@@ -220,3 +227,4 @@ export * from "./yt-hooks.js";
 export * from "./yt-os.js";
 export * from "./clone.js";
 export * from "./studio.js";
+export * from "./studio-set.js";
