@@ -33,8 +33,22 @@ function startHereOptions(layer: ReturnType<typeof resolveGuideLayer>): GuideOpt
         kind: "goto",
       }
     : undefined;
-  const rest = layer.options.filter((o) => o.id !== "where-start").slice(0, 3);
-  return [where, ...(primary ? [primary] : []), ...rest].slice(0, 5);
+  const seen = new Set<string>(["where-start", "where do i start?"]);
+  const rest = layer.options.filter((o) => {
+    const key = o.label.trim().toLowerCase();
+    if (seen.has(o.id) || seen.has(key)) return false;
+    seen.add(o.id);
+    seen.add(key);
+    return true;
+  });
+  if (primary) {
+    const pKey = primary.label.trim().toLowerCase();
+    if (!seen.has(pKey)) {
+      seen.add(pKey);
+      return [where, primary, ...rest].slice(0, 5);
+    }
+  }
+  return [where, ...rest].slice(0, 5);
 }
 
 function localCoach(pathname: string, message: string, option?: GuideOption): {
