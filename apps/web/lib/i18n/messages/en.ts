@@ -40,6 +40,7 @@ export const en: MessageTree = {
     archiveVault: "Archive Vault",
     mergeStudio: "Merge Studio",
     modelCenter: "Model Center",
+    avatarStudio: "Avatar Studio",
     team: "Team",
     brand: "Brand",
     wallet: "RTC Wallet",

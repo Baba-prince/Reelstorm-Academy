@@ -36,6 +36,7 @@ export const ig: MessageTree = {
     archiveVault: "Ọba Nchekwa",
     mergeStudio: "Studio Njikọ",
     modelCenter: "Ebe Model",
+    avatarStudio: "Avatar Studio",
     team: "Otu",
     brand: "Akara",
     wallet: "Akpa RTC",

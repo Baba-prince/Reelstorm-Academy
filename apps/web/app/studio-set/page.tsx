@@ -123,6 +123,7 @@ export default function StudioSetPage() {
   const [payload, setPayload] = useState<StudioSetPayload | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const avatarVideo = searchParams.get("avatarVideo")?.trim() || "";
   const [artistName, setArtistName] = useState("");
   const [artistRole, setArtistRole] = useState("lead");
   const [artistUrl, setArtistUrl] = useState("");
@@ -332,6 +333,37 @@ export default function StudioSetPage() {
         Live API E2E verified (seed → plates → imagery → Apply to Director). Plates are soft-launch
         SVG/URL stamps until real still gen — flow + readiness are testable now.
       </div>
+
+      {(avatarVideo || true) && (
+        <div className="rounded-rs-xl border border-cyan/30 bg-cyan/5 p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="mono text-[10px] text-cyan">AVATAR STUDIO · R2 PLAYBACK</div>
+              <p className="text-sm text-white/60 mt-1">
+                Avatar / saver clips play beside Courtroom pack.{" "}
+                <Link href="/model-center/avatar" className="text-cyan underline-offset-2 hover:underline">
+                  Open Avatar Studio
+                </Link>
+              </p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {avatarVideo ? (
+              <video src={avatarVideo} controls className="w-full rounded-rs border border-white/10 bg-black" />
+            ) : null}
+            <video
+              src="https://videos.reelstorm.uk/videos/835b782996b24d4c81655f507e1acf62.mp4"
+              controls
+              className="w-full rounded-rs border border-white/10 bg-black"
+            />
+          </div>
+          {avatarVideo ? (
+            <a href={avatarVideo} target="_blank" rel="noreferrer" className="mono text-[10px] text-cyan break-all">
+              {avatarVideo}
+            </a>
+          ) : null}
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>

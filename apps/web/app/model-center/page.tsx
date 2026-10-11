@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function ModelCenterPage() {
   const [dashscope, setDashscope] = useState("");
@@ -26,11 +27,20 @@ export default function ModelCenterPage() {
           Local Ollama <span className="text-cyan">llama3.1:8b</span> works without DashScope.
         </p>
       </div>
+      <Link
+        href="/model-center/avatar"
+        className="block rounded-rs-xl border border-cyan/40 bg-cyan/10 px-5 py-4 hover:bg-cyan/15 transition"
+      >
+        <div className="mono text-[10px] text-cyan">NEW · HEYGEN-STYLE WORKFLOW</div>
+        <div className="font-bold text-lg mt-1">Avatar Model Studio</div>
+        <p className="text-sm text-white/60 mt-1">
+          1 photo → 4 outfit variants → niche script → videos.reelstorm.uk. Active AI coach on the page.
+        </p>
+      </Link>
       <div className="rounded-rs-xl border border-orange/30 bg-orange/10 px-4 py-3 text-sm text-white/75">
         <span className="mono text-[10px] text-orange mr-2">SOFT-LAUNCH TESTABLE</span>
-        UI saves keys locally for demos. Production engines must be stamped in VPS{" "}
-        <span className="mono text-[10px] text-white/50">.env</span> (DashScope / Seedance / R2). Scorecard still
-        blocks on object_storage + video_gen until those are green.
+        UI saves keys locally for demos. Production engines stamped in VPS{" "}
+        <span className="mono text-[10px] text-white/50">.env</span> (DashScope / Seedance / R2 / HEYGEN_API_KEY).
       </div>
       <div className="rounded-rs-xl border border-white/[0.08] bg-panel p-6 space-y-4">
         <label className="block">

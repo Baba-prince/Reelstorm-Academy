@@ -21,6 +21,7 @@
     "check:apis:live": "bash scripts/check-production-apis.sh --live",
     "worker:fetch-intros": "node --import tsx scripts/fetch-intros.mjs",
     "db:seed-system-bank": "npx tsx scripts/seedSystemBank.ts",
+    "db:seed-avatar-templates": "npx tsx scripts/seedAvatarTemplates.ts",
     "db:allocate-free-demos": "npx tsx scripts/allocateFreeDemoToAllUsers.ts",
     "studio:build": "npm run build:main -w @reelstorm/desktop && npm run build:ui -w @reelstorm/desktop",
 

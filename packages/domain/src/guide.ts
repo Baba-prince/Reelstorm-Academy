@@ -486,16 +486,35 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/model-center",
     layer: "os",
     title: "Model Center",
-    blurb: "DashScope / Ollama LLM · Seedance video · optional Kling/Veo/TTS.",
+    blurb: "DashScope / Ollama LLM · Seedance video · optional Kling/Veo/TTS · Avatar Studio.",
     tips: [
       "Soft launch minimum: Ollama local LLM (GUIDE_USE_OLLAMA=1) + mock video OK.",
-      "Production: DASHSCOPE_API_KEY + Seedance + MOCK_VIDEO_GEN=0 + sk_live Stripe.",
-      "Pixabay API key powers Template Room intros (PRIMARY) — never commit keys to git.",
+      "Avatar Studio (/model-center/avatar): 1 photo → 4 outfits → niche script → videos.reelstorm.uk.",
+      "Production: DASHSCOPE_API_KEY + Seedance + MOCK_VIDEO_GEN=0 + optional HEYGEN_API_KEY.",
     ],
     options: [
+      { id: "avatar", label: "Open Avatar Studio", prompt: "Walk me through MissTechy Avatar Studio: photo → 4 outfits → News Authority template → R2.", href: "/model-center/avatar", kind: "goto" },
       { id: "min", label: "Minimum keys", prompt: "What is the minimum key set for soft launch vs full production?", kind: "learn" },
       { id: "pixabay", label: "Pixabay intros", prompt: "How does Pixabay PRIMARY wire into Template Room?", href: "/templates-room", kind: "goto" },
       { id: "score", label: "Check scorecard", prompt: "How do I verify Model Center readiness on the scorecard?", href: "/scorecard", kind: "goto" },
+    ],
+  },
+  {
+    path: /^\/model-center\/avatar/,
+    layer: "os",
+    title: "Avatar Model Studio",
+    blurb: "HeyGen-style twin → R2. Active coach walks Create → Template → Script → Generate.",
+    tips: [
+      "Upload 1 front-face photo — we store 4 outfit variant slots on videos.reelstorm.uk/avatars/variants/…",
+      "Pick News Update Authority + niche + local news — Ollama writes the 30s hook script.",
+      "Generate spends template RTC and returns real_r2 URL — Send to Studio Set when done.",
+      "Voice stays in Sound Studio OS; AVATAR_ENGINE=heygen|liveportrait (saver fallback).",
+    ],
+    options: [
+      { id: "create", label: "Create from photo", prompt: "How do I upload one photo and get four outfit variants?", kind: "do" },
+      { id: "news", label: "News Authority script", prompt: "Help me write a Waymo / local news 30-second ON AIR script.", kind: "do" },
+      { id: "set", label: "Studio Set next", prompt: "After R2 video, how do I use it in Studio Set?", href: "/studio-set", kind: "goto" },
+      { id: "voice", label: "Sound Studio", prompt: "How does Avatar Studio connect to Sound Studio voice OS?", href: "/sound-studio", kind: "goto" },
     ],
   },
   {

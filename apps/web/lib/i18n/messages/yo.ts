@@ -36,6 +36,7 @@ export const yo: MessageTree = {
     archiveVault: "Àgọ́ Ìpamọ́",
     mergeStudio: "Sitúdíò Ìdapọ̀",
     modelCenter: "Ilé Àwọn Àwòṣe",
+    avatarStudio: "Avatar Studio",
     team: "Ẹgbẹ́",
     brand: "Ààmì",
     wallet: "Àpò RTC",

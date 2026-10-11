@@ -587,6 +587,18 @@ function WizardInner() {
               <div className="mono text-[10px] text-white/40">
                 LUT {movie.worldBible.style.lut} · grain {movie.worldBible.style.grain}
               </div>
+              <div className="rounded-rs border border-cyan/30 bg-cyan/10 p-3 space-y-2">
+                <div className="mono text-[10px] text-cyan">HAND SCENE WORLD · AVATAR</div>
+                <p className="text-xs text-white/60">
+                  Skip re-filming outfits — generate a talking-head twin with 4 daily looks, then drop the R2 clip into Studio Set.
+                </p>
+                <Link
+                  href="/model-center/avatar"
+                  className="inline-flex h-10 px-4 items-center rounded-rs bg-cyan text-black text-sm font-bold"
+                >
+                  Use Avatar Studio →
+                </Link>
+              </div>
               <button
                 type="button"
                 onClick={() => setStep(4)}

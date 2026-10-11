@@ -36,6 +36,7 @@ export const ha: MessageTree = {
     archiveVault: "Ma'ajiyar Archive",
     mergeStudio: "Studio na Haɗawa",
     modelCenter: "Cibiyar Model",
+    avatarStudio: "Avatar Studio",
     team: "Ƙungiya",
     brand: "Alama",
     wallet: "Walat RTC",
