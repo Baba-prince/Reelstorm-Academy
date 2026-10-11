@@ -184,9 +184,14 @@ pm2 jlist | python3 -c "import sys,json; apps=json.load(sys.stdin); print('total
 [print(' ',a.get('name'), a.get('pm2_env',{}).get('status')) for a in apps]"
 REMOTE
 
-echo "==> Nginx — write ONLY reelstorm site (do not remove other sites)"
+echo "==> Nginx — write ONLY reelstorm site WITH SSL if cert exists (do not remove other sites)"
 ssh_cmd "$VPS" "bash -s" <<REMOTE
 set -euo pipefail
+CERT=/etc/letsencrypt/live/reelstorm.uk/fullchain.pem
+KEY=/etc/letsencrypt/live/reelstorm.uk/privkey.pem
+HAS_SSL=0
+[[ -f "\$CERT" && -f "\$KEY" ]] && HAS_SSL=1
+
 cat > /etc/nginx/sites-available/reelstorm <<NGX
 # REELSTORM only — other projects keep their own server_name blocks
 upstream reelstorm_web { server 127.0.0.1:${RS_WEB_PORT}; keepalive 8; }
@@ -198,7 +203,31 @@ server {
   server_name reelstorm.uk www.reelstorm.uk app.reelstorm.uk;
   client_max_body_size 2G;
   location /.well-known/acme-challenge/ { root /var/www/html; }
-  # Same-origin API proxy (Stripe webhook, readiness, Templates Room)
+NGX
+
+if [[ "\$HAS_SSL" == "1" ]]; then
+  cat >> /etc/nginx/sites-available/reelstorm <<'NGX'
+  location / { return 301 https://$host$request_uri; }
+}
+server {
+  listen 80;
+  listen [::]:80;
+  server_name api.reelstorm.uk;
+  client_max_body_size 2G;
+  location /.well-known/acme-challenge/ { root /var/www/html; }
+  location / { return 301 https://$host$request_uri; }
+}
+NGX
+  cat >> /etc/nginx/sites-available/reelstorm <<NGX
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  server_name reelstorm.uk www.reelstorm.uk app.reelstorm.uk;
+  client_max_body_size 2G;
+  ssl_certificate /etc/letsencrypt/live/reelstorm.uk/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/reelstorm.uk/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
   location /api/ {
     proxy_pass http://reelstorm_api;
     proxy_http_version 1.1;
@@ -239,7 +268,67 @@ server {
     proxy_set_header Connection "upgrade";
   }
 }
-
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  server_name api.reelstorm.uk;
+  client_max_body_size 2G;
+  ssl_certificate /etc/letsencrypt/live/reelstorm.uk/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/reelstorm.uk/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+  location / {
+    proxy_pass http://reelstorm_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+  }
+}
+NGX
+else
+  cat >> /etc/nginx/sites-available/reelstorm <<NGX
+  location /api/ {
+    proxy_pass http://reelstorm_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_request_buffering off;
+  }
+  location /media/ {
+    proxy_pass http://reelstorm_api;
+    proxy_http_version 1.1;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_buffering off;
+  }
+  location /ws/ {
+    proxy_pass http://reelstorm_api;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade \\\$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_read_timeout 3600s;
+  }
+  location / {
+    proxy_pass http://reelstorm_web;
+    proxy_http_version 1.1;
+    proxy_set_header Host \\\$host;
+    proxy_set_header X-Real-IP \\\$remote_addr;
+    proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \\\$scheme;
+    proxy_set_header Upgrade \\\$http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+}
 server {
   listen 80;
   listen [::]:80;
@@ -256,16 +345,20 @@ server {
   }
 }
 NGX
+fi
+
 ln -sfn /etc/nginx/sites-available/reelstorm /etc/nginx/sites-enabled/reelstorm
 # IMPORTANT: do NOT rm other sites-enabled entries
 echo "sites-enabled after link:"
 ls -la /etc/nginx/sites-enabled/
+echo "HAS_SSL=\$HAS_SSL"
 nginx -t
 systemctl reload nginx
 REMOTE
 
 echo "==> Health on isolated ports"
 ssh_cmd "$VPS" "curl -sS http://127.0.0.1:$RS_API_PORT/health || true; echo; curl -sS -o /dev/null -w 'web:%{http_code}\n' http://127.0.0.1:$RS_WEB_PORT/ || true"
+ssh_cmd "$VPS" "curl -sk -H 'Host: app.reelstorm.uk' https://127.0.0.1/model-center/avatar | grep -oE '<title>[^<]+</title>|Arole Adjo' | head -3 || true"
 
 echo ""
 echo "DONE — multi-project safe."
@@ -273,5 +366,5 @@ echo "  App dir:  $APP_DIR"
 echo "  Ports:    web $RS_WEB_PORT · api $RS_API_PORT"
 echo "  Redis:    db $RS_REDIS_DB · prefix reelstorm"
 echo "  PM2:      $RS_PM2_API / $RS_PM2_WORKER / $RS_PM2_WEB"
-echo "  Nginx:    only server_name *.reelstorm.uk"
-echo "Next: bash scripts/apply-ssl.sh  (only reelstorm domains)"
+echo "  Nginx:    *.reelstorm.uk (HTTPS if /etc/letsencrypt/live/reelstorm.uk exists)"
+echo "  If HTTPS missing: bash scripts/apply-ssl.sh"
