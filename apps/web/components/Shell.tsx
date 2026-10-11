@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { AccountMenu } from "@/components/AccountMenu";
-import { PageStartCoach } from "@/components/guide/PageStartCoach";
+import { openStormGuide, PageStartCoach } from "@/components/guide/PageStartCoach";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { useAuth } from "@/lib/auth";
-import { isAdminEmail } from "@reelstorm/domain";
+import { isAdminEmail, resolveGuideLayer } from "@reelstorm/domain";
 
 const NAV = [
   { href: "/wizard", key: "nav.wizard" },
@@ -93,13 +93,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => {
-              if (typeof window !== "undefined") {
-                window.dispatchEvent(
-                  new CustomEvent("rs-open-guide", {
-                    detail: { prompt: "Where do I start in ReelStorm OS?" },
-                  }),
-                );
-              }
+              const layer = resolveGuideLayer(pathname || "/");
+              openStormGuide(`Where do I start on ${layer.title}? Give the first click and next two steps.`);
             }}
             className="w-full h-9 rounded-rs bg-violet/30 border border-violet/40 text-[11px] font-bold text-violet-soft hover:bg-violet/40"
           >

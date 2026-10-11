@@ -4,9 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { FACTORY_START_PATH, getStartHere, resolveGuideLayer } from "@reelstorm/domain";
+import { getStartHere, OS_SYSTEM_GUIDE_PATHS, resolveGuideLayer } from "@reelstorm/domain";
 
 const DISMISS_KEY = "rs_page_coach_dismissed";
+
+const CHIP_LABELS: Record<string, string> = {
+  "/wizard": "Wizard",
+  "/yt-os": "YT-OS",
+  "/tools/clone": "Clone",
+  "/dashboard": "Dashboard",
+  "/templates-room": "Templates",
+  "/template-forge": "Forge",
+  "/studio-set": "Studio Set",
+  "/world-builder": "World",
+  "/storyboard": "Storyboard",
+  "/studio": "Studio",
+  "/sound-studio": "Sound",
+  "/archive-vault": "Vault",
+  "/merge-studio": "Merge",
+  "/model-center": "Models",
+  "/model-center/avatar": "Avatar",
+};
 
 /** Open STORM Guide with a prefilled “where do I start?” ask */
 export function openStormGuide(prompt = "Where do I start on this screen?") {
@@ -130,32 +148,28 @@ export function PageStartCoach() {
       )}
 
       <div className="px-3 py-2 border-t border-white/[0.06] flex gap-1.5 overflow-x-auto">
-        {FACTORY_START_PATH.map((p) => {
-          const active = pathname === p.href || pathname.startsWith(p.href + "/");
+        {OS_SYSTEM_GUIDE_PATHS.filter((href) => CHIP_LABELS[href]).map((href) => {
+          const active =
+            pathname === href ||
+            (href !== "/model-center" && pathname.startsWith(href + "/")) ||
+            (href === "/model-center" && pathname === "/model-center");
           return (
             <Link
-              key={p.href}
-              href={p.href}
+              key={href}
+              href={href}
               className={clsx(
                 "shrink-0 mono text-[9px] px-2.5 py-1.5 rounded-full border",
-                active ? "border-cyan/50 bg-cyan/15 text-cyan" : "border-white/10 text-white/40 hover:text-white/70",
+                active
+                  ? href.includes("avatar")
+                    ? "border-orange/50 bg-orange/15 text-orange"
+                    : "border-cyan/50 bg-cyan/15 text-cyan"
+                  : "border-white/10 text-white/40 hover:text-white/70",
               )}
             >
-              {p.label}
+              {CHIP_LABELS[href]}
             </Link>
           );
         })}
-        <Link
-          href="/model-center/avatar"
-          className={clsx(
-            "shrink-0 mono text-[9px] px-2.5 py-1.5 rounded-full border",
-            pathname.includes("/avatar")
-              ? "border-orange/50 bg-orange/15 text-orange"
-              : "border-white/10 text-white/40 hover:text-white/70",
-          )}
-        >
-          Avatar
-        </Link>
       </div>
     </section>
   );

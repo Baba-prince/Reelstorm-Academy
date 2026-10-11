@@ -290,7 +290,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Lean on Pixabay intros to keep Short cost near zero.",
       "Generate plan then produce via /rs-script → Studio / Clone.",
     ],
+    startHere: {
+      goal: "Generate a 30-day Long/Short calendar you can actually produce.",
+      steps: [
+        "Hit Generate plan — read Long vs Short day costs.",
+        "Pick tomorrow’s Short → /rs-script or Clone Factory.",
+        "Produce via Studio; keep Pixabay intros for near-$0 Shorts.",
+      ],
+      primaryLabel: "Generate plan",
+      primaryHref: "/yt-os/plan",
+      nextLabel: "Back to YT-OS",
+      nextHref: "/yt-os",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on the content calendar?", kind: "improve" },
       { id: "gen", label: "Generate plan", prompt: "How do I generate and read the 30-day calendar?", kind: "do" },
       { id: "cost", label: "RTC budget", prompt: "Estimate RTC for 30 Shorts + 12 Longs from SystemBank.", kind: "learn" },
       { id: "back", label: "Back to skills", prompt: "Return to YT-OS dashboard.", href: "/yt-os", kind: "goto" },
@@ -336,7 +349,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Filter ?type=intro&category=… — served from DB/R2/local, not live API.",
       "Open a card → Use ideal for DNA; extract custom style in Template Forge when needed.",
     ],
+    startHere: {
+      goal: "Pick a stock ideal or intro so your project has DNA before Forge / Studio Set.",
+      steps: [
+        "Browse category chips (Nollywood · Asia · Drama · Product · Intros).",
+        "Open a card → Use ideal (or note the intro for $0 Seedance).",
+        "Need custom DNA? Continue to Template Forge with an MP4/URL.",
+      ],
+      primaryLabel: "Browse stock intros",
+      primaryHref: "/templates-room",
+      nextLabel: "Extract my own",
+      nextHref: "/template-forge",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Templates Room?", kind: "improve" },
       { id: "intros", label: "Stock intros", prompt: "How do Pixabay stock intros work and why $0 Seedance?", kind: "learn" },
       { id: "nollywood", label: "Nollywood pick", prompt: "Which Nollywood template fits a Lagos family drama short?", kind: "improve" },
       { id: "asia", label: "Asia cinema pick", prompt: "Recommend an Asia template — K-drama, Bollywood, anime, or SEA food.", kind: "improve" },
@@ -415,7 +441,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Artist Generate stamps soft-launch plates (or URL#angle) so readiness is not stuck on pending.",
       "Imagery Save upserts the pack and regenerates every Room angle from the customized prompt.",
     ],
+    startHere: {
+      goal: "Finish this tab’s plates, then return to Apply to Director.",
+      steps: [
+        "Confirm Project ID is still attached from Full Studio Set.",
+        "Generate or import plates for this module (Room / Artist / Imagery).",
+        "Back to Studio Set overview → Apply when readiness ≥60%.",
+      ],
+      primaryLabel: "Generate plates",
+      primaryHref: "/studio-set",
+      nextLabel: "Back to Studio Set",
+      nextHref: "/studio-set",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on this Studio Set module?", kind: "improve" },
       { id: "framing", label: "Framing cheat sheet", prompt: "Explain wide, medium, OSH, close, insert, establishing, reaction for new directors.", kind: "learn" },
       { id: "gen", label: "Generate plates", prompt: "When do I hit Generate plates on Room vs Artist?", kind: "do" },
       { id: "set", label: "Back to Studio Set", prompt: "Return to Full Studio Set overview.", href: "/studio-set", kind: "goto" },
@@ -431,7 +470,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Open Studio Set (passes projectId) for multi-angle Room · Artist · Imagery production lock.",
       "World Builder is the stub path; Full Studio Set is the production-test path before Storyboard.",
     ],
+    startHere: {
+      goal: "Quick-lock Soul + Room, or jump to Full Studio Set for production angles.",
+      steps: [
+        "Paste a real Project ID.",
+        "Lock Soul ID and/or Lock Room Plates (stub path).",
+        "Prefer Open Studio Set for multi-angle Room · Artist · Imagery before Storyboard.",
+      ],
+      primaryLabel: "Open Studio Set",
+      primaryHref: "/studio-set",
+      nextLabel: "Next: Storyboard",
+      nextHref: "/storyboard",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on World Builder?", kind: "improve" },
       { id: "set", label: "Open Studio Set", prompt: "Take me to Full Studio Set to lock courtroom angles and cast with my project ID.", href: "/studio-set", kind: "goto" },
       { id: "soul", label: "Lock Soul", prompt: "How do I lock Soul ID correctly on World Builder without errors?", kind: "do" },
       { id: "room", label: "Lock Room", prompt: "How do Room Memory plates map to Studio Set angles?", kind: "learn" },
@@ -590,7 +642,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Top up before Studio if remaining < 2 sets (10 RTC).",
       "Clone reproduce needs 5 RTC — analyze alone may use your free demo.",
     ],
+    startHere: {
+      goal: "Know your RTC balance before queuing Studio or Clone.",
+      steps: [
+        "Read balance + free-demo status.",
+        "If under 10 RTC, top up or open Billing for packs.",
+        "Return to Dashboard / Studio when you have enough for 2 sets.",
+      ],
+      primaryLabel: "RTC math",
+      primaryHref: "/wallet",
+      nextLabel: "Billing / packs",
+      nextHref: "/billing",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in the RTC Wallet?", kind: "improve" },
       { id: "math", label: "RTC math", prompt: "I have 25 RTC — how many 5-min sets can I vault?", kind: "learn" },
       { id: "billing", label: "Billing page", prompt: "Show SystemBank funnel and my wallet.", href: "/billing", kind: "goto" },
       { id: "buy", label: "Upgrade / packs", prompt: "Where do I purchase tiers or RTC packs?", href: "/pricing", kind: "goto" },
@@ -606,7 +671,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Your wallet shows free demo granted/used + balance.",
       "Account menu also links here — header avatar top-right.",
     ],
+    startHere: {
+      goal: "Understand SystemBank, free demo, and which plan to buy.",
+      steps: [
+        "Read SystemBank remaining + your free-demo grant.",
+        "Open Wallet for balance / vouchers.",
+        "Pick a tier on Pricing when ready to produce past demo.",
+      ],
+      primaryLabel: "SystemBank?",
+      primaryHref: "/billing",
+      nextLabel: "Open wallet",
+      nextHref: "/wallet",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on Billing?", kind: "improve" },
       { id: "bank", label: "SystemBank?", prompt: "Explain SystemBank remaining and free demo grants.", kind: "learn" },
       { id: "wallet", label: "Open wallet", prompt: "Take me to top-up and vouchers.", href: "/wallet", kind: "goto" },
       { id: "account", label: "Account settings", prompt: "Where do I change password and log out?", href: "/account", kind: "goto" },
@@ -622,7 +700,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Change password for email/password accounts (Google users use Google security).",
       "Log out from this page or the header avatar menu.",
     ],
+    startHere: {
+      goal: "Manage profile, password, and session safely.",
+      steps: [
+        "Update display name if needed (email is locked).",
+        "Change password for email/password accounts.",
+        "Use Billing / Wallet links, or Log out from here / header avatar.",
+      ],
+      primaryLabel: "Change password",
+      primaryHref: "/account",
+      nextLabel: "Go to billing",
+      nextHref: "/billing",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Account settings?", kind: "improve" },
       { id: "pw", label: "Change password", prompt: "How do I change my password safely?", kind: "do" },
       { id: "bill", label: "Go to billing", prompt: "Open billing and explain my free demo status.", href: "/billing", kind: "goto" },
       { id: "out", label: "Log out help", prompt: "Where is log out and what happens to my session?", kind: "learn" },
@@ -638,7 +729,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Admin gifts/vouchers do not drain SystemBank free-demo pool.",
       "Use for support RTC grants — not for day-to-day production.",
     ],
+    startHere: {
+      goal: "Support operators with gifts/vouchers without draining SystemBank demos.",
+      steps: [
+        "Confirm you are the locked admin email.",
+        "Gift RTC or issue a voucher for support cases.",
+        "Check SystemBank remaining — gifts do not drain the free-demo pool.",
+      ],
+      primaryLabel: "Gift RTC",
+      primaryHref: "/admin",
+      nextLabel: "Back to OS",
+      nextHref: "/dashboard",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Captain Admin?", kind: "improve" },
       { id: "gift", label: "Gift RTC", prompt: "How do I gift RTC or issue a voucher without touching SystemBank?", kind: "do" },
       { id: "bank", label: "Bank status", prompt: "How do I read SystemBank remaining on admin?", kind: "learn" },
       { id: "back", label: "Back to OS", prompt: "Return to dashboard for production.", href: "/dashboard", kind: "goto" },
@@ -654,7 +758,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Avatar Studio (/model-center/avatar): 1 photo → 4 outfits → niche script → videos.reelstorm.uk.",
       "Production: DASHSCOPE_API_KEY + Seedance + MOCK_VIDEO_GEN=0 + optional HEYGEN_API_KEY.",
     ],
+    startHere: {
+      goal: "Know which engines are live, then open Avatar Studio or check the scorecard.",
+      steps: [
+        "Scan LLM / video / TTS status for soft-launch vs production.",
+        "Open Avatar Studio for talking-head twins → R2.",
+        "Verify readiness on Scorecard before academy demos.",
+      ],
+      primaryLabel: "Open Avatar Studio",
+      primaryHref: "/model-center/avatar",
+      nextLabel: "Check scorecard",
+      nextHref: "/scorecard",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Model Center?", kind: "improve" },
       { id: "avatar", label: "Open Avatar Studio", prompt: "Walk me through MissTechy Avatar Studio: photo → 4 outfits → News Authority template → R2.", href: "/model-center/avatar", kind: "goto" },
       { id: "min", label: "Minimum keys", prompt: "What is the minimum key set for soft launch vs full production?", kind: "learn" },
       { id: "pixabay", label: "Pixabay intros", prompt: "How does Pixabay PRIMARY wire into Template Room?", href: "/templates-room", kind: "goto" },
@@ -703,7 +820,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Target grade A on /api/readiness before academy launch; video_gen + object_storage may still block ship-ready.",
       "Soft launch: Ollama LLM, Stripe test, mock video can PASS with SOFT_LAUNCH=1.",
     ],
+    startHere: {
+      goal: "Read what’s READY vs PARTIAL, then pick the next production-test room.",
+      steps: [
+        "Scan grade + blockers (video_gen, object_storage, saver-health).",
+        "Production-test Studio Set first if look/cast isn’t locked.",
+        "Walk Storyboard → Studio → Sound → Vault → Merge in order.",
+      ],
+      primaryLabel: "Test Studio Set",
+      primaryHref: "/studio-set",
+      nextLabel: "Test pipeline",
+      nextHref: "/storyboard",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on the Scorecard?", kind: "improve" },
       { id: "set", label: "Test Studio Set", prompt: "How do I production-test Room · Artist · Imagery from the scorecard status?", href: "/studio-set", kind: "goto" },
       { id: "land", label: "Landing hero", prompt: "What Studio Set messaging is on the marketing landing hero?", href: "/", kind: "goto" },
       { id: "pipe", label: "Test pipeline", prompt: "Order to production-test Storyboard → Studio → Sound → Archive → Merge.", kind: "do" },
@@ -716,8 +846,25 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     layer: "os",
     title: "Brand",
     blurb: "Tokens for void / violet / cyan / orange.",
-    tips: ["Keep brand hero-level on marketing surfaces."],
+    tips: [
+      "Keep brand hero-level on marketing surfaces — never nav-only.",
+      "Void black + violet / cyan / orange accents; no purple-on-white defaults.",
+      "Use Brand tokens when shipping landing or white-label skins.",
+    ],
+    startHere: {
+      goal: "Grab the token map before shipping any marketing or white-label UI.",
+      steps: [
+        "Open Brand and note void / violet / cyan / orange roles.",
+        "Apply hero-level brand on landing — not just nav text.",
+        "Ask STORM Guide for a token summary if building a new surface.",
+      ],
+      primaryLabel: "Token map",
+      primaryHref: "/brand",
+      nextLabel: "Factory map",
+      nextHref: "/how-it-works",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on Brand?", kind: "improve" },
       { id: "tokens", label: "Token map", prompt: "Summarize ReelStorm brand tokens for UI work.", kind: "learn" },
     ],
   },
@@ -726,12 +873,54 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     layer: "os",
     title: "Team",
     blurb: "Producer seats and STORM agent roles.",
-    tips: ["Assign voice/world/render roles so jobs do not collide."],
+    tips: [
+      "Assign voice / world / render roles so jobs do not collide.",
+      "One producer owns Director Wizard; another can own Sound / Vault.",
+      "Keep RTC spend visible in Wallet when sharing seats.",
+    ],
+    startHere: {
+      goal: "Assign seats so Wizard, World, Render, and Sound don’t collide.",
+      steps: [
+        "List who owns Wizard / Studio Set vs Studio generate vs Sound.",
+        "Assign seats and avoid two people queuing the same project.",
+        "Check Wallet before shared Studio runs.",
+      ],
+      primaryLabel: "Role design",
+      primaryHref: "/team",
+      nextLabel: "Dashboard",
+      nextHref: "/dashboard",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on Team?", kind: "improve" },
       { id: "roles", label: "Role design", prompt: "Suggest team roles for a 3-person Academy studio.", kind: "improve" },
     ],
   },
 ];
+
+/** Every sidebar / OS system — used to verify guide coverage */
+export const OS_SYSTEM_GUIDE_PATHS = [
+  "/wizard",
+  "/yt-os",
+  "/tools/clone",
+  "/dashboard",
+  "/templates-room",
+  "/template-forge",
+  "/studio-set",
+  "/world-builder",
+  "/storyboard",
+  "/studio",
+  "/sound-studio",
+  "/archive-vault",
+  "/merge-studio",
+  "/model-center",
+  "/model-center/avatar",
+  "/wallet",
+  "/billing",
+  "/account",
+  "/brand",
+  "/team",
+  "/scorecard",
+] as const;
 
 /** Build a Start Here wizard for any screen (explicit or derived). */
 export function getStartHere(layer: GuideLayer): GuideStartHere {
@@ -740,13 +929,37 @@ export function getStartHere(layer: GuideLayer): GuideStartHere {
   const nextOpt = layer.options.find((o) => o.href && o !== doOpt);
   return {
     goal: layer.blurb,
-    steps: layer.tips.slice(0, 4),
+    steps: (layer.tips.length ? layer.tips : ["Ask STORM Guide: Where do I start on this screen?"]).slice(0, 4),
     primaryLabel: doOpt?.label || "Ask AI: where do I start?",
-    primaryHref: doOpt?.href || "/wizard",
+    primaryHref: doOpt?.href || (typeof layer.path === "string" ? layer.path : "/wizard"),
     nextLabel: nextOpt?.label,
     nextHref: nextOpt?.href,
   };
 }
+
+/** Seal every layer: materialize startHere + guarantee a Where do I start? chip */
+function sealGuideLayers(layers: GuideLayer[]): GuideLayer[] {
+  return layers.map((layer) => {
+    const startHere = getStartHere(layer);
+    const hasStart = layer.options.some(
+      (o) => o.id === "start" || o.id === "where-start" || o.label.trim().toLowerCase() === "where do i start?",
+    );
+    const whereOpt: GuideOption = {
+      id: "start",
+      label: "Where do I start?",
+      prompt: `Where do I start on ${layer.title}? Give the first click and next two steps.`,
+      kind: "improve",
+    };
+    return {
+      ...layer,
+      startHere,
+      options: hasStart ? layer.options : [whereOpt, ...layer.options],
+    };
+  });
+}
+
+// Materialize startHere + Where do I start on every layer (marketing + OS)
+;(GUIDE_LAYERS as GuideLayer[]).splice(0, GUIDE_LAYERS.length, ...sealGuideLayers(GUIDE_LAYERS));
 
 export function resolveGuideLayer(pathname: string): GuideLayer {
   const exact = GUIDE_LAYERS.find((l) => typeof l.path === "string" && l.path === pathname);
@@ -759,7 +972,7 @@ export function resolveGuideLayer(pathname: string): GuideLayer {
     .sort((a, b) => String(b.path).length - String(a.path).length)
     .find((l) => typeof l.path === "string" && pathname.startsWith(l.path));
   if (soft) return soft;
-  return {
+  const fallback: GuideLayer = {
     path: pathname,
     layer:
       pathname.startsWith("/") &&
@@ -777,12 +990,15 @@ export function resolveGuideLayer(pathname: string): GuideLayer {
       "Try /yt-os or /tools/clone for YouTube growth loops.",
     ],
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in ReelStorm OS right now?", kind: "improve" },
       { id: "next", label: "What next?", prompt: "What should I do next in ReelStorm?", kind: "improve" },
       { id: "ytos", label: "YT-OS", prompt: "Show YT-OS eleven skills briefly.", href: "/yt-os", kind: "goto" },
       { id: "map", label: "Factory map", prompt: "Show the factory path briefly.", href: "/how-it-works", kind: "goto" },
       { id: "train", label: "Training", prompt: "Point me to training.", href: "/training", kind: "goto" },
     ],
   };
+  fallback.startHere = getStartHere(fallback);
+  return fallback;
 }
 
 export function buildGuideContextBlock(pathname: string): string {
