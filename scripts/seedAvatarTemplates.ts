@@ -6,7 +6,9 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 config({ path: resolve(process.cwd(), ".env") });
 
-import { prisma } from "@reelstorm/db";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 const TEMPLATES = [
   {
@@ -127,4 +129,6 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
