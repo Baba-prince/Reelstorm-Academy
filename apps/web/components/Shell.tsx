@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { AccountMenu } from "@/components/AccountMenu";
+import { PageStartCoach } from "@/components/guide/PageStartCoach";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { useAuth } from "@/lib/auth";
 import { isAdminEmail } from "@reelstorm/domain";
@@ -89,6 +90,21 @@ export function Shell({ children }: { children: React.ReactNode }) {
             {t("common.liveEngine")}
           </div>
           <div className="mono text-[8px] text-white/35 leading-relaxed">{t("common.guideHint")}</div>
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("rs-open-guide", {
+                    detail: { prompt: "Where do I start in ReelStorm OS?" },
+                  }),
+                );
+              }
+            }}
+            className="w-full h-9 rounded-rs bg-violet/30 border border-violet/40 text-[11px] font-bold text-violet-soft hover:bg-violet/40"
+          >
+            Where do I start?
+          </button>
         </div>
       </aside>
 
@@ -111,7 +127,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
         </header>
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 lg:p-8">
+          <PageStartCoach />
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -14,6 +14,17 @@ export type GuideOption = {
   kind: "learn" | "do" | "improve" | "goto";
 };
 
+export type GuideStartHere = {
+  /** One-line outcome for this screen */
+  goal: string;
+  /** Ordered steps the user should take on THIS page */
+  steps: string[];
+  primaryLabel: string;
+  primaryHref: string;
+  nextLabel?: string;
+  nextHref?: string;
+};
+
 export type GuideLayer = {
   path: string | RegExp;
   layer: string;
@@ -21,17 +32,32 @@ export type GuideLayer = {
   blurb: string;
   tips: string[];
   options: GuideOption[];
+  /** Explicit “where do I start on this screen” wizard — falls back via getStartHere() */
+  startHere?: GuideStartHere;
 };
+
+/** Canonical factory path shown in Start Here coaches */
+export const FACTORY_START_PATH = [
+  { href: "/wizard", label: "01 Wizard" },
+  { href: "/studio-set", label: "02 Studio Set" },
+  { href: "/storyboard", label: "03 Storyboard" },
+  { href: "/studio", label: "04 Studio" },
+  { href: "/sound-studio", label: "05 Sound" },
+  { href: "/archive-vault", label: "06 Vault" },
+  { href: "/merge-studio", label: "07 Merge" },
+] as const;
 
 export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.6.4 / YT-OS v2.
 
 Mission:
-- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Full Studio Set, STORM pipeline, BOT Director Wizard, YT-OS 11 skills, Viral Clone Factory).
+- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Full Studio Set, STORM pipeline, BOT Director Wizard, YT-OS 11 skills, Viral Clone Factory, Avatar Studio).
+- You are the explanatory wizard on EVERY screen. Default assumption: the operator feels lost (“where can I start?”). Lead with Start Here steps from page context before anything else.
+- When the user asks “where do I start?” give ONE recommended first click + the next 2 steps on the current screen, then the factory path.
 - Improve the operator's workflow with concrete next actions.
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer factory order: BOT Director Wizard (or /yt-os / /tools/clone) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Prefer factory order: BOT Director Wizard (or /yt-os / /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
 - Full Studio Set (/studio-set) is READY FOR PRODUCTION TESTING on app.reelstorm.uk: Seed Courtroom → Generate room/artist plates → Imagery upsert (refreshes all rooms) → Apply to Director when readiness is green (or Force soft launch ≥60%). Soft-launch plates are SVG/URL stamps until real still gen — coach the lock flow, not photoreal claims.
 - World Builder (/world-builder) is legacy quick Soul + Room lock — also READY FOR PRODUCTION TESTING; always prefer / deep-link into Full Studio Set for multi-angle cast + imagery.
 - Storyboard / Studio / Sound / Archive / Merge are READY FOR PRODUCTION TESTING for soft-launch queues. Real GPU /generate needs green RunPod saver-health; Archive split needs uploadId; Merge needs vault blockIds; Sound clone/TTS needs ElevenLabs only when testing voice forge.
@@ -173,10 +199,23 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Header avatar → Account · Billing · Wallet · Log out.",
       "Prefer BOT Director Wizard or YT-OS for a guided first project, then Full Studio Set before Storyboard.",
     ],
+    startHere: {
+      goal: "Start a first project without getting lost in the nav.",
+      steps: [
+        "Click BOT Director Wizard (best first path) — or YT-OS if you only want Shorts.",
+        "Create / open a project and copy its Project ID.",
+        "After Wizard: lock Full Studio Set, then Storyboard → Studio.",
+      ],
+      primaryLabel: "Start with Wizard",
+      primaryHref: "/wizard",
+      nextLabel: "Or open Avatar Studio",
+      nextHref: "/model-center/avatar",
+    },
     options: [
-      { id: "next", label: "What next?", prompt: "Based on a fresh project, what should I do next?", kind: "improve" },
+      { id: "start", label: "Where do I start?", prompt: "I am new — where do I start on the dashboard?", kind: "improve" },
       { id: "wizard", label: "Open Wizard", prompt: "Walk me through BOT Director Wizard stages.", href: "/wizard", kind: "do" },
       { id: "set", label: "Studio Set", prompt: "How do I lock Room · Artist · Imagery on Full Studio Set?", href: "/studio-set", kind: "goto" },
+      { id: "avatar", label: "Avatar Studio", prompt: "Should I use Avatar Studio or Wizard first?", href: "/model-center/avatar", kind: "goto" },
       { id: "rtc", label: "Check RTC", prompt: "How do I know if I have enough RTC for 2 ARCHIVE5 blocks?", href: "/wallet", kind: "goto" },
     ],
   },
@@ -191,7 +230,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Free demo 1 RTC can burn for a 1-min watermarked preview.",
       "When READY, Feed Factory → then lock Full Studio Set (/studio-set) before Storyboard / STORM generate.",
     ],
+    startHere: {
+      goal: "Leave with a locked blueprint the factory can execute.",
+      steps: [
+        "Click Start directing → pick Idea or Clone Viral Link.",
+        "Walk stages 01–07 (World stage has Use Avatar Studio if you need a talking-head twin).",
+        "When READY, Feed Factory → open Studio Set with your Project ID.",
+      ],
+      primaryLabel: "Explain 7 stages",
+      primaryHref: "/wizard",
+      nextLabel: "Next: Studio Set",
+      nextHref: "/studio-set",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on BOT Director Wizard right now?", kind: "improve" },
       { id: "stages", label: "Explain 7 stages", prompt: "Explain each BOT Director Wizard stage and what I must enter.", kind: "learn" },
       { id: "clone-tab", label: "Clone Viral Link", prompt: "How do I use the Clone Viral Link tab vs idea generate?", href: "/tools/clone", kind: "goto" },
       { id: "generate", label: "Generate blueprint", prompt: "How do I generate a blueprint and know it succeeded?", kind: "do" },
@@ -209,6 +261,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Costs draw from your RTC wallet / SystemBank — Pixabay intros keep Shorts near $0.",
       "Slash filter at bottom: type rs-viral, rs-clone…",
     ],
+    startHere: {
+      goal: "Pick one skill and ship a Short without leaving REELSTORM.",
+      steps: [
+        "Open /rs-viral or /rs-script — don’t browse all 11 first.",
+        "Generate a hook + script, then package or clone if you have a viral link.",
+        "When ready for plates, hand off to Studio Set → Studio.",
+      ],
+      primaryLabel: "Run /rs-viral",
+      primaryHref: "/yt-os",
+      nextLabel: "Clone a viral link",
+      nextHref: "/tools/clone",
+    },
     options: [
       { id: "viral", label: "Run /rs-viral", prompt: "How does Virality Engine find and rebuild niche winners?", kind: "do" },
       { id: "script", label: "21 hooks", prompt: "Explain hook formulas and write a Shorts script for my niche.", kind: "learn" },
@@ -243,6 +307,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Reproduce = 5 RTC — rewritten script + Pixabay B-roll + Seedance prompts + watermark.",
       "Styles: kids · gaming · a24 · original. Fair-use remake — not a copy.",
     ],
+    startHere: {
+      goal: "Turn one viral URL into a transformative remake (not a byte copy).",
+      steps: [
+        "Paste a YouTube / TikTok / Instagram URL only.",
+        "Analyze (1 RTC) → pick style → Reproduce (5 RTC).",
+        "Review watermarked output, then continue in Studio / Vault if needed.",
+      ],
+      primaryLabel: "Full clone flow",
+      primaryHref: "/tools/clone",
+      nextLabel: "Back to YT-OS",
+      nextHref: "/yt-os",
+    },
     options: [
       { id: "flow", label: "Full flow", prompt: "Walk me through analyze then reproduce with kids style.", kind: "do" },
       { id: "cost", label: "RTC costs", prompt: "Explain 1+5 RTC and free demo limits for clone.", kind: "learn" },
@@ -277,7 +353,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Apply template to a project, then lock Full Studio Set before Storyboard.",
       "Or start from curated ideals / Pixabay intros in Templates Room.",
     ],
+    startHere: {
+      goal: "Extract style DNA, then lock a Studio Set before generating.",
+      steps: [
+        "Drop an MP4 or paste a YouTube URL — wait until READY.",
+        "Apply the template to your project.",
+        "Open Studio Set with that Project ID before Storyboard.",
+      ],
+      primaryLabel: "Browse stock ideals",
+      primaryHref: "/templates-room",
+      nextLabel: "Next: Studio Set",
+      nextHref: "/studio-set",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Template Forge?", kind: "improve" },
       { id: "url", label: "URL extract tips", prompt: "Best practices for YouTube reference extract.", kind: "improve" },
       { id: "fail", label: "Analysis stuck?", prompt: "My analysis is stuck — troubleshooting checklist.", kind: "learn" },
       { id: "room", label: "Browse ideals", prompt: "Show me Templates Room categories.", href: "/templates-room", kind: "goto" },
@@ -296,7 +385,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Apply to Director when readiness is green; Force apply allows soft-launch partial ≥60%.",
       "Soft-launch: plates may be SVG/URL stamps — still valid for lock-flow testing until real still gen.",
     ],
+    startHere: {
+      goal: "Lock look + cast so Storyboard / Studio share one world.",
+      steps: [
+        "Paste Project ID → Seed Courtroom.",
+        "Generate Room + Artist plates · save Imagery prompt.",
+        "When readiness ≥60%, Apply to Director → Storyboard.",
+      ],
+      primaryLabel: "Production test path",
+      primaryHref: "/studio-set",
+      nextLabel: "Next: Storyboard",
+      nextHref: "/storyboard",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on Full Studio Set right now?", kind: "improve" },
       { id: "test", label: "Production test path", prompt: "Give me the exact production-test checklist for Studio Set on a live project ID.", kind: "do" },
       { id: "court", label: "Courtroom tour", prompt: "Walk me through courtroom camera angles like a DP — establishing to insert.", kind: "learn" },
       { id: "imagery", label: "Imagery refresh", prompt: "How does Imagery upsert refresh room plates and when should I use it?", kind: "learn" },
@@ -346,6 +448,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Confirm Full Studio Set applied (or World Builder stub) before breaking beats.",
       "Approve frames, then queue Studio with the same project ID.",
     ],
+    startHere: {
+      goal: "Break the script into approved frames before queuing GPU.",
+      steps: [
+        "Paste Project ID (script + Studio Set applied).",
+        "Generate Board → approve / tweak frames.",
+        "Open Studio with the same Project ID.",
+      ],
+      primaryLabel: "Generate board",
+      primaryHref: "/storyboard",
+      nextLabel: "Next: Studio",
+      nextHref: "/studio",
+    },
     options: [
       { id: "test", label: "Test path", prompt: "Exact production-test steps for Storyboard on a live project.", kind: "do" },
       { id: "set", label: "Studio Set first?", prompt: "Do I need Apply to Director before Storyboard?", href: "/studio-set", kind: "improve" },
@@ -362,6 +476,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "0MB /generate saver path needs RunPod saver-health green (correct pod ID in RUNPOD_SAVER_URL).",
       "Retry only failed blocks; never re-render passed QC.",
     ],
+    startHere: {
+      goal: "Queue a generate job for approved storyboard beats.",
+      steps: [
+        "Paste Project ID + short vibe note.",
+        "Queue Vibe Direct — watch jobId / LIVE ENGINE.",
+        "On QC pass → Sound Studio or Archive Vault.",
+      ],
+      primaryLabel: "Queue a job",
+      primaryHref: "/studio",
+      nextLabel: "Next: Sound",
+      nextHref: "/sound-studio",
+    },
     options: [
       { id: "test", label: "Queue a job", prompt: "How do I production-test Studio Vibe Direct safely?", kind: "do" },
       { id: "saver", label: "Saver health", prompt: "What does /api/studio/saver-health mean and how do I fix 404?", href: "/generate", kind: "learn" },
@@ -379,6 +505,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Demo bed + library endpoints work without ElevenLabs; clone/TTS need ELEVENLABS_API_KEY.",
       "Sync needs a Template Forge uploadId + audio file/URL/asset.",
     ],
+    startHere: {
+      goal: "Attach or forge voice without blocking on ElevenLabs.",
+      steps: [
+        "Open Sync or Library — demo bed works without a TTS key.",
+        "Sync needs uploadId + audio file/URL when locking to picture.",
+        "When blocks sound right → Archive Vault.",
+      ],
+      primaryLabel: "Sync workflow",
+      primaryHref: "/sound-studio",
+      nextLabel: "Next: Vault",
+      nextHref: "/archive-vault",
+    },
     options: [
       { id: "sync", label: "Sync workflow", prompt: "Step-by-step external audio sync onto video.", kind: "do" },
       { id: "extract", label: "Extract stems", prompt: "How do I extract voice/music stems from an upload?", kind: "learn" },
@@ -396,6 +534,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Tag series/episode/brand so remix stays findable.",
       "Empty vault is normal until you split a long upload.",
     ],
+    startHere: {
+      goal: "Promote QC-pass media into ARCHIVE5 blocks you can merge.",
+      steps: [
+        "Refresh to see existing blocks (empty is OK at first).",
+        "Split with projectId + uploadId when you have a long master.",
+        "Copy block IDs → Merge Studio.",
+      ],
+      primaryLabel: "Test split",
+      primaryHref: "/archive-vault",
+      nextLabel: "Next: Merge",
+      nextHref: "/merge-studio",
+    },
     options: [
       { id: "test", label: "Test split", prompt: "How do I production-test ARCHIVE5 split with a real uploadId?", kind: "do" },
       { id: "debit", label: "RTC debit", prompt: "When exactly is RTC debited for ARCHIVE5? (5 RTC per 5-min set)", kind: "learn" },
@@ -412,6 +562,18 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Never re-unlock Soul during merge — only vault IDs.",
       "FFmpeg concat runs on the worker — watch PM2/worker logs if job hangs.",
     ],
+    startHere: {
+      goal: "Concat vault blocks into a finished master — no Soul re-lock.",
+      steps: [
+        "Paste projectId + vault blockIds (from Archive Vault).",
+        "Queue merge — worker runs FFmpeg concat.",
+        "Download / review master; start next set from Wizard if needed.",
+      ],
+      primaryLabel: "Test merge",
+      primaryHref: "/merge-studio",
+      nextLabel: "Get block IDs",
+      nextHref: "/archive-vault",
+    },
     options: [
       { id: "test", label: "Test merge", prompt: "Exact production-test fields for POST /api/merge.", kind: "do" },
       { id: "order", label: "Block order", prompt: "How should I order blocks for a 30-min master?", kind: "improve" },
@@ -510,7 +672,20 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       "Generate spends template RTC and returns real_r2 URL — Send to Studio Set when done.",
       "Voice stays in Sound Studio OS; AVATAR_ENGINE=heygen|liveportrait (saver fallback).",
     ],
+    startHere: {
+      goal: "Ship a talking-head clip to videos.reelstorm.uk without re-filming outfits.",
+      steps: [
+        "Create Avatar → upload 1 photo (4 outfit slots).",
+        "Templates → News Update Authority · set niche + local news · Generate Script.",
+        "Generate → R2 → Send to Studio Set.",
+      ],
+      primaryLabel: "Create from photo",
+      primaryHref: "/model-center/avatar",
+      nextLabel: "Studio Set",
+      nextHref: "/studio-set",
+    },
     options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Avatar Studio?", kind: "improve" },
       { id: "create", label: "Create from photo", prompt: "How do I upload one photo and get four outfit variants?", kind: "do" },
       { id: "news", label: "News Authority script", prompt: "Help me write a Waymo / local news 30-second ON AIR script.", kind: "do" },
       { id: "set", label: "Studio Set next", prompt: "After R2 video, how do I use it in Studio Set?", href: "/studio-set", kind: "goto" },
@@ -558,6 +733,21 @@ export const GUIDE_LAYERS: GuideLayer[] = [
   },
 ];
 
+/** Build a Start Here wizard for any screen (explicit or derived). */
+export function getStartHere(layer: GuideLayer): GuideStartHere {
+  if (layer.startHere) return layer.startHere;
+  const doOpt = layer.options.find((o) => o.kind === "do" || o.kind === "goto");
+  const nextOpt = layer.options.find((o) => o.href && o !== doOpt);
+  return {
+    goal: layer.blurb,
+    steps: layer.tips.slice(0, 4),
+    primaryLabel: doOpt?.label || "Ask AI: where do I start?",
+    primaryHref: doOpt?.href || "/wizard",
+    nextLabel: nextOpt?.label,
+    nextHref: nextOpt?.href,
+  };
+}
+
 export function resolveGuideLayer(pathname: string): GuideLayer {
   const exact = GUIDE_LAYERS.find((l) => typeof l.path === "string" && l.path === pathname);
   if (exact) return exact;
@@ -597,10 +787,14 @@ export function resolveGuideLayer(pathname: string): GuideLayer {
 
 export function buildGuideContextBlock(pathname: string): string {
   const layer = resolveGuideLayer(pathname);
+  const start = getStartHere(layer);
   return [
     `Current path: ${pathname}`,
     `Layer: ${layer.layer} · ${layer.title}`,
     `Blurb: ${layer.blurb}`,
+    `Start here goal: ${start.goal}`,
+    `Start here steps:\n- ${start.steps.join("\n- ")}`,
+    `Primary CTA: ${start.primaryLabel}${start.primaryHref ? ` → ${start.primaryHref}` : ""}`,
     `Tips:\n- ${layer.tips.join("\n- ")}`,
     `Suggested options:\n${layer.options.map((o) => `- [${o.kind}] ${o.label}: ${o.prompt}${o.href ? ` → ${o.href}` : ""}`).join("\n")}`,
   ].join("\n");

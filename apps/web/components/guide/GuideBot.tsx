@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { FACTORY_START_PATH, getStartHere, resolveGuideLayer } from "@reelstorm/domain";
 
 type GuideOption = {
   id: string;
@@ -24,6 +25,8 @@ const KIND_COLOR: Record<GuideOption["kind"], string> = {
   goto: "#C4B5FD",
 };
 
+const WELCOME_KEY = "rs_guide_welcomed_v2";
+
 export function GuideBot() {
   const pathname = usePathname() || "/";
   const router = useRouter();
@@ -31,13 +34,16 @@ export function GuideBot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [tips, setTips] = useState<string[]>([]);
   const [options, setOptions] = useState<GuideOption[]>([]);
   const [title, setTitle] = useState("STORM Guide");
   const [blurb, setBlurb] = useState("Improve workflow · learn the system");
   const [messages, setMessages] = useState<Msg[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
   const greeted = useRef<string | null>(null);
+  const pendingAsk = useRef<string | null>(null);
+
+  const layer = resolveGuideLayer(pathname);
+  const startHere = getStartHere(layer);
 
   const loadContext = useCallback(async (path: string) => {
     try {
@@ -49,105 +55,157 @@ export function GuideBot() {
       }>(`/api/guide/context?pathname=${encodeURIComponent(path)}`);
       setTitle(ctx.title);
       setBlurb(ctx.blurb);
-      setTips(ctx.tips);
       setOptions(ctx.options);
       return ctx;
     } catch {
-      setTitle("STORM Guide");
-      setBlurb("Coach available offline with system knowledge.");
-      setTips(["Ask what to do next on this screen."]);
+      const local = resolveGuideLayer(path);
+      const start = getStartHere(local);
+      setTitle(local.title);
+      setBlurb(local.blurb);
       setOptions([
         {
-          id: "next",
-          label: "What next?",
-          prompt: "What should I do next?",
+          id: "start",
+          label: "Where do I start?",
+          prompt: `Where do I start on ${local.title}?`,
           kind: "improve",
         },
+        ...local.options.slice(0, 3),
       ]);
-      return null;
+      return {
+        title: local.title,
+        blurb: local.blurb,
+        tips: start.steps,
+        options: local.options,
+      };
     }
   }, []);
+
+  const ask = useCallback(
+    async (message: string, optionId?: string, opt?: GuideOption) => {
+      const text = message.trim();
+      if (!text && !optionId) return;
+      if (opt?.href && opt.kind === "goto") {
+        setMessages((m) => [
+          ...m,
+          { role: "user", content: opt.label },
+          {
+            role: "assistant",
+            content: `Opening **${opt.href}** — I’ll coach you there.`,
+            source: "nav",
+          },
+        ]);
+        setOpen(true);
+        router.push(opt.href);
+        return;
+      }
+
+      setOpen(true);
+      setBusy(true);
+      setMessages((m) => [...m, { role: "user", content: text || opt?.label || "…" }]);
+      setInput("");
+      try {
+        const history = messages.slice(-6).map(({ role, content }) => ({ role, content }));
+        const res = await api<{
+          reply: string;
+          options: GuideOption[];
+          source: string;
+        }>("/api/guide/chat", {
+          method: "POST",
+          body: JSON.stringify({
+            message: text || undefined,
+            optionId,
+            pathname,
+            history,
+            locale,
+          }),
+        });
+        setOptions(res.options?.length ? res.options : options);
+        setMessages((m) => [...m, { role: "assistant", content: res.reply, source: res.source }]);
+      } catch (e) {
+        // Offline: answer from Start Here knowledge
+        const start = getStartHere(resolveGuideLayer(pathname));
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: [
+              `**${resolveGuideLayer(pathname).title}** — ${start.goal}`,
+              "",
+              ...start.steps.map((s, i) => `${i + 1}. ${s}`),
+              "",
+              `Primary: ${start.primaryLabel}${start.primaryHref ? ` → ${start.primaryHref}` : ""}`,
+              "",
+              `Guide API briefly offline: ${(e as Error).message}`,
+            ].join("\n"),
+            source: "start-here",
+          },
+        ]);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [locale, messages, options, pathname, router],
+  );
 
   useEffect(() => {
     loadContext(pathname).then((ctx) => {
       if (!ctx) return;
       if (greeted.current === pathname) return;
       greeted.current = pathname;
+      const start = getStartHere(resolveGuideLayer(pathname));
       setMessages([
         {
           role: "assistant",
-          content: `**${ctx.title}** — ${ctx.blurb}\n\n${ctx.tips.map((t) => `• ${t}`).join("\n")}\n\nPick an option to improve your workflow, or ask me anything.`,
+          content: [
+            `**${ctx.title}** — ${ctx.blurb}`,
+            "",
+            "**Start here on this screen:**",
+            ...start.steps.map((s, i) => `${i + 1}. ${s}`),
+            "",
+            "Tap **Where do I start?** anytime, or pick an option below.",
+          ].join("\n"),
           source: "context",
         },
       ]);
     });
   }, [pathname, loadContext]);
 
+  // First visit: auto-open guide so users aren't lost
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(WELCOME_KEY)) return;
+      localStorage.setItem(WELCOME_KEY, "1");
+      setOpen(true);
+      pendingAsk.current = "Where do I start in ReelStorm OS? Give me the first click and next two steps.";
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // External open from Start Here rail / sidebar
+  useEffect(() => {
+    function onOpen(e: Event) {
+      const detail = (e as CustomEvent<{ prompt?: string }>).detail;
+      setOpen(true);
+      const prompt = detail?.prompt || "Where do I start on this screen?";
+      pendingAsk.current = prompt;
+    }
+    window.addEventListener("rs-open-guide", onOpen as EventListener);
+    return () => window.removeEventListener("rs-open-guide", onOpen as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !pendingAsk.current || busy) return;
+    const p = pendingAsk.current;
+    pendingAsk.current = null;
+    void ask(p);
+  }, [open, busy, ask]);
+
   useEffect(() => {
     if (open && scroller.current) {
       scroller.current.scrollTop = scroller.current.scrollHeight;
     }
   }, [messages, open, busy]);
-
-  async function ask(message: string, optionId?: string, opt?: GuideOption) {
-    const text = message.trim();
-    if (!text && !optionId) return;
-    if (opt?.href && opt.kind === "goto") {
-      setMessages((m) => [
-        ...m,
-        { role: "user", content: opt.label },
-        {
-          role: "assistant",
-          content: `Opening **${opt.href}** — I’ll coach you there.`,
-          source: "nav",
-        },
-      ]);
-      setOpen(true);
-      router.push(opt.href);
-      return;
-    }
-
-    setOpen(true);
-    setBusy(true);
-    setMessages((m) => [...m, { role: "user", content: text || opt?.label || "…" }]);
-    setInput("");
-    try {
-      const history = messages.slice(-6).map(({ role, content }) => ({ role, content }));
-      const res = await api<{
-        reply: string;
-        options: GuideOption[];
-        source: string;
-      }>("/api/guide/chat", {
-        method: "POST",
-        body: JSON.stringify({
-          message: text || undefined,
-          optionId,
-          pathname,
-          history,
-          locale,
-        }),
-      });
-      setOptions(res.options?.length ? res.options : options);
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: res.reply, source: res.source },
-      ]);
-      if (opt?.href && opt.kind !== "goto") {
-        // soft hint already in reply; keep user on page unless they click again
-      }
-    } catch (e) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content: `Guide offline for a moment: ${(e as Error).message}\n\nTry again, or open /training for the flip manual.`,
-          source: "error",
-        },
-      ]);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   function renderContent(content: string) {
     return content.split("\n").map((line, i) => {
@@ -169,31 +227,53 @@ export function GuideBot() {
     });
   }
 
+  const startOptions: GuideOption[] = [
+    {
+      id: "where-start",
+      label: "Where do I start?",
+      prompt: `Where do I start on ${title}? Give the first click and next two steps.`,
+      kind: "improve",
+    },
+    ...options.filter((o) => o.id !== "where-start" && o.id !== "start").slice(0, 3),
+  ];
+
   return (
     <>
-      {/* Launcher — every layer */}
-      <button
-        type="button"
-        aria-label={t("guide.title")}
-        onClick={() => setOpen((v) => !v)}
-        className={clsx(
-          "fixed z-[60] bottom-5 right-5 md:bottom-7 md:right-7",
-          "h-14 pl-3 pr-4 rounded-full flex items-center gap-2.5",
-          "bg-gradient-to-r from-violet to-cyan text-white font-bold shadow-[0_12px_40px_rgba(124,58,237,0.45)]",
-          "hover:brightness-110 transition border border-white/20",
-          open && "ring-2 ring-orange/80",
+      <div className="fixed z-[60] bottom-5 right-5 md:bottom-7 md:right-7 flex flex-col items-end gap-2">
+        {!open && (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+              pendingAsk.current = `Where do I start on ${title}?`;
+            }}
+            className="h-9 px-3 rounded-full border border-orange/50 bg-orange text-black text-[11px] font-bold shadow-lg animate-pulse"
+          >
+            Where do I start?
+          </button>
         )}
-      >
-        <span className="w-8 h-8 rounded-full bg-black/25 flex items-center justify-center mono text-[10px] tracking-wider">
-          AI
-        </span>
-        <span className="text-[13px] hidden sm:inline">{t("guide.title")}</span>
-        <span className="sm:hidden text-[13px]">Guide</span>
-      </button>
+        <button
+          type="button"
+          aria-label={t("guide.title")}
+          onClick={() => setOpen((v) => !v)}
+          className={clsx(
+            "h-14 pl-3 pr-4 rounded-full flex items-center gap-2.5",
+            "bg-gradient-to-r from-violet to-cyan text-white font-bold shadow-[0_12px_40px_rgba(124,58,237,0.45)]",
+            "hover:brightness-110 transition border border-white/20",
+            open && "ring-2 ring-orange/80",
+          )}
+        >
+          <span className="w-8 h-8 rounded-full bg-black/25 flex items-center justify-center mono text-[10px] tracking-wider">
+            AI
+          </span>
+          <span className="text-[13px] hidden sm:inline">{t("guide.title")}</span>
+          <span className="sm:hidden text-[13px]">Guide</span>
+        </button>
+      </div>
 
       {open && (
         <div
-          className="fixed z-[60] bottom-[5.5rem] right-4 md:right-7 w-[min(100vw-1.5rem,400px)] max-h-[min(72vh,620px)] flex flex-col rounded-rs-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.65)] overflow-hidden"
+          className="fixed z-[60] bottom-[5.5rem] right-4 md:right-7 w-[min(100vw-1.5rem,420px)] max-h-[min(78vh,680px)] flex flex-col rounded-rs-xl border border-white/10 bg-[#0A0A0A]/95 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.65)] overflow-hidden"
           role="dialog"
           aria-label="STORM Guide"
         >
@@ -211,6 +291,36 @@ export function GuideBot() {
             >
               ×
             </button>
+          </div>
+
+          <div className="px-3 py-2 border-b border-white/[0.06] flex gap-1 overflow-x-auto">
+            {FACTORY_START_PATH.map((p) => (
+              <Link
+                key={p.href}
+                href={p.href}
+                onClick={() => setOpen(false)}
+                className={clsx(
+                  "shrink-0 mono text-[8px] px-2 py-1 rounded-full border",
+                  pathname === p.href || pathname.startsWith(p.href + "/")
+                    ? "border-cyan/50 text-cyan bg-cyan/10"
+                    : "border-white/10 text-white/35",
+                )}
+              >
+                {p.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="px-3 py-2 border-b border-white/[0.06] bg-void/50">
+            <div className="mono text-[8px] text-orange mb-1">THIS SCREEN</div>
+            <ol className="space-y-1">
+              {startHere.steps.slice(0, 3).map((s, i) => (
+                <li key={i} className="text-[11px] text-white/60 flex gap-2">
+                  <span className="text-orange mono text-[9px]">{i + 1}.</span>
+                  <span>{s}</span>
+                </li>
+              ))}
+            </ol>
           </div>
 
           <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-[13px]">
@@ -236,7 +346,7 @@ export function GuideBot() {
           </div>
 
           <div className="px-3 pb-2 flex flex-wrap gap-1.5 border-t border-white/[0.06] pt-2">
-            {options.slice(0, 4).map((o) => (
+            {startOptions.map((o) => (
               <button
                 key={o.id}
                 type="button"
@@ -280,8 +390,8 @@ export function GuideBot() {
             <Link href="/how-it-works" className="hover:text-cyan" onClick={() => setOpen(false)}>
               {t("guide.factoryMap")}
             </Link>
-            <Link href="/sound-studio" className="hover:text-cyan" onClick={() => setOpen(false)}>
-              {t("guide.soundStudio")}
+            <Link href="/wizard" className="hover:text-cyan" onClick={() => setOpen(false)}>
+              Wizard
             </Link>
           </div>
         </div>

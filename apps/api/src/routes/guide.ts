@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import {
   GUIDE_SYSTEM_PROMPT,
   buildGuideContextBlock,
+  getStartHere,
   resolveGuideLayer,
   type GuideOption,
 } from "@reelstorm/domain";
@@ -15,15 +16,66 @@ type ChatBody = {
   locale?: string;
 };
 
+function startHereOptions(layer: ReturnType<typeof resolveGuideLayer>): GuideOption[] {
+  const start = getStartHere(layer);
+  const where: GuideOption = {
+    id: "where-start",
+    label: "Where do I start?",
+    prompt: `Where do I start on ${layer.title}? Give the first click and next two steps.`,
+    kind: "improve",
+  };
+  const primary: GuideOption | undefined = start.primaryHref
+    ? {
+        id: "primary",
+        label: start.primaryLabel,
+        prompt: `Help me with: ${start.primaryLabel}`,
+        href: start.primaryHref,
+        kind: "goto",
+      }
+    : undefined;
+  const rest = layer.options.filter((o) => o.id !== "where-start").slice(0, 3);
+  return [where, ...(primary ? [primary] : []), ...rest].slice(0, 5);
+}
+
 function localCoach(pathname: string, message: string, option?: GuideOption): {
   reply: string;
   options: GuideOption[];
   source: "knowledge";
 } {
   const layer = resolveGuideLayer(pathname);
+  const start = getStartHere(layer);
   const focus = option?.prompt || message;
+  const lower = focus.toLowerCase();
+  const askingStart =
+    lower.includes("where do i start") ||
+    lower.includes("where can i start") ||
+    lower.includes("how do i start") ||
+    lower.includes("first click") ||
+    lower.includes("getting started") ||
+    lower.includes("what should i do first") ||
+    option?.id === "where-start";
+
+  if (askingStart) {
+    const lines = [
+      `**${layer.title}** — ${start.goal}`,
+      "",
+      "**Start here (do this now):**",
+      ...start.steps.map((s, i) => `${i + 1}. ${s}`),
+      "",
+      `→ First action: **${start.primaryLabel}**${start.primaryHref ? ` (${start.primaryHref})` : ""}`,
+    ];
+    if (start.nextLabel && start.nextHref) {
+      lines.push(`→ Then: **${start.nextLabel}** (${start.nextHref})`);
+    }
+    lines.push("", "Ask anything about this screen — I’m with you on every step.");
+    return { reply: lines.join("\n"), options: startHereOptions(layer), source: "knowledge" };
+  }
+
   const lines = [
     `**${layer.title}** — ${layer.blurb}`,
+    "",
+    "Start here:",
+    ...start.steps.slice(0, 3).map((s, i) => `${i + 1}. ${s}`),
     "",
     "System tips:",
     ...layer.tips.map((t) => `• ${t}`),
@@ -31,7 +83,6 @@ function localCoach(pathname: string, message: string, option?: GuideOption): {
     `On “${focus.slice(0, 160)}”:`,
   ];
 
-  const lower = focus.toLowerCase();
   if (
     lower.includes("rtc") ||
     lower.includes("pricing") ||
@@ -114,23 +165,25 @@ function localCoach(pathname: string, message: string, option?: GuideOption): {
     );
   }
 
-  lines.push("", "Pick an option to improve your workflow:");
-  return { reply: lines.join("\n"), options: layer.options, source: "knowledge" };
+  lines.push("", "Pick an option — or ask “Where do I start?” anytime:");
+  return { reply: lines.join("\n"), options: startHereOptions(layer), source: "knowledge" };
 }
 
 export async function guideRoutes(app: FastifyInstance) {
-  /** GET /api/guide/context?pathname= — page tips + options */
+  /** GET /api/guide/context?pathname= — page tips + options + startHere wizard */
   app.get("/api/guide/context", async (req, reply) => {
     const q = req.query as { pathname?: string };
     const pathname = q.pathname || "/";
     const layer = resolveGuideLayer(pathname);
+    const startHere = getStartHere(layer);
     return reply.send({
       pathname,
       layer: layer.layer,
       title: layer.title,
       blurb: layer.blurb,
-      tips: layer.tips,
-      options: layer.options,
+      tips: layer.tips.length ? layer.tips : startHere.steps,
+      options: startHereOptions(layer),
+      startHere,
     });
   });
 
@@ -173,9 +226,10 @@ export async function guideRoutes(app: FastifyInstance) {
         if (raw?.trim()) {
           return reply.send({
             reply: raw.trim(),
-            options: layer.options,
+            options: startHereOptions(layer),
             source: process.env.DASHSCOPE_API_KEY ? "dashscope" : "ollama",
             layer: { title: layer.title, path: pathname },
+            startHere: getStartHere(layer),
           });
         }
       } catch (err) {
@@ -187,6 +241,7 @@ export async function guideRoutes(app: FastifyInstance) {
     return reply.send({
       ...local,
       layer: { title: layer.title, path: pathname },
+      startHere: getStartHere(layer),
     });
   });
 }
