@@ -209,7 +209,7 @@ NGX
 
 if [[ "\$HAS_SSL" == "1" ]]; then
   cat >> /etc/nginx/sites-available/reelstorm <<'NGX'
-  location / { return 301 https://$host$request_uri; }
+  location / { return 301 https://\$host\$request_uri; }
 }
 server {
   listen 80;
@@ -217,7 +217,7 @@ server {
   server_name api.reelstorm.uk;
   client_max_body_size 2G;
   location /.well-known/acme-challenge/ { root /var/www/html; }
-  location / { return 301 https://$host$request_uri; }
+  location / { return 301 https://\$host\$request_uri; }
 }
 NGX
   cat >> /etc/nginx/sites-available/reelstorm <<NGX
