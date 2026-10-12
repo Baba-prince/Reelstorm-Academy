@@ -2,9 +2,10 @@
  * Language Studio — DOWNLOAD → TRANSCRIBE → TRANSLATE → TTS → LIPSYNC → MUX
  */
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { prisma, type TranslationStatus } from "@reelstorm/db";
 import {
   downloadReferenceVideo,
@@ -27,11 +28,12 @@ import {
   TRANSLATE_SEED_TRANSLATIONS,
   translateRtcCost,
   classifyTranslateSource,
-  YT_PROOF_VIDEO_URL,
 } from "@reelstorm/domain";
 
 type Segment = { start: number; end: number; text: string };
 type Transcript = { text: string; language: string; segments: Segment[]; engine?: string };
+
+const MMS_LANGS = new Set(["yo", "ha", "ig", "de"]);
 
 function run(cmd: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
@@ -47,6 +49,35 @@ function run(cmd: string, args: string[]): Promise<{ code: number; stdout: strin
     proc.on("close", (code) => resolve({ code: code ?? 1, stdout, stderr }));
     proc.on("error", (err) => resolve({ code: 1, stdout, stderr: err.message }));
   });
+}
+
+/** Resolve tools/lang-studio Python venv (VPS) or python3 fallback */
+async function langStudioPython(): Promise<{ python: string; root: string } | null> {
+  const candidates = [
+    process.env.LANG_STUDIO_ROOT,
+    path.resolve(process.cwd(), "tools/lang-studio"),
+    path.resolve(process.cwd(), "../../tools/lang-studio"),
+    "/opt/reelstorm-os/tools/lang-studio",
+  ].filter(Boolean) as string[];
+
+  // When running from packages/pipeline dist
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    candidates.push(path.resolve(here, "../../../tools/lang-studio"));
+  } catch {
+    /* ignore */
+  }
+
+  for (const root of candidates) {
+    const venvPy = path.join(root, ".venv", "bin", "python");
+    try {
+      await access(venvPy);
+      return { python: venvPy, root };
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
 }
 
 async function appendLog(jobId: string, line: string) {
@@ -71,7 +102,60 @@ async function failJob(jobId: string, error: string) {
   return setStatus(jobId, "FAILED", { error });
 }
 
-/** Try pod /transcribe; fallback seed + duration-scaled segments */
+/** Local Whisper (tools/lang-studio venv) — real speech, not seed */
+async function whisperLocal(localPath: string): Promise<Transcript | null> {
+  const studio = await langStudioPython();
+  if (!studio) return null;
+  const ffmpeg = await resolveFfmpeg();
+  const work = path.join(tmpdir(), `rs-whisper-${Date.now()}`);
+  await mkdir(work, { recursive: true });
+  const wav = path.join(work, "audio.wav");
+  const outJson = path.join(work, "transcript.json");
+  try {
+    const extract = await run(ffmpeg, [
+      "-y",
+      "-i",
+      localPath,
+      "-vn",
+      "-ac",
+      "1",
+      "-ar",
+      "16000",
+      wav,
+    ]);
+    if (extract.code !== 0) return null;
+
+    const model = process.env.WHISPER_LOCAL_MODEL || "base";
+    const script = path.join(studio.root, "whisper_transcribe.py");
+    const res = await run(studio.python, [
+      script,
+      "--audio",
+      wav,
+      "--model",
+      model,
+      "--language",
+      "en",
+      "--out",
+      outJson,
+    ]);
+    if (res.code !== 0) return null;
+    const parsed = JSON.parse(await readFile(outJson, "utf8")) as Transcript;
+    if (!parsed.text?.trim()) return null;
+    return {
+      text: parsed.text.trim(),
+      language: parsed.language || "en",
+      segments: Array.isArray(parsed.segments) ? parsed.segments : [],
+      engine: parsed.engine || `whisper-local-${model}`,
+    };
+  } catch {
+    return null;
+  } finally {
+    await unlink(wav).catch(() => undefined);
+    await unlink(outJson).catch(() => undefined);
+  }
+}
+
+/** Try pod /transcribe → local Whisper → seed (last resort only) */
 async function whisperOrFallback(localPath: string, durationSec: number): Promise<Transcript> {
   const engine = await ensurePodAliveOrFallback();
   const saverBase = (process.env.RUNPOD_SAVER_URL || "").replace(/\/generate\/?$/, "");
@@ -106,11 +190,14 @@ async function whisperOrFallback(localPath: string, durationSec: number): Promis
         }
       }
     } catch {
-      /* soft-fail */
+      /* soft-fail → local */
     }
   }
 
-  // Scale seed segments to video duration
+  const local = await whisperLocal(localPath);
+  if (local) return local;
+
+  // Scale seed segments to video duration — ONLY when STT unavailable
   const seed = TRANSLATE_SEED_TRANSCRIPT;
   const last = seed.segments[seed.segments.length - 1]?.end || 12;
   const scale = Math.max(1, durationSec / last);
@@ -183,18 +270,69 @@ async function translateLang(
   };
 }
 
-/** ElevenLabs multilingual TTS or ffmpeg tone bed soft-launch */
+/** Meta MMS-TTS (yo/ha/ig/de) via tools/lang-studio — real voice, no beep */
+async function synthesizeMmsTts(
+  jobId: string,
+  lang: string,
+  text: string,
+): Promise<{ url: string; key: string; engine: string } | null> {
+  if (!MMS_LANGS.has(lang)) return null;
+  const studio = await langStudioPython();
+  if (!studio) return null;
+
+  const key = `translated/tts/${jobId}_${lang}.mp3`;
+  const work = path.join(tmpdir(), `rs-mms-${jobId}-${lang}`);
+  await mkdir(work, { recursive: true });
+  const wav = path.join(work, "voice.wav");
+  const mp3 = path.join(work, "voice.mp3");
+  const script = path.join(studio.root, "mms_tts.py");
+  const ffmpeg = await resolveFfmpeg();
+
+  try {
+    const tts = await run(studio.python, [
+      script,
+      "--lang",
+      lang,
+      "--text",
+      text.slice(0, 8000),
+      "--out",
+      wav,
+    ]);
+    if (tts.code !== 0) {
+      await appendLog(jobId, `MMS-TTS ${lang} failed: ${(tts.stderr || tts.stdout).slice(0, 240)}`);
+      return null;
+    }
+    const enc = await run(ffmpeg, ["-y", "-i", wav, "-q:a", "4", "-acodec", "libmp3lame", mp3]);
+    if (enc.code !== 0) return null;
+    await uploadFile(key, mp3, "audio/mpeg");
+    return { url: publicUrl(key), key, engine: `mms-tts-${lang}` };
+  } catch (e) {
+    await appendLog(jobId, `MMS-TTS ${lang} error: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  } finally {
+    await unlink(wav).catch(() => undefined);
+    await unlink(mp3).catch(() => undefined);
+  }
+}
+
+/** ElevenLabs (DE / supported langs) → MMS (yo/ha/ig/de) — never ship a silent sine beep */
 async function synthesizeTts(
   jobId: string,
   lang: string,
   text: string,
-  durationSec: number,
+  _durationSec: number,
 ): Promise<{ url: string; key: string; engine: string }> {
   const key = `translated/tts/${jobId}_${lang}.mp3`;
-  const elevenKey = process.env.ELEVENLABS_API_KEY;
+  const elevenKey = (process.env.ELEVENLABS_API_KEY || "").trim();
   const voiceId = process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
+  const spoken = (text || "").trim();
+  if (!spoken) {
+    throw new Error(`TTS ${lang}: empty translation text — cannot synthesize voice`);
+  }
 
-  if (elevenKey) {
+  // ElevenLabs does not support Yoruba/Hausa/Igbo — skip for those langs
+  const elevenOkLang = !["yo", "ha", "ig"].includes(lang);
+  if (elevenKey && elevenOkLang) {
     try {
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
@@ -204,7 +342,7 @@ async function synthesizeTts(
           Accept: "audio/mpeg",
         },
         body: JSON.stringify({
-          text: text.slice(0, 2500),
+          text: spoken.slice(0, 2500),
           model_id: "eleven_multilingual_v2",
           voice_settings: { stability: 0.45, similarity_boost: 0.75 },
         }),
@@ -215,34 +353,67 @@ async function synthesizeTts(
         await uploadBuffer(key, buf, "audio/mpeg");
         return { url: publicUrl(key), key, engine: "elevenlabs" };
       }
-    } catch {
-      /* fall through */
+      await appendLog(jobId, `ElevenLabs ${lang} HTTP ${res.status} — trying MMS`);
+    } catch (e) {
+      await appendLog(
+        jobId,
+        `ElevenLabs ${lang} error: ${e instanceof Error ? e.message : String(e)} — trying MMS`,
+      );
     }
   }
 
-  // Soft-launch: generate silent/tone mp3 matching duration via ffmpeg
-  const ffmpeg = await resolveFfmpeg();
-  const out = path.join(tmpdir(), `rs-tts-${jobId}-${lang}.mp3`);
-  const dur = Math.max(2, Math.min(120, Math.ceil(durationSec || 12)));
-  const freq = lang === "de" ? 220 : lang === "yo" ? 260 : lang === "ha" ? 240 : 280;
-  await run(ffmpeg, [
-    "-y",
-    "-f",
-    "lavfi",
-    "-i",
-    `sine=frequency=${freq}:duration=${dur}`,
-    "-q:a",
-    "9",
-    "-acodec",
-    "libmp3lame",
-    out,
-  ]);
-  try {
-    await uploadFile(key, out, "audio/mpeg");
-  } finally {
-    await unlink(out).catch(() => undefined);
+  const mms = await synthesizeMmsTts(jobId, lang, spoken);
+  if (mms) return mms;
+
+  // Google Translate TTS for Hausa/German when MMS unavailable
+  if (lang === "ha" || lang === "de") {
+    const ggl = await synthesizeGoogleTts(jobId, lang, spoken, key);
+    if (ggl) return ggl;
   }
-  return { url: publicUrl(key), key, engine: "ffmpeg-soft" };
+
+  throw new Error(
+    `TTS ${lang} failed — set ELEVENLABS_API_KEY (de) or install tools/lang-studio MMS-TTS (yo/ha/ig). Refusing beep/source-echo.`,
+  );
+}
+
+/** Chunked Google translate_tts (ha/de). Yoruba/Igbo return 400 — use MMS. */
+async function synthesizeGoogleTts(
+  jobId: string,
+  lang: string,
+  text: string,
+  key: string,
+): Promise<{ url: string; key: string; engine: string } | null> {
+  const ffmpeg = await resolveFfmpeg();
+  const work = path.join(tmpdir(), `rs-ggl-${jobId}-${lang}`);
+  await mkdir(work, { recursive: true });
+  const chunks = text.match(/.{1,160}(?:\s|$)/g) || [text.slice(0, 160)];
+  const parts: string[] = [];
+  try {
+    for (let i = 0; i < Math.min(chunks.length, 40); i++) {
+      const q = encodeURIComponent(chunks[i]!.trim());
+      if (!q) continue;
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${q}&tl=${lang}&client=tw-ob`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; ReelStorm/1.0)" },
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) continue;
+      const part = path.join(work, `p${i}.mp3`);
+      await writeFile(part, Buffer.from(await res.arrayBuffer()));
+      parts.push(part);
+    }
+    if (!parts.length) return null;
+    const list = path.join(work, "list.txt");
+    await writeFile(list, parts.map((p) => `file '${p}'`).join("\n"));
+    const out = path.join(work, "voice.mp3");
+    const cat = await run(ffmpeg, ["-y", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", out]);
+    if (cat.code !== 0) return null;
+    await uploadFile(key, out, "audio/mpeg");
+    return { url: publicUrl(key), key, engine: `google-tts-${lang}` };
+  } catch (e) {
+    await appendLog(jobId, `Google TTS ${lang}: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  }
 }
 
 /** Lip-sync via pod /lipsync or ffmpeg audio replace (body preserved from source video) */
@@ -290,85 +461,70 @@ async function lipsyncLang(
   }
 
   // Preserve video (body motion) + replace audio track = soft body-sync path
+  // NEVER source-copy (that echoes the original English / source voice).
   const ffmpeg = await resolveFfmpeg();
   const work = path.join(tmpdir(), `rs-ls-${jobId}-${lang}`);
   await mkdir(work, { recursive: true });
   const audioPath = path.join(work, "voice.mp3");
+  const paddedPath = path.join(work, "voice_pad.m4a");
   const outPath = path.join(work, "out.mp4");
 
-  try {
-    const aRes = await fetch(ttsUrl);
-    if (aRes.ok) {
-      await writeFile(audioPath, Buffer.from(await aRes.arrayBuffer()));
-    } else {
-      // regenerate tone
-      await run(ffmpeg, [
-        "-y",
-        "-f",
-        "lavfi",
-        "-i",
-        `sine=frequency=200:duration=${Math.ceil(durationSec || 12)}`,
-        "-q:a",
-        "9",
-        "-acodec",
-        "libmp3lame",
-        audioPath,
-      ]);
-    }
+  const aRes = await fetch(ttsUrl);
+  if (!aRes.ok) {
+    throw new Error(`Lip-sync ${lang}: TTS fetch failed HTTP ${aRes.status}`);
+  }
+  await writeFile(audioPath, Buffer.from(await aRes.arrayBuffer()));
 
-    const mux = await run(ffmpeg, [
-      "-y",
-      "-i",
-      sourceLocal,
-      "-i",
-      audioPath,
-      "-map",
-      "0:v:0",
-      "-map",
-      "1:a:0",
-      "-c:v",
-      "copy",
-      "-c:a",
-      "aac",
-      "-shortest",
-      "-movflags",
-      "+faststart",
-      outPath,
-    ]);
+  const dur = Math.max(2, Math.ceil(durationSec || 12));
+  // Pad/trim TTS to picture length so we don't leave original audio or cut mid-scene oddly
+  const pad = await run(ffmpeg, [
+    "-y",
+    "-i",
+    audioPath,
+    "-af",
+    `apad=whole_dur=${dur}`,
+    "-t",
+    String(dur),
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    paddedPath,
+  ]);
+  const audioForMux = pad.code === 0 ? paddedPath : audioPath;
 
-    if (mux.code === 0) {
-      await uploadFile(outKey, outPath, "video/mp4");
-      return {
-        r2Url: publicUrl(outKey),
-        key: outKey,
-        lipSync: false,
-        bodySync: true,
-        engine: "ffmpeg-audio-replace",
-      };
-    }
-  } catch {
-    /* proof fallback */
+  const mux = await run(ffmpeg, [
+    "-y",
+    "-i",
+    sourceLocal,
+    "-i",
+    audioForMux,
+    "-map",
+    "0:v:0",
+    "-map",
+    "1:a:0",
+    "-c:v",
+    "copy",
+    "-c:a",
+    "aac",
+    "-shortest",
+    "-movflags",
+    "+faststart",
+    outPath,
+  ]);
+
+  if (mux.code !== 0) {
+    throw new Error(`Lip-sync ${lang}: ffmpeg mux failed — ${(mux.stderr || "").slice(-300)}`);
   }
 
-  // Last resort: copy proof or re-upload source as lang variant
-  try {
-    await uploadFile(outKey, sourceLocal, "video/mp4");
-    return {
-      r2Url: publicUrl(outKey),
-      key: outKey,
-      lipSync: false,
-      bodySync: true,
-      engine: "source-copy",
-    };
-  } catch {
-    return {
-      r2Url: YT_PROOF_VIDEO_URL,
-      key: outKey,
-      lipSync: false,
-      bodySync: false,
-      engine: "proof-fallback",
-    };
-  }
+  await uploadFile(outKey, outPath, "video/mp4");
+  return {
+    r2Url: publicUrl(outKey),
+    key: outKey,
+    lipSync: false,
+    bodySync: true,
+    engine: "ffmpeg-audio-replace",
+  };
 }
 
 function segmentsToVtt(segments: Segment[], lang: string): string {
