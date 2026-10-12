@@ -60,11 +60,13 @@ function webFingerprint() {
 }
 
 const GUIDE_STEPS = [
-  { n: "01", title: "Create or pick avatar", tip: "Upload 1 photo → 4 outfit variants (same face, fresh daily look)." },
+  { n: "01", title: "Create or pick avatar", tip: "Photo, video twin, or YouTube/social link → extract face stills → rebuild 4 outfit variants." },
   { n: "02", title: "Choose a template", tip: "MissTechy flow: Unknown→Expert, News Authority, Outfit Carousel, CTA Army, Pizza→CEO." },
   { n: "03", title: "Niche + local news", tip: "Ollama writes a 30s script with a viral hook — same ChatGPT prompt she used." },
   { n: "04", title: "Generate → R2", tip: "Output lands on videos.reelstorm.uk — open Studio Set to use it in the factory." },
 ];
+
+type ExtractFrame = { index: number; time: number; r2Url: string; key: string };
 
 export default function AvatarStudioPage() {
   const { token, user, loading } = useAuth();
@@ -80,6 +82,15 @@ export default function AvatarStudioPage() {
   const [localNews, setLocalNews] = useState("Waymo robotaxi opened service");
   const [script, setScript] = useState("");
   const [name, setName] = useState("Tobi Twin");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [extractFrames, setExtractFrames] = useState<ExtractFrame[]>([]);
+  const [extractMeta, setExtractMeta] = useState<{
+    title?: string;
+    sourceLabel?: string;
+    sourceVideoUrl?: string;
+    suggestedName?: string;
+  } | null>(null);
+  const [pickedFrame, setPickedFrame] = useState<ExtractFrame | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -122,9 +133,18 @@ export default function AvatarStudioPage() {
     void load();
   }, [load]);
 
+  async function selectAvatarById(avatarId: string) {
+    const list = await fetch(`${getApiBase()}/api/avatar/list`, { headers: authHeaders }).then((r) => r.json());
+    const found = (list.avatars || []).find((a: Avatar) => a.id === avatarId);
+    if (found) {
+      setSelectedAvatar(found);
+      setVariantId(found.outfitVariants?.[0]?.id || "red-bomber");
+    }
+  }
+
   async function onUpload(file: File, kind: "image" | "video") {
     if (!token) return setMsg("Sign in required");
-    setBusy(kind === "image" ? "Creating 4 outfit variants…" : "Uploading digital twin…");
+    setBusy(kind === "image" ? "Creating 4 outfit variants…" : "Uploading digital twin + extracting faces…");
     setMsg("");
     try {
       const fd = new FormData();
@@ -138,18 +158,87 @@ export default function AvatarStudioPage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || res.statusText);
+      if (Array.isArray(j.frames) && j.frames.length) {
+        setExtractFrames(j.frames);
+        setExtractMeta({
+          title: file.name,
+          sourceLabel: "Uploaded video",
+          sourceVideoUrl: j.sourceUrl,
+          suggestedName: name || file.name,
+        });
+        setPickedFrame(j.frames[Math.floor(j.frames.length / 2)] || j.frames[0]);
+      }
       setMsg(`Avatar ready · ${j.outfitVariants?.length || 0} outfit slots on R2`);
       setTab("mine");
       setGuideIdx(1);
       await load();
-      if (j.avatarId) {
-        const list = await fetch(`${getApiBase()}/api/avatar/list`, { headers: authHeaders }).then((r) => r.json());
-        const found = (list.avatars || []).find((a: Avatar) => a.id === j.avatarId);
-        if (found) {
-          setSelectedAvatar(found);
-          setVariantId(found.outfitVariants?.[0]?.id || "red-bomber");
-        }
-      }
+      if (j.avatarId) await selectAvatarById(j.avatarId);
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onExtractFromLink() {
+    if (!token) return setMsg("Sign in required");
+    if (!linkUrl.trim()) return setMsg("Paste a YouTube, Instagram, TikTok, or social video URL.");
+    setBusy("Downloading link + extracting character stills…");
+    setMsg("");
+    setExtractFrames([]);
+    setPickedFrame(null);
+    setExtractMeta(null);
+    try {
+      const res = await fetch(`${getApiBase()}/api/avatar/extract-from-url`, {
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ url: linkUrl.trim(), name, count: 8 }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || res.statusText);
+      const frames = (j.frames || []) as ExtractFrame[];
+      setExtractFrames(frames);
+      setExtractMeta({
+        title: j.title,
+        sourceLabel: j.sourceLabel,
+        sourceVideoUrl: j.sourceVideoUrl,
+        suggestedName: j.suggestedName || name,
+      });
+      if (j.suggestedName && (!name || name === "Tobi Twin")) setName(j.suggestedName);
+      setPickedFrame(frames[Math.floor(frames.length / 2)] || frames[0] || null);
+      setMsg(
+        `${j.sourceLabel || "Video"} · ${frames.length} character stills — pick a face → Rebuild as avatar`,
+      );
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onRebuildFromFrame() {
+    if (!token) return setMsg("Sign in required");
+    if (!pickedFrame) return setMsg("Pick a character still first");
+    setBusy("Rebuilding avatar from selected still…");
+    setMsg("");
+    try {
+      const res = await fetch(`${getApiBase()}/api/avatar/create-from-frame`, {
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          frameUrl: pickedFrame.r2Url,
+          frameKey: pickedFrame.key,
+          name: name || extractMeta?.suggestedName || "Link Twin",
+          sourceVideoUrl: extractMeta?.sourceVideoUrl,
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || res.statusText);
+      setMsg(`Avatar rebuilt from still · ${j.outfitVariants?.length || 0} outfit slots`);
+      setTab("mine");
+      setGuideIdx(1);
+      await load();
+      if (j.avatarId) await selectAvatarById(j.avatarId);
     } catch (e) {
       setMsg((e as Error).message);
     } finally {
@@ -277,8 +366,10 @@ export default function AvatarStudioPage() {
       <div className="grid xl:grid-cols-[1fr_320px] gap-5">
         <div className="space-y-5">
           {tab === "create" && (
-            <div className="rounded-rs-xl border border-white/[0.08] bg-panel p-6 space-y-4">
-              <div className="mono text-[10px] text-violet-soft">CREATE · PHOTO OR 2-MIN VIDEO</div>
+            <div className="rounded-rs-xl border border-white/[0.08] bg-panel p-6 space-y-5">
+              <div className="mono text-[10px] text-violet-soft">
+                CREATE · PHOTO · VIDEO · YOUTUBE / SOCIAL LINK
+              </div>
               <label className="block">
                 <span className="mono text-[10px] text-white/40">AVATAR NAME</span>
                 <input
@@ -303,7 +394,7 @@ export default function AvatarStudioPage() {
                 </label>
                 <label className="rounded-rs border border-dashed border-violet/40 bg-violet/10 p-8 text-center cursor-pointer hover:bg-violet/15 transition">
                   <div className="display text-xl text-violet-soft">Upload video twin</div>
-                  <p className="text-xs text-white/45 mt-2">~2 min talking head → digital twin source</p>
+                  <p className="text-xs text-white/45 mt-2">Talking head → extract faces → twin source</p>
                   <input
                     type="file"
                     accept="video/*"
@@ -315,6 +406,80 @@ export default function AvatarStudioPage() {
                   />
                 </label>
               </div>
+
+              <div className="rounded-rs border border-[#00f0ff]/30 bg-[#00f0ff]/5 p-4 space-y-3">
+                <div className="mono text-[10px] text-[#00f0ff] tracking-[0.14em]">
+                  OR PASTE YOUTUBE / INSTAGRAM / TIKTOK / SOCIAL
+                </div>
+                <p className="text-[12px] text-white/50">
+                  We download the reel, extract character stills, then rebuild your Avatar Studio twin from the face you pick.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=… or instagram.com/reel/…"
+                    className="flex-1 h-11 rounded-rs bg-void border border-white/10 px-3 text-[13px]"
+                  />
+                  <button
+                    type="button"
+                    disabled={Boolean(busy)}
+                    onClick={() => void onExtractFromLink()}
+                    className="h-11 px-5 rounded-rs bg-[#00f0ff] text-black font-bold text-[13px] disabled:opacity-50 shrink-0"
+                  >
+                    Extract characters
+                  </button>
+                </div>
+              </div>
+
+              {extractFrames.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="mono text-[10px] text-orange tracking-[0.12em]">
+                      CHARACTER STILLS · {extractMeta?.sourceLabel || "VIDEO"}
+                      {extractMeta?.title ? ` · ${extractMeta.title.slice(0, 40)}` : ""}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!pickedFrame || Boolean(busy)}
+                      onClick={() => void onRebuildFromFrame()}
+                      className="h-10 px-4 rounded-rs bg-orange text-black font-bold text-[12px] disabled:opacity-50"
+                    >
+                      Rebuild as avatar
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {extractFrames.map((f) => {
+                      const active = pickedFrame?.key === f.key;
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          onClick={() => setPickedFrame(f)}
+                          className={clsx(
+                            "relative aspect-[3/4] rounded-rs overflow-hidden border bg-void",
+                            active ? "border-orange ring-1 ring-orange" : "border-white/10 hover:border-white/30",
+                          )}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={f.r2Url} alt={`Frame ${f.index}`} className="w-full h-full object-cover" />
+                          <span className="absolute bottom-1 left-1 mono text-[9px] px-1.5 py-0.5 rounded bg-black/70 text-white/80">
+                            {f.time}s
+                          </span>
+                          {active && (
+                            <span className="absolute top-1 right-1 mono text-[8px] px-1.5 py-0.5 rounded bg-orange text-black font-bold">
+                              PICK
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[12px] text-white/45">
+                    Pick the clearest face, then <span className="text-orange">Rebuild as avatar</span> to lock 4 outfit slots.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

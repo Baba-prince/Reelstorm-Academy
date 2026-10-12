@@ -1,12 +1,21 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
+import { mkdir, unlink } from "node:fs/promises";
+import path from "node:path";
+import { tmpdir } from "node:os";
 import { prisma, AvatarType } from "@reelstorm/db";
 import {
   uploadBuffer,
+  uploadFile,
   publicUrl,
   generateWithAutonomousPod,
   getPodStatus,
   probePodHealth,
+  downloadReferenceVideo,
+  classifyVideoUrl,
+  videoUrlKindLabel,
+  extractFrame,
+  probeVideo,
 } from "@reelstorm/media";
 import { orchestrate } from "@reelstorm/providers";
 import { resolveUserFromAuthHeader } from "./auth.js";
@@ -60,6 +69,92 @@ async function requireUser(req: FastifyRequest) {
   const user = await resolveUserFromAuthHeader(req.headers.authorization);
   if (!user) return null;
   return user;
+}
+
+async function createAvatarFromImageBuffer(opts: {
+  userId: string;
+  name: string;
+  buf: Buffer;
+  ext?: "jpg" | "png";
+  contentType?: string;
+  sourceNote?: string;
+}) {
+  const avatarId = randomUUID().replace(/-/g, "").slice(0, 16);
+  const ext = opts.ext || "jpg";
+  const contentType = opts.contentType || (ext === "png" ? "image/png" : "image/jpeg");
+  const sourceKey = `avatars/source/${opts.userId}/${avatarId}.${ext}`;
+  await uploadBuffer(sourceKey, opts.buf, contentType);
+  const sourceUrl = publicUrl(sourceKey);
+
+  const outfitVariants: OutfitVariant[] = [];
+  for (const preset of OUTFIT_PRESETS) {
+    const key = `avatars/variants/${opts.userId}/${avatarId}/${preset.id}.${ext}`;
+    await uploadBuffer(key, opts.buf, contentType);
+    const url = publicUrl(key);
+    outfitVariants.push({
+      id: preset.id,
+      name: preset.name,
+      outfitPrompt: preset.outfitPrompt,
+      thumbUrl: url,
+      r2Url: url,
+    });
+  }
+
+  const avatar = await prisma.avatar.create({
+    data: {
+      id: avatarId,
+      userId: opts.userId,
+      name: opts.name || "Avatar Twin",
+      type: AvatarType.PERSONAL_PHOTO,
+      sourceUrl,
+      status: "ready",
+      outfitVariants,
+    },
+  });
+
+  return {
+    ok: true as const,
+    avatarId: avatar.id,
+    sourceUrl,
+    outfitVariants,
+    note:
+      opts.sourceNote ||
+      "Identity locked on R2 — 4 outfit slots ready. Wire ComfyUI IPAdapter/HeyGen for costume swap next.",
+  };
+}
+
+/** Pull evenly spaced stills from a local video for character pick */
+async function extractCharacterStills(
+  localVideo: string,
+  userId: string,
+  sessionId: string,
+  count = 8,
+): Promise<Array<{ index: number; time: number; r2Url: string; key: string }>> {
+  let duration = 12;
+  try {
+    duration = (await probeVideo(localVideo)).durationSec || 12;
+  } catch {
+    /* default */
+  }
+  const work = path.join(tmpdir(), `rs-avatar-frames-${sessionId}`);
+  await mkdir(work, { recursive: true });
+  const frames: Array<{ index: number; time: number; r2Url: string; key: string }> = [];
+  const n = Math.max(4, Math.min(12, count));
+  for (let i = 0; i < n; i++) {
+    const t = Number(((duration * (i + 0.5)) / n).toFixed(2));
+    const out = path.join(work, `frame_${i}.jpg`);
+    try {
+      await extractFrame(localVideo, t, out);
+      const key = `avatars/extract/${userId}/${sessionId}/${i}.jpg`;
+      await uploadFile(key, out, "image/jpeg");
+      frames.push({ index: i, time: t, r2Url: publicUrl(key), key });
+    } catch {
+      /* skip bad frame */
+    } finally {
+      await unlink(out).catch(() => undefined);
+    }
+  }
+  return frames;
 }
 
 async function generateScript(opts: {
@@ -216,49 +311,15 @@ export async function avatarRoutes(app: FastifyInstance) {
     const buf = await file.toBuffer();
     if (!buf.length) return reply.code(400).send({ error: "empty image" });
 
-    const avatarId = randomUUID().replace(/-/g, "").slice(0, 16);
     const ext = (file.filename || "photo.jpg").toLowerCase().endsWith(".png") ? "png" : "jpg";
-    const contentType = ext === "png" ? "image/png" : "image/jpeg";
-    const sourceKey = `avatars/source/${user.id}/${avatarId}.${ext}`;
-    await uploadBuffer(sourceKey, buf, contentType);
-    const sourceUrl = publicUrl(sourceKey);
-
-    // Phase 1: same-face identity lock — upload source bytes to 4 variant keys on R2 (real HTTP 200 thumbs).
-    // Outfit prompts stored for later ComfyUI IPAdapter / HeyGen Photo Avatar swap.
-    const outfitVariants: OutfitVariant[] = [];
-    for (const preset of OUTFIT_PRESETS) {
-      const key = `avatars/variants/${user.id}/${avatarId}/${preset.id}.${ext}`;
-      await uploadBuffer(key, buf, contentType);
-      const url = publicUrl(key);
-      outfitVariants.push({
-        id: preset.id,
-        name: preset.name,
-        outfitPrompt: preset.outfitPrompt,
-        thumbUrl: url,
-        r2Url: url,
-      });
-    }
-
-    const avatar = await prisma.avatar.create({
-      data: {
-        id: avatarId,
-        userId: user.id,
-        name: name || "Avatar Twin",
-        type: AvatarType.PERSONAL_PHOTO,
-        sourceUrl,
-        status: "ready",
-        outfitVariants,
-      },
+    const created = await createAvatarFromImageBuffer({
+      userId: user.id,
+      name,
+      buf,
+      ext: ext as "jpg" | "png",
+      contentType: ext === "png" ? "image/png" : "image/jpeg",
     });
-
-    return {
-      ok: true,
-      avatarId: avatar.id,
-      sourceUrl,
-      outfitVariants,
-      engine: engineMode(),
-      note: "Identity locked on R2 — 4 outfit slots ready. Wire ComfyUI IPAdapter/HeyGen for costume swap next.",
-    };
+    return { ...created, engine: engineMode() };
   });
 
   app.post("/api/avatar/create-from-video", async (req, reply) => {
@@ -275,18 +336,53 @@ export async function avatarRoutes(app: FastifyInstance) {
     const buf = await file.toBuffer();
     if (!buf.length) return reply.code(400).send({ error: "empty video" });
 
+    const sessionId = randomUUID().replace(/-/g, "").slice(0, 12);
+    const work = path.join(process.env.UPLOAD_TMP_DIR || tmpdir(), "avatar-video", user.id, sessionId);
+    await mkdir(work, { recursive: true });
+    const localPath = path.join(work, "source.mp4");
+    const { writeFile } = await import("node:fs/promises");
+    await writeFile(localPath, buf);
+
     const avatarId = randomUUID().replace(/-/g, "").slice(0, 16);
     const sourceKey = `avatars/source-video/${user.id}/${avatarId}.mp4`;
     await uploadBuffer(sourceKey, buf, "video/mp4");
     const sourceUrl = publicUrl(sourceKey);
 
-    const outfitVariants: OutfitVariant[] = OUTFIT_PRESETS.map((preset) => ({
+    const frames = await extractCharacterStills(localPath, user.id, sessionId, 8);
+    const faceStill = frames[Math.floor(frames.length / 2)] || frames[0];
+    let outfitVariants: OutfitVariant[] = OUTFIT_PRESETS.map((preset) => ({
       id: preset.id,
       name: preset.name,
       outfitPrompt: preset.outfitPrompt,
-      thumbUrl: sourceUrl,
-      r2Url: sourceUrl,
+      thumbUrl: faceStill?.r2Url || sourceUrl,
+      r2Url: faceStill?.r2Url || sourceUrl,
     }));
+
+    if (faceStill?.r2Url) {
+      try {
+        const res = await fetch(faceStill.r2Url);
+        if (res.ok) {
+          const stillBuf = Buffer.from(await res.arrayBuffer());
+          if (stillBuf.length) {
+            outfitVariants = [];
+            for (const preset of OUTFIT_PRESETS) {
+              const key = `avatars/variants/${user.id}/${avatarId}/${preset.id}.jpg`;
+              await uploadBuffer(key, stillBuf, "image/jpeg");
+              const url = publicUrl(key);
+              outfitVariants.push({
+                id: preset.id,
+                name: preset.name,
+                outfitPrompt: preset.outfitPrompt,
+                thumbUrl: url,
+                r2Url: url,
+              });
+            }
+          }
+        }
+      } catch {
+        /* keep still thumbs */
+      }
+    }
 
     const avatar = await prisma.avatar.create({
       data: {
@@ -295,15 +391,9 @@ export async function avatarRoutes(app: FastifyInstance) {
         name: name || "Digital Twin",
         type: AvatarType.PERSONAL_VIDEO,
         sourceUrl,
-        status: "training",
+        status: "ready",
         outfitVariants,
       },
-    });
-
-    // Soft mark ready after source lands (LivePortrait training hook later)
-    await prisma.avatar.update({
-      where: { id: avatar.id },
-      data: { status: "ready" },
     });
 
     return {
@@ -311,9 +401,109 @@ export async function avatarRoutes(app: FastifyInstance) {
       avatarId: avatar.id,
       status: "ready",
       sourceUrl,
+      frames,
       outfitVariants,
-      note: "Video twin source on R2 — LivePortrait training hook pending; variants selectable now.",
+      note: "Video twin + character stills extracted — pick a better frame via Extract from link if needed.",
     };
+  });
+
+  /**
+   * YouTube / Instagram / TikTok / Facebook / X / direct MP4 → character stills
+   * Client picks a still → create-from-frame rebuilds Avatar Studio twin.
+   */
+  app.post("/api/avatar/extract-from-url", async (req, reply) => {
+    const user = await requireUser(req);
+    if (!user) return reply.code(401).send({ error: "Sign in required" });
+
+    const body = (req.body || {}) as { url?: string; count?: number; name?: string };
+    const url = (body.url || "").trim();
+    if (!url) return reply.code(400).send({ error: "url required (YouTube, Instagram, TikTok, etc.)" });
+
+    const kind = classifyVideoUrl(url);
+    const sessionId = randomUUID().replace(/-/g, "").slice(0, 12);
+    const work = path.join(
+      process.env.UPLOAD_TMP_DIR || tmpdir(),
+      "avatar-extract",
+      user.id,
+      sessionId,
+    );
+
+    try {
+      const dl = await downloadReferenceVideo(url, work);
+      const vKey = `avatars/extract/${user.id}/${sessionId}/source.mp4`;
+      await uploadFile(vKey, dl.localPath, "video/mp4");
+      const frames = await extractCharacterStills(
+        dl.localPath,
+        user.id,
+        sessionId,
+        Number(body.count) || 8,
+      );
+      if (!frames.length) {
+        return reply.code(422).send({
+          error: "Could not extract character frames from this video. Try another link or upload a photo.",
+        });
+      }
+      return {
+        ok: true,
+        sessionId,
+        sourceType: kind,
+        sourceLabel: videoUrlKindLabel(kind),
+        title: dl.title,
+        sourceVideoUrl: publicUrl(vKey),
+        sourceVideoKey: vKey,
+        suggestedName: (body.name || dl.title || "Link Twin").slice(0, 80),
+        frames,
+        note: "Pick a clear face still → Rebuild as avatar (4 outfit slots).",
+      };
+    } catch (e) {
+      return reply.code(500).send({
+        error: e instanceof Error ? e.message : String(e),
+        hint: "yt-dlp must resolve the link. Instagram/TikTok may need cookies on the VPS for private reels.",
+      });
+    }
+  });
+
+  /** Rebuild Avatar Studio twin from an extracted character still (R2 URL or key) */
+  app.post("/api/avatar/create-from-frame", async (req, reply) => {
+    const user = await requireUser(req);
+    if (!user) return reply.code(401).send({ error: "Sign in required" });
+
+    const body = (req.body || {}) as {
+      frameUrl?: string;
+      frameKey?: string;
+      name?: string;
+      sourceVideoUrl?: string;
+    };
+    const frameUrl = (body.frameUrl || "").trim();
+    const frameKey = (body.frameKey || "").trim();
+    if (!frameUrl && !frameKey) {
+      return reply.code(400).send({ error: "frameUrl or frameKey required" });
+    }
+
+    let buf: Buffer;
+    try {
+      const fetchUrl = frameUrl || publicUrl(frameKey);
+      const res = await fetch(fetchUrl);
+      if (!res.ok) throw new Error(`Frame fetch HTTP ${res.status}`);
+      buf = Buffer.from(await res.arrayBuffer());
+    } catch (e) {
+      return reply.code(400).send({
+        error: e instanceof Error ? e.message : "Could not load extracted frame",
+      });
+    }
+    if (!buf.length) return reply.code(400).send({ error: "empty frame" });
+
+    const created = await createAvatarFromImageBuffer({
+      userId: user.id,
+      name: (body.name || "Link Twin").trim() || "Link Twin",
+      buf,
+      ext: "jpg",
+      contentType: "image/jpeg",
+      sourceNote: body.sourceVideoUrl
+        ? `Rebuilt from social/YouTube still · source ${body.sourceVideoUrl}`
+        : "Rebuilt from extracted character still — 4 outfit slots ready.",
+    });
+    return { ...created, engine: engineMode(), sourceVideoUrl: body.sourceVideoUrl || null };
   });
 
   app.post("/api/avatar/script", async (req, reply) => {

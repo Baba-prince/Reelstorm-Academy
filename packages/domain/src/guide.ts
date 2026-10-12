@@ -847,9 +847,9 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: /^\/model-center\/avatar/,
     layer: "os",
     title: "Avatar Model Studio",
-    blurb: "HeyGen-style twin → R2. Active coach walks Create → Template → Script → Generate.",
+    blurb: "HeyGen-style twin → R2. Photo, video upload, or YouTube/social extract → rebuild avatar.",
     tips: [
-      "Upload 1 front-face photo — we store 4 outfit variant slots on videos.reelstorm.uk/avatars/variants/…",
+      "Create: upload photo, upload talking-head video, OR paste YouTube/Instagram/TikTok → Extract characters → pick still → Rebuild as avatar (4 outfit slots).",
       "Pick News Update Authority + niche + local news — Ollama writes the 30s hook script.",
       "Generate spends template RTC and returns real_r2 URL — Send to Studio Set when done.",
       "Voice stays in Sound Studio OS; AVATAR_ENGINE=heygen|liveportrait (saver fallback).",
@@ -857,11 +857,11 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     startHere: {
       goal: "Ship a talking-head clip to videos.reelstorm.uk without re-filming outfits.",
       steps: [
-        "Create Avatar → upload 1 photo (4 outfit slots).",
+        "Create Avatar → photo, video, or paste a YouTube/social link → Extract → Rebuild.",
         "Templates → News Update Authority · set niche + local news · Generate Script.",
         "Generate → R2 → Send to Studio Set.",
       ],
-      primaryLabel: "Create from photo",
+      primaryLabel: "Create / extract avatar",
       primaryHref: "/model-center/avatar",
       nextLabel: "Studio Set",
       nextHref: "/studio-set",
@@ -869,6 +869,7 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     options: [
       { id: "start", label: "Where do I start?", prompt: "Where do I start in Avatar Studio?", kind: "improve" },
       { id: "create", label: "Create from photo", prompt: "How do I upload one photo and get four outfit variants?", kind: "do" },
+      { id: "link", label: "YouTube / social extract", prompt: "How do I paste a YouTube or Instagram reel, extract character stills, and rebuild an avatar?", kind: "do" },
       { id: "news", label: "News Authority script", prompt: "Help me write a Waymo / local news 30-second ON AIR script.", kind: "do" },
       { id: "set", label: "Studio Set next", prompt: "After R2 video, how do I use it in Studio Set?", href: "/studio-set", kind: "goto" },
       { id: "voice", label: "Sound Studio", prompt: "How does Avatar Studio connect to Sound Studio voice OS?", href: "/sound-studio", kind: "goto" },
