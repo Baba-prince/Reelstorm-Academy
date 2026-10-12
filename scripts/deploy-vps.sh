@@ -150,6 +150,8 @@ npm run build -w @reelstorm/domain
 npm run db:generate
 npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss \
   || echo "WARN: prisma db push failed (DB unreachable?) — continuing if schema already applied"
+# pipeline exports youtube agents — must build before api/worker
+npm run build -w @reelstorm/media -w @reelstorm/providers -w @reelstorm/pipeline
 npm run build -w @reelstorm/api -w @reelstorm/worker -w @reelstorm/web
 # Fail loud if Google auth would be dead in production
 if [[ -z "\${NEXT_PUBLIC_SUPABASE_URL:-}" || -z "\${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}" ]]; then

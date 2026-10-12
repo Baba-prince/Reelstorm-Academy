@@ -298,7 +298,8 @@ export async function agentThumbnail(opts: { videoId: string; variants?: number 
   for (let i = 0; i < count; i++) {
     const preset = YT_THUMB_VARIANT_PRESETS[i]!;
     const png = buildPngThumb(preset.text, colors[i]!);
-    const key = `thumbnails/yt-os/${video.id}/${preset.id}.png`;
+    // Public CDN (videos.reelstorm.uk) serves under /videos/ — keep thumbs there
+    const key = `videos/youtube/thumbs/${video.id}/${preset.id}.png`;
     await uploadBuffer(key, png, "image/png");
     const r2Url = publicUrl(key);
     thumbnailVariants.push({
@@ -432,35 +433,33 @@ export async function agentProduction(opts: {
   }
 
   // Narration placeholder metadata (Sound Studio VO when ElevenLabs live)
-  const narrKey = `youtube/assets/${video.id}/Narration_T01.txt`;
+  const narrKey = `videos/youtube/assets/${video.id}/Narration_T01.txt`;
   const script = (video.scriptJson as { fullScript?: string } | null)?.fullScript || video.title;
   await uploadBuffer(narrKey, Buffer.from(script, "utf8"), "text/plain");
   const narrationUrl = publicUrl(narrKey);
 
-  // B-roll / image assets — real PNG on R2
+  // B-roll / image assets — real PNG on R2 (under /videos/ for public CDN)
   const assetNames = ["desk_setup", "day1_alarm", "waymo_broll", "empty_seat"];
   const imageAssets = [];
   for (const name of assetNames) {
     const png = buildPngThumb(name.toUpperCase(), [0, 30, 50]);
-    const key = `youtube/assets/${video.id}/${name}.png`;
+    const key = `videos/youtube/assets/${video.id}/${name}.png`;
     await uploadBuffer(key, png, "image/png");
     imageAssets.push({ name: `${name}.png`, r2Url: publicUrl(key), type: "broll" });
   }
 
-  // Final video: copy live proof bytes → youtube/{id}.mp4 (real video/mp4 on R2)
+  // Final video: copy live proof bytes → videos/youtube/{id}.mp4 (real video/mp4 on R2)
   let finalVideoUrl = YT_PROOF_VIDEO_URL;
   let realR2 = false;
   try {
     const res = await fetch(YT_PROOF_VIDEO_URL, { signal: AbortSignal.timeout(120_000) });
-    if (res.ok) {
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length > 10_000) {
-        const key = `videos/youtube/${video.id}.mp4`;
-        await uploadBuffer(key, buf, "video/mp4");
-        finalVideoUrl = publicUrl(key);
-        realR2 = true;
-      }
-    }
+    if (!res.ok) throw new Error(`proof fetch ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length <= 10_000) throw new Error(`proof too small ${buf.length}`);
+    const key = `videos/youtube/${video.id}.mp4`;
+    await uploadBuffer(key, buf, "video/mp4");
+    finalVideoUrl = publicUrl(key);
+    realR2 = true;
   } catch (err) {
     console.warn("[yt-os production] proof copy failed", (err as Error).message);
   }
