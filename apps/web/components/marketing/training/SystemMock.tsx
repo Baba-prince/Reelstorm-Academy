@@ -69,9 +69,9 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
         <div className="relative z-10 flex items-end justify-between gap-4">
           <p className="text-[12px] text-white/55 max-w-[220px] leading-relaxed">
-            Flip each page. Match the screen — YouTube Automation · Avatar · Wizard · Sound.
+            Flip each page. Match the screen — Camera Angles · YouTube Automation · Avatar · Wizard.
           </p>
-          <div className="mono text-[9px] text-orange tracking-[0.16em]">23 PAGES</div>
+          <div className="mono text-[9px] text-orange tracking-[0.16em]">24 PAGES</div>
         </div>
       </div>
     );
@@ -461,6 +461,39 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
       </div>,
       "#FF7A00",
+    );
+  }
+
+  if (kind === "camera") {
+    return shell(
+      ["Camera", "Prompts", "Preview"],
+      <div className="space-y-2">
+        <div className="flex justify-between text-[8px]">
+          <span className="text-[#00f0ff] font-bold">ANALYZE · 2 RTC</span>
+          <span className="text-[#ff7a00]">DARIO 5 → 30+</span>
+        </div>
+        <div className="rounded-md border border-[#00f0ff]/30 bg-[#0a1214] p-2 aspect-video flex items-center justify-center">
+          <div className="text-center">
+            <div className="mono text-[8px] text-[#00f0ff]">SOURCE · EYE LEVEL · 85%</div>
+            <div className="text-[9px] text-white/70 mt-1">Type this to get this</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 gap-1">
+          {["/BTS", "/Ad", "/Drone", "/Low", "/Orbit"].map((c, i) => (
+            <div
+              key={c}
+              className="rounded text-[7px] text-center py-1 border truncate"
+              style={{
+                borderColor: i < 2 ? "#ff7a0066" : i < 4 ? "#00f0ff66" : "#8b5cf666",
+                color: i < 2 ? "#ff7a00" : i < 4 ? "#00f0ff" : "#c4b5fd",
+              }}
+            >
+              {c}
+            </div>
+          ))}
+        </div>
+      </div>,
+      "#00f0ff",
     );
   }
 

@@ -27,6 +27,7 @@ export type TrainingPage = {
     | "sound"
     | "ytos"
     | "avatar"
+    | "camera"
     | "whitelabel"
     | "developers"
     | "pricing"
@@ -39,7 +40,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 0,
     section: "COVER",
     title: "REELSTORM — Training Manual",
-    lead: "Flip-over operator guide for Academy Studio — YouTube Automation OS, Avatar Studio, BOT Director, Sound Studio.",
+    lead: "Flip-over operator guide — Camera Angle Prompt Studio, Language Studio, YouTube Automation OS, Avatar, BOT Director.",
     steps: [],
     mock: "cover",
   },
@@ -47,7 +48,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 1,
     section: "INDEX",
     title: "Table of Contents — Flip Index",
-    lead: "Tap any chapter to flip instantly. Four sections · 23 pages · YouTube Automation included.",
+    lead: "Tap any chapter to flip instantly. Four sections · 24 pages · Camera Angles + YouTube Automation included.",
     steps: [],
     mock: "index",
   },
@@ -273,6 +274,19 @@ export const TRAINING_PAGES: TrainingPage[] = [
   },
   {
     id: 19,
+    section: "B — Operator Training",
+    title: "Camera Angle Prompt Studio — Dario 5 → 30+",
+    lead: "Type this to get this: any image, video, or YouTube/Instagram reel → detect angle → 30+ Flux-ready cinematography prompts including /BTS /Adcreative /Blueprint /Droneview /Explodeview.",
+    steps: [
+      "Open /camera → drop a still/video or paste a YouTube/Instagram URL → Analyze (2 RTC).",
+      "Copy prompts for /BTS, LowAngle, BirdsEye, Orbit… — or Generate Preview (1 RTC) via ComfyUI Flux to R2 camera/preview/.",
+      "Send picks to World Builder (4-angle plates), Shot List, or Studio Set — then continue the factory path.",
+    ],
+    mock: "camera",
+    href: "/camera",
+  },
+  {
+    id: 20,
     section: "C — Academy White-label",
     title: "White-label — Your Brand, Our Factory",
     lead: "Academies run ReelStorm under their brand with tenant keys and shared RTC ledgers.",
@@ -285,7 +299,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/white-label",
   },
   {
-    id: 20,
+    id: 21,
     section: "C — Academy White-label",
     title: "Developers — API Smoke Path",
     lead: "Health → generate → vault. Same RTC rules as the console.",
@@ -298,7 +312,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/developers",
   },
   {
-    id: 21,
+    id: 22,
     section: "C — Academy White-label",
     title: "Pricing — Free / Basic / Premium / Pro",
     lead: "Sell sets, meter minutes. Free Test $0 · Basic $49 (720p) · Premium $99 hero · Premium Pro $199.",
@@ -311,14 +325,14 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/pricing",
   },
   {
-    id: 22,
+    id: 23,
     section: "D — Launch",
     title: "Production Checklist + Final",
     lead: "Ship when scorecard is green. Soft launch accepts Ollama LLM, Stripe test, and mock video until live keys arrive.",
     steps: [
       "Open /scorecard → RE-SCAN — target grade A (API /api/readiness).",
-      "Confirm ffmpeg/ffprobe, Redis db 17, YouTube Automation /yt-os, Avatar Studio, Sound Studio PASS.",
-      "Operators trained on YouTube Automation or Wizard → Sound → Vault → Merge.",
+      "Confirm ffmpeg/ffprobe, Redis db 17, /camera meta, YouTube Automation /yt-os, Avatar Studio, Sound Studio PASS.",
+      "Operators trained on Camera Angles → World Builder / Studio Set, or YouTube Automation → Sound → Vault → Merge.",
     ],
     mock: "checklist",
     href: "/scorecard",
@@ -340,7 +354,7 @@ export const INDEX_SECTIONS = [
   },
   {
     title: "Section B: Operator Training",
-    pages: "Pages 7–18",
+    pages: "Pages 7–19",
     color: "#00D9FF",
     items: [
       { id: 7, label: "Dashboard Navigation" },
@@ -355,22 +369,23 @@ export const INDEX_SECTIONS = [
       { id: 16, label: "Sound Studio" },
       { id: 17, label: "YouTube Automation OS" },
       { id: 18, label: "Avatar Studio" },
+      { id: 19, label: "Camera Angle Prompt Studio" },
     ],
   },
   {
     title: "Section C: Academy White-label",
-    pages: "Pages 19–21",
+    pages: "Pages 20–22",
     color: "#FF7A00",
     items: [
-      { id: 19, label: "White-label Tenant" },
-      { id: 20, label: "Developers API" },
-      { id: 21, label: "Pricing Tiers" },
+      { id: 20, label: "White-label Tenant" },
+      { id: 21, label: "Developers API" },
+      { id: 22, label: "Pricing Tiers" },
     ],
   },
   {
     title: "Section D: Launch",
-    pages: "Page 22",
+    pages: "Page 23",
     color: "#E5E7EB",
-    items: [{ id: 22, label: "Production Checklist" }],
+    items: [{ id: 23, label: "Production Checklist" }],
   },
 ];

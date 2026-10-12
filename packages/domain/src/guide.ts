@@ -1,8 +1,8 @@
 /**
  * STORM Guide — system knowledge + workflow improvement options
  * Used by API (LLM grounding) and web (instant page tips).
- * Keep in sync with shipped OS: YouTube Automation OS (7 agents), Viral Clone Factory,
- * Full Studio Set v1.6.4, landing Studio Set + YT Automation layers, Avatar Studio, Pixabay PRIMARY.
+ * Keep in sync with shipped OS: Camera Angle Prompt Studio, Language Studio, YouTube Automation OS
+ * (7 agents), Viral Clone Factory, Full Studio Set, Avatar Studio, Pixabay PRIMARY.
  */
 
 export type GuideOption = {
@@ -47,17 +47,17 @@ export const FACTORY_START_PATH = [
   { href: "/merge-studio", label: "07 Merge" },
 ] as const;
 
-export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.6.4 / YouTube Automation OS.
+export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.6.4 / Camera Angle Prompt Studio + YouTube Automation OS.
 
 Mission:
-- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Full Studio Set, STORM pipeline, BOT Director Wizard, YouTube Automation 7 agents, Viral Clone Factory, Avatar Studio).
+- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Camera Angle Prompt Studio, Language Studio, Full Studio Set, STORM pipeline, BOT Director Wizard, YouTube Automation 7 agents, Viral Clone Factory, Avatar Studio).
 - You are the explanatory wizard on EVERY screen. Default assumption: the operator feels lost (“where can I start?”). Lead with Start Here steps from page context before anything else.
 - When the user asks “where do I start?” give ONE recommended first click + the next 2 steps on the current screen, then the factory path.
 - Improve the operator's workflow with concrete next actions.
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer factory order: YouTube Automation (/yt-os) or BOT Director Wizard (or /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Prefer factory order: Camera Angles (/camera) or Language Studio (/translate) or YouTube Automation (/yt-os) or BOT Director Wizard (or /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
 - Full Studio Set (/studio-set) is READY FOR PRODUCTION TESTING on app.reelstorm.uk: Seed Courtroom → Generate room/artist plates → Imagery upsert (refreshes all rooms) → Apply to Director when readiness is green (or Force soft launch ≥60%). Soft-launch plates are SVG/URL stamps until real still gen — coach the lock flow, not photoreal claims.
 - World Builder (/world-builder) is legacy quick Soul + Room lock — also READY FOR PRODUCTION TESTING; always prefer / deep-link into Full Studio Set for multi-angle cast + imagery.
 - Storyboard / Studio / Sound / Archive / Merge are READY FOR PRODUCTION TESTING for soft-launch queues. Real GPU /generate needs green RunPod saver-health; Archive split needs uploadId; Merge needs vault blockIds; Sound clone/TTS needs ElevenLabs only when testing voice forge.
@@ -80,17 +80,17 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/",
     layer: "marketing",
     title: "Landing",
-    blurb: "Brand-first entry — Language Studio + YouTube Automation + Studio Set.",
+    blurb: "Brand-first entry — Camera Angle Prompt Studio + Language Studio + YouTube Automation + Studio Set.",
     tips: [
       "REELSTORM is not a course player — it is a factory that vaults ARCHIVE5 IP.",
-      "New: Language Studio (/translate) — English reel → German · Yoruba · Hausa · Igbo with body sync (10 RTC/lang).",
-      "Also: YouTube Automation 7 agents, Avatar twins, Full Studio Set.",
+      "New: Camera Angle Prompt Studio (/camera) — image/video/link → Dario 5 + 30+ Flux-ready prompts (2 RTC analyze · 1 RTC preview).",
+      "Also: Language Studio de/yo/ha/ig, YouTube Automation 7 agents, Avatar twins, Full Studio Set.",
     ],
     options: [
-      { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual — especially Language Studio.", href: "/training", kind: "goto" },
+      { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual — especially Camera Angle Prompt Studio.", href: "/training", kind: "goto" },
+      { id: "camera", label: "Camera Angles", prompt: "How do I turn a still or reel into /BTS /Droneview /LowAngle Flux prompts?", href: "/camera", kind: "goto" },
       { id: "lang", label: "Language Studio", prompt: "How do I translate a YouTube or Instagram reel to German, Yoruba, Hausa, and Igbo?", href: "/translate", kind: "goto" },
       { id: "ytos", label: "YouTube Automation", prompt: "How do I use the 7-agent YouTube Automation OS from channel create to publish?", href: "/yt-os", kind: "goto" },
-      { id: "avatar", label: "Avatar Studio", prompt: "How do I lock an avatar twin for Production?", href: "/model-center/avatar", kind: "goto" },
       { id: "pricing", label: "RTC pricing", prompt: "Explain RTC, free demo SystemBank, and paid tiers.", href: "/pricing", kind: "learn" },
     ],
   },
@@ -98,35 +98,37 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/training",
     layer: "marketing",
     title: "Training Manual",
-    blurb: "Flip-over artifact — screen-by-screen operator training including YouTube Automation.",
+    blurb: "Flip-over artifact — screen-by-screen operator training including Camera Angles + YouTube Automation.",
     tips: [
       "Use arrow keys or Flip to advance; Index jumps to any chapter.",
-      "Flip to YouTube Automation OS (page 17) and Avatar Studio (page 18) for the no-filming path.",
+      "Flip to Camera Angle Prompt Studio (page 19), YouTube Automation OS (page 17), and Avatar Studio (page 18).",
       "Match each system image to the live OS screen before moving on.",
     ],
     options: [
       { id: "rules", label: "System rules first", prompt: "Summarize Section A system rules I must not break.", kind: "learn" },
+      { id: "camera", label: "Camera Angles chapter", prompt: "Teach me upload → analyze → copy Flux prompts → send to World Builder.", href: "/camera", kind: "goto" },
       { id: "ytos", label: "YouTube Automation chapter", prompt: "Teach me Create Channel → Run Full Pipeline → Approve & Publish step by step.", href: "/yt-os", kind: "goto" },
       { id: "avatar", label: "Avatar chapter", prompt: "How do I attach a 4-outfit avatar twin before Production?", href: "/model-center/avatar", kind: "goto" },
-      { id: "ops", label: "Operator path", prompt: "Give me the fastest no-filming path: YT Automation → Avatar → Publish.", kind: "improve" },
+      { id: "ops", label: "Operator path", prompt: "Give me the fastest path: Camera Angles → World Builder / Studio Set → STORM.", kind: "improve" },
     ],
   },
   {
     path: "/how-it-works",
     layer: "marketing",
     title: "Factory Map",
-    blurb: "YouTube Automation · Studio Set · STORM · zero timeline scrubbing.",
+    blurb: "Camera Angles · Language Studio · YouTube Automation · Studio Set · STORM.",
     tips: [
+      "Start with /camera for 30+ Flux prompts from any still or reel (2 RTC analyze).",
       "Primary growth loop: /yt-os 7 agents (Strategy→Analytics) at 20 RTC/video — no filming.",
       "Alternate: Wizard or Clone → Full Studio Set locks Room · Artist · Imagery before Storyboard / STORM.",
-      "World Builder is a quick Soul/Room stub — prefer /studio-set for production testing.",
-      "Sound Studio owns voice after Studio QC — before or alongside vault.",
+      "Language Studio dubs EN→de/yo/ha/ig with body sync (10 RTC/lang).",
     ],
     options: [
       { id: "stages", label: "Explain STORM stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
+      { id: "camera", label: "Camera Angles", prompt: "How does Camera Angle Prompt Studio feed World Builder and Studio Set?", href: "/camera", kind: "goto" },
       { id: "ytos", label: "YouTube Automation", prompt: "How does the 7-agent YouTube Automation OS Layer fit the factory map?", href: "/yt-os", kind: "goto" },
       { id: "set", label: "Studio Set lock", prompt: "Where does Full Studio Set fit and how do I test Room · Artist · Imagery?", href: "/studio-set", kind: "goto" },
-      { id: "start", label: "Start production", prompt: "I am ready — what is my first click for no-filming YouTube?", href: "/yt-os", kind: "do" },
+      { id: "start", label: "Start production", prompt: "I am ready — what is my first click for Camera Angles or no-filming YouTube?", href: "/camera", kind: "do" },
     ],
   },
   {

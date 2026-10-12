@@ -28,16 +28,16 @@ export default function LandingPage() {
               <p className="mt-3 text-[12px] text-cyan/80 max-w-[34rem]">{t("marketing.targetMarkets")}</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/translate"
+                  href="/camera"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs bg-orange text-black font-bold text-[14px] md:text-[15px] hover:brightness-110 transition"
                 >
                   {t("marketing.ctaForge")}
                 </Link>
                 <Link
-                  href="/yt-os"
+                  href="/translate"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-cyan/40 text-cyan font-medium text-[14px] md:text-[15px] hover:bg-cyan/10 transition"
                 >
-                  YouTube OS
+                  Language Studio
                 </Link>
                 <Link
                   href="/studio-set"
@@ -48,38 +48,39 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Language Studio — interactive hero display */}
+            {/* Camera Angle Prompt Studio — interactive hero display */}
             <Link
-              href="/translate"
-              className="group relative block w-full max-w-[420px] lg:max-w-none justify-self-end rounded-rs-xl border border-cyan/35 bg-[#0A0A0A]/85 backdrop-blur-md overflow-hidden hover:border-cyan/60 hover:bg-[#0C1214]/95 transition-all duration-300 hero-copy"
+              href="/camera"
+              className="group relative block w-full max-w-[420px] lg:max-w-none justify-self-end rounded-rs-xl border border-[#00f0ff]/40 bg-[#0A0A0A]/85 backdrop-blur-md overflow-hidden hover:border-[#00f0ff]/70 hover:bg-[#0C1214]/95 transition-all duration-300 hero-copy"
               style={{ animationDelay: "0.15s" }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan/15 via-transparent to-orange/10 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/15 via-transparent to-[#ff7a00]/15 pointer-events-none" />
               <div className="relative p-5 md:p-6">
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="mono text-[10px] text-cyan tracking-[0.16em]">
-                    {t("marketing.heroLangEyebrow")}
+                  <span className="mono text-[10px] text-[#00f0ff] tracking-[0.16em]">
+                    {t("marketing.heroCameraEyebrow")}
                   </span>
-                  <span className="mono text-[9px] px-2 py-1 rounded-full bg-orange text-black font-bold">
+                  <span className="mono text-[9px] px-2 py-1 rounded-full bg-[#ff7a00] text-black font-bold">
                     LIVE
                   </span>
                 </div>
                 <div className="display text-[28px] md:text-[32px] leading-none">
-                  {t("marketing.heroLangTitle")}
+                  {t("marketing.heroCameraTitle")}
                 </div>
                 <p className="mt-3 text-[13px] text-white/60 leading-relaxed">
-                  {t("marketing.heroLangBody")}
+                  {t("marketing.heroCameraBody")}
                 </p>
-                <div className="mt-5 grid grid-cols-4 gap-2">
+                <div className="mt-5 grid grid-cols-5 gap-1.5">
                   {[
-                    { code: "DE", c: "#00D9FF" },
-                    { code: "YO", c: "#C4B5FD" },
-                    { code: "HA", c: "#FF7A00" },
-                    { code: "IG", c: "#7C3AED" },
+                    { code: "/BTS", c: "#ff7a00" },
+                    { code: "/Ad", c: "#ff7a00" },
+                    { code: "/Drone", c: "#00f0ff" },
+                    { code: "/Low", c: "#00f0ff" },
+                    { code: "/Orbit", c: "#8b5cf6" },
                   ].map((l) => (
                     <div
                       key={l.code}
-                      className="rounded-md border py-2.5 text-center mono text-[11px] font-bold group-hover:scale-[1.03] transition-transform"
+                      className="rounded-md border py-2 text-center mono text-[9px] font-bold group-hover:scale-[1.03] transition-transform truncate px-0.5"
                       style={{ borderColor: `${l.c}66`, color: l.c }}
                     >
                       {l.code}
@@ -87,9 +88,9 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <span className="mono text-[9px] text-white/35">{t("marketing.heroLangMeta")}</span>
-                  <span className="inline-flex h-10 px-4 items-center rounded-rs bg-cyan text-black text-[12px] font-bold group-hover:brightness-110">
-                    {t("marketing.heroLangCta")} →
+                  <span className="mono text-[9px] text-white/35">{t("marketing.heroCameraMeta")}</span>
+                  <span className="inline-flex h-10 px-4 items-center rounded-rs bg-[#00f0ff] text-black text-[12px] font-bold group-hover:brightness-110">
+                    {t("marketing.heroCameraCta")} →
                   </span>
                 </div>
               </div>
@@ -167,6 +168,78 @@ export default function LandingPage() {
               </text>
               <text x="32" y="330" fill="rgba(255,255,255,0.28)" fontSize="10" fontFamily="monospace">
                 WORLD BUILDER = QUICK SOUL/ROOM STUB
+              </text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* Camera Angle Prompt Studio OS Layer */}
+      <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/14 via-transparent to-[#ff7a00]/12" />
+        <div className="relative mx-auto max-w-[1280px] grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div>
+            <div className="mono text-[11px] text-[#00f0ff] mb-3">{t("marketing.cameraEyebrow")}</div>
+            <h2 className="display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95]">
+              {t("marketing.cameraTitle")}
+              <br />
+              <span className="text-white/40">{t("marketing.cameraTitleMuted")}</span>
+            </h2>
+            <p className="mt-4 text-white/55 text-[15px] leading-relaxed max-w-[420px]">
+              {t("marketing.cameraBody")}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link
+                href="/camera"
+                className="inline-flex h-12 px-6 items-center rounded-rs bg-[#00f0ff] text-black font-bold text-[14px]"
+              >
+                {t("marketing.cameraCta")}
+              </Link>
+              <Link
+                href="/world-builder"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-[#8b5cf6]/40 text-[#c4b5fd] font-medium text-[14px] hover:bg-[#8b5cf6]/10"
+              >
+                World Builder
+              </Link>
+              <Link
+                href="/training"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-white/20 text-white/80 font-medium text-[14px] hover:bg-white/[0.05]"
+              >
+                {t("marketing.ctaTraining")}
+              </Link>
+            </div>
+          </div>
+          <div className="relative aspect-[4/3] rounded-rs-xl border border-white/[0.08] bg-[#0A0A0A] overflow-hidden">
+            <svg viewBox="0 0 480 360" className="w-full h-full" aria-hidden>
+              <rect width="480" height="360" fill="#0A0A0A" />
+              <text x="28" y="36" fill="#00f0ff" fontSize="11" fontFamily="monospace" letterSpacing="2">
+                CAMERA ANGLES · DARIO 5 → 30+ · FLUX READY
+              </text>
+              {[
+                { y: 56, label: "01 SOURCE — image · video · YouTube / IG reel", w: 400, c: "#00f0ff" },
+                { y: 96, label: "02 DETECT — eye-level · lens · confidence", w: 380, c: "#8b5cf6" },
+                { y: 136, label: "03 DARIO — /BTS /Adcreative /Blueprint /Drone /Explode", w: 420, c: "#ff7a00" },
+                { y: 176, label: "04 ANGLES — Low · High · BirdsEye · POV · Orbit…", w: 390, c: "#00f0ff" },
+                { y: 216, label: "05 PREVIEW — ComfyUI Flux → R2 camera/preview/", w: 400, c: "#8b5cf6" },
+                { y: 256, label: "06 SEND — World Builder · Shot List · Studio Set", w: 390, c: "#ff7a00" },
+              ].map((row) => (
+                <g key={row.label}>
+                  <rect
+                    x="24"
+                    y={row.y}
+                    width={row.w}
+                    height="32"
+                    rx="6"
+                    fill="#12121a"
+                    stroke={`${row.c}66`}
+                  />
+                  <text x="40" y={row.y + 21} fill="rgba(255,255,255,0.8)" fontSize="11" fontFamily="monospace">
+                    {row.label}
+                  </text>
+                </g>
+              ))}
+              <text x="28" y="330" fill="rgba(255,255,255,0.35)" fontSize="10" fontFamily="monospace">
+                2 RTC ANALYZE · 1 RTC PREVIEW · app.reelstorm.uk/camera
               </text>
             </svg>
           </div>
@@ -564,6 +637,9 @@ export default function LandingPage() {
           <div className="flex flex-wrap gap-5 text-[13px] text-white/50">
             <Link href="/how-it-works" className="hover:text-white">
               {t("nav.howItWorks")}
+            </Link>
+            <Link href="/camera" className="hover:text-white">
+              Camera Angles
             </Link>
             <Link href="/translate" className="hover:text-white">
               Language Studio
