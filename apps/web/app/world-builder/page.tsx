@@ -89,6 +89,22 @@ export default function WorldBuilderPage() {
         </Link>
       </div>
 
+      <div className="rounded-rs-xl border border-violet/25 bg-violet/5 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="mono text-[10px] text-violet-soft">CAMERA ANGLES · 30+</div>
+          <div className="font-bold mt-1">Generate Camera Angles</div>
+          <p className="text-xs text-white/50 mt-1">
+            Drop a location still or reel → /BTS /Droneview /LowAngle… → fill 4-angle plates with Flux-ready prompts.
+          </p>
+        </div>
+        <Link
+          href="/camera?from=world-builder"
+          className="h-10 px-4 rounded-rs bg-violet text-white text-sm font-bold grid place-items-center shrink-0"
+        >
+          Open Camera Studio
+        </Link>
+      </div>
+
       <div className="rounded-rs-xl border border-white/[0.08] bg-panel p-6 space-y-4">
         <label className="block">
           <span className="mono text-[10px] text-white/40">PROJECT ID</span>

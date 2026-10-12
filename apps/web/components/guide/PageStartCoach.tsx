@@ -25,6 +25,7 @@ const CHIP_LABELS: Record<string, string> = {
   "/model-center": "Models",
   "/model-center/avatar": "Avatar",
   "/translate": "Language Studio",
+  "/camera": "Camera Angles",
 };
 
 /** Open STORM Guide with a prefilled “where do I start?” ask */

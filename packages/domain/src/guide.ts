@@ -66,6 +66,7 @@ Mission:
 - Viral Clone Factory (/tools/clone · /rs-clone): paste YouTube/TikTok/Instagram → Analyze 1 RTC → transformative remake 5 RTC. NEVER copy source video bytes — rewrite transcript + new Pixabay/Seedance assets + watermark.
 - YouTube Automation OS (/yt-os): 7 agents — Strategy → Script → Thumbnail → SEO → Production → Publish → Analytics. Create Channel → Run Full Pipeline (20 RTC/video). Production uses Avatar Studio (4 outfits) + Sound Studio VO → R2 videos.reelstorm.uk/videos/youtube/…. Analytics feedback loop reorders the 14-day calendar. Legacy /rs-* skills still via API.
 - Language Studio (/translate): YouTube/Instagram/upload EN video → Whisper → translate de/yo/ha/ig → TTS → Wav2Lip+LivePortrait body sync → R2 videos.reelstorm.uk/translated/. 10 RTC per language.
+- Camera Angle Prompt Studio (/camera): image/video/YouTube/Instagram → detect angle → 30+ pro prompts (/BTS /Adcreative /Blueprint /Droneview /Explodeview + LowAngle, BirdsEye, Orbit…) for ComfyUI Flux. 2 RTC analyze, 1 RTC preview.
 - Account menu (header avatar): Account settings · Change password · Billing · RTC Wallet · Log out. Captain Admin only for locked admin email.
 - Free demo: 1 RTC from SystemBank (4600 RTC pool ≈ 920 × 5-min sets). Free users can analyze/demo; reproduce/vault needs paid RTC.
 - Soft launch: Ollama may power the guide LLM; Stripe test + mock video OK until live DashScope/Seedance/sk_live keys are stamped. Scorecard tracks landing YouTube Automation + Studio Set layers + factory pipeline production-test matrix.
@@ -339,6 +340,35 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       { id: "cost", label: "RTC costs", prompt: "Explain 1+5 RTC and free demo limits for clone.", kind: "learn" },
       { id: "legal", label: "Compliance", prompt: "What makes a remake transformative vs copyright risk?", kind: "learn" },
       { id: "ytos", label: "YT-OS viral", prompt: "How does /rs-viral differ from Clone Factory?", href: "/yt-os", kind: "goto" },
+    ],
+  },
+  {
+    path: "/camera",
+    layer: "os",
+    title: "Camera Angle Prompt Studio",
+    blurb: "Any image/video/link → 30+ cinematography prompts upgraded from Dario's 5.",
+    tips: [
+      "Drop an image/video or paste Instagram/YouTube → Analyze (2 RTC) → copy Flux-ready prompts.",
+      "Dario 5 included: /BTS /Adcreative /Blueprint /Droneview /Explodeview — plus LowAngle, BirdsEye, Orbit, Anamorphic…",
+      "Generate Preview (1 RTC) stamps R2 camera/preview/… — send picks to World Builder / Shot List / Studio Set.",
+    ],
+    startHere: {
+      goal: "Get a full angle prompt pack from one still or reel.",
+      steps: [
+        "Paste a reel URL or drop a cockpit/car/mansion still.",
+        "Hit Analyze → 30+ Prompts — read detected angle + confidence.",
+        "Filter Dario 5 or Angles → Copy /LowAngle → optional Preview → World Builder.",
+      ],
+      primaryLabel: "Open Camera Studio",
+      primaryHref: "/camera",
+      nextLabel: "World Builder",
+      nextHref: "/world-builder",
+    },
+    options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on Camera Angle Studio?", kind: "improve" },
+      { id: "dario", label: "Dario 5", prompt: "Explain /BTS /Adcreative /Blueprint /Droneview /Explodeview and when to use each.", kind: "learn" },
+      { id: "flow", label: "Full flow", prompt: "Walk me through upload → analyze → copy prompts → preview → World Builder.", kind: "do" },
+      { id: "world", label: "World Builder", prompt: "How do I apply angle prompts to 4-angle locations?", href: "/world-builder", kind: "goto" },
     ],
   },
   {
@@ -948,6 +978,7 @@ export const OS_SYSTEM_GUIDE_PATHS = [
   "/model-center",
   "/model-center/avatar",
   "/translate",
+  "/camera",
   "/wallet",
   "/billing",
   "/account",

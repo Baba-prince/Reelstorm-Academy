@@ -42,6 +42,7 @@ export const en: MessageTree = {
     modelCenter: "Model Center",
     avatarStudio: "Avatar Studio",
     translate: "Language Studio",
+    camera: "Camera Angles",
     team: "Team",
     brand: "Brand",
     wallet: "RTC Wallet",

@@ -47,6 +47,16 @@ export default function ModelCenterPage() {
           YouTube / Instagram → German · Yoruba · Hausa · Igbo with lip + body sync on R2.
         </p>
       </Link>
+      <Link
+        href="/camera"
+        className="block rounded-rs-xl border border-violet/40 bg-violet/10 px-5 py-4 hover:bg-violet/15 transition"
+      >
+        <div className="mono text-[10px] text-violet-soft">NEW · DARIO 5 → 30+ ANGLES</div>
+        <div className="font-bold text-lg mt-1">Camera Angle Prompt Studio</div>
+        <p className="text-sm text-white/60 mt-1">
+          Image / video / link → /BTS /Droneview /LowAngle… Flux-ready prompts + previews.
+        </p>
+      </Link>
       <div className="rounded-rs-xl border border-orange/30 bg-orange/10 px-4 py-3 text-sm text-white/75">
         <span className="mono text-[10px] text-orange mr-2">SOFT-LAUNCH TESTABLE</span>
         UI saves keys locally for demos. Production engines stamped in VPS{" "}

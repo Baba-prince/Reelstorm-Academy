@@ -227,6 +227,8 @@ export * from "./yt-hooks.js";
 export * from "./yt-os.js";
 export * from "./youtube-automation.js";
 export * from "./language-translate.js";
+export * from "./camera-angles.js";
 export * from "./clone.js";
+
 export * from "./studio.js";
 export * from "./studio-set.js";

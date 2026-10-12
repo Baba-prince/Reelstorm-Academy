@@ -12,6 +12,7 @@ export const QUEUES = {
   cloneReproduce: "cloneReproduce",
   youtubeAutomation: "youtubeAutomation",
   translateAutomation: "translateAutomation",
+  cameraAngleGenerator: "cameraAngleGenerator",
 } as const;
 
 export type QueueName = keyof typeof QUEUES;

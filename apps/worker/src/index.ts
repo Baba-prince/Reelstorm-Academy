@@ -80,6 +80,7 @@ const { fetchTemplateIntrosJob } = await import("./jobs/fetchTemplateIntros.js")
 const { cloneReproduceJob } = await import("./jobs/cloneReproduce.js");
 const { youtubeAutomationJob } = await import("./jobs/youtubeAutomation.js");
 const { translateAutomationJob } = await import("./jobs/translateAutomation.js");
+const { cameraAngleGeneratorJob } = await import("./jobs/cameraAngleGenerator.js");
 
 const connection = redis();
 const prefix = bullPrefix();
@@ -113,6 +114,7 @@ start("fetchTemplateIntros", fetchTemplateIntrosJob);
 start("cloneReproduce", cloneReproduceJob);
 start("youtubeAutomation", youtubeAutomationJob);
 start("translateAutomation", translateAutomationJob);
+start("cameraAngleGenerator", cameraAngleGeneratorJob);
 
 const { startPodIdleWatcher } = await import("./podIdleStop.js");
 startPodIdleWatcher();

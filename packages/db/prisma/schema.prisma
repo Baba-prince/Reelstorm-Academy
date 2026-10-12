@@ -80,6 +80,7 @@ model User {
   studioLicenses       StudioLicense[]
   avatars              Avatar[]
   translationJobs      TranslationJob[]
+  cameraAngleJobs      CameraAngleJob[]
 }
 
 model Team {
@@ -935,6 +936,47 @@ model TranslationJob {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+enum CameraSourceType {
+  IMAGE
+  VIDEO
+  YOUTUBE_URL
+  INSTAGRAM_URL
+}
+
+enum CameraStatus {
+  UPLOADING
+  EXTRACTING
+  ANALYZING
+  GENERATING_PROMPTS
+  DONE
+  FAILED
+}
+
+/// Camera Angle Prompt Studio — 30+ pro angles from image/video/link
+model CameraAngleJob {
+  id          String           @id @default(cuid())
+  userId      String
+  sourceType  CameraSourceType
+  sourceUrl   String           @default("")
+  sourceR2Url String?
+  sourceR2Key String?
+  originalUrl String?
+  status      CameraStatus     @default(UPLOADING)
+  analysis    Json?
+  prompts     Json?
+  previews    Json?
+  keyframes   Json?
+  rtcCost     Int              @default(2)
+  error       String?
+  logs        Json             @default("[]")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([status, createdAt])

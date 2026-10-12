@@ -87,3 +87,11 @@ export {
   stepMuxSubtitles,
   runTranslateOrchestrator,
 } from "./translateAgents.js";
+
+export {
+  stepCameraIngest,
+  stepCameraAnalyze,
+  stepCameraGeneratePrompts,
+  stepCameraPreview,
+  runCameraOrchestrator,
+} from "./cameraAgents.js";
