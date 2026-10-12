@@ -6,14 +6,17 @@ import clsx from "clsx";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useT } from "@/lib/i18n/I18nProvider";
 
-const LINKS = [
+type NavLink = { href: string; label?: string; key?: string };
+
+const LINKS: NavLink[] = [
+  { href: "/os", label: "OS Layers" },
   { href: "/how-it-works", key: "nav.howItWorks" },
   { href: "/download", key: "nav.studio" },
   { href: "/pricing", key: "nav.pricing" },
   { href: "/producers", key: "nav.producers" },
   { href: "/training", key: "nav.training" },
   { href: "/developers", key: "nav.api" },
-] as const;
+];
 
 export function MarketingNav({ variant = "overlay" }: { variant?: "overlay" | "solid" }) {
   const pathname = usePathname();
@@ -33,7 +36,7 @@ export function MarketingNav({ variant = "overlay" }: { variant?: "overlay" | "s
           </div>
           <div className="leading-none">
             <div className="display text-[12px] md:text-[13px]">REELSTORM</div>
-            <div className="mono text-[8px] text-cyan mt-1 tracking-[0.18em]">ACADEMY OS · CAMERA ANGLES</div>
+            <div className="mono text-[8px] text-cyan mt-1 tracking-[0.18em]">ACADEMY OS · FACTORY</div>
           </div>
         </Link>
 
@@ -44,10 +47,12 @@ export function MarketingNav({ variant = "overlay" }: { variant?: "overlay" | "s
               href={l.href}
               className={clsx(
                 "text-[13px] font-medium transition-colors",
-                pathname === l.href ? "text-white" : "text-white/55 hover:text-white",
+                pathname === l.href || (l.href === "/os" && pathname?.startsWith("/os"))
+                  ? "text-white"
+                  : "text-white/55 hover:text-white",
               )}
             >
-              {t(l.key)}
+              {l.label ?? (l.key ? t(l.key) : l.href)}
             </Link>
           ))}
         </nav>

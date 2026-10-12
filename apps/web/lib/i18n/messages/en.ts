@@ -53,7 +53,7 @@ export const en: MessageTree = {
   },
   marketing: {
     heroLine:
-      "Camera Angle Prompt Studio — any image, video, or reel → 30+ pro angles (/BTS /Droneview /LowAngle…) ready for ComfyUI Flux. Plus Language Studio, YouTube Automation, Studio Set.",
+      "Production OS for Africa & Asia — BOT Director, YouTube Automation, Clone Factory, Language Studio, Studio Set → STORM → ARCHIVE5 → Merge. Every room has a static demo map.",
     ctaForge: "Open Camera Angles",
     ctaTraining: "Flip the training guide",
     ctaClone: "Clone a viral link",
@@ -64,17 +64,17 @@ export const en: MessageTree = {
     heroLangBody: "EN → Deutsch · Yorùbá · Hausa · Igbo · lip + body sync → R2",
     heroLangCta: "Open Language Studio",
     heroLangMeta: "10 RTC / language · yt-dlp · Whisper · TTS",
-    heroCameraEyebrow: "NEW OS LAYER · CAMERA ANGLE PROMPT STUDIO",
+    heroCameraEyebrow: "OS LAYER · CAMERA ANGLE PROMPT STUDIO",
     heroCameraTitle: "Type this to get this.",
     heroCameraBody:
       "Drop a still or paste a reel → /BTS /Adcreative /Blueprint /Droneview /Explodeview + LowAngle, BirdsEye, Orbit…",
     heroCameraCta: "Open Camera Studio",
     heroCameraMeta: "2 RTC analyze · 1 RTC preview · World Builder ready",
-    pipelineEyebrow: "STORM OS · CAMERA ANGLES · LANGUAGE · YOUTUBE",
+    pipelineEyebrow: "STORM OS · FACTORY MAP",
     pipelineTitle: "Idea or viral link.",
-    pipelineTitleMuted: "Angle locked. Master shipped.",
+    pipelineTitleMuted: "Master shipped.",
     pipelineBody:
-      "Camera Angle Studio turns any still or reel into 30+ Flux-ready prompts. Language Studio dubs EN→de/yo/ha/ig. YouTube Automation or Clone feeds Studio Set → STORM → ARCHIVE5 → Merge.",
+      "Seventeen OS rooms — from BOT Director and YouTube Automation to Language Studio and Camera Angles. Clone or brief feeds Studio Set → STORM → ARCHIVE5 → Merge.",
     forgeEyebrow: "TEMPLATE FORGE + CLONE",
     forgeTitle: "Steal the structure.",
     forgeTitleMuted: "Never the bytes.",
@@ -130,12 +130,12 @@ export const en: MessageTree = {
     closeCtaFactory: "Start free demo",
     closeCtaPricing: "View pricing",
     footerCopy:
-      "© REELSTORM ACADEMY · CAMERA ANGLES · LANGUAGE STUDIO · YOUTUBE AUTOMATION · STUDIO SET · ARCHIVE5 · AFRICA/ASIA",
+      "© REELSTORM ACADEMY · 17 OS LAYERS · LANGUAGE STUDIO · YOUTUBE AUTOMATION · STUDIO SET · ARCHIVE5 · AFRICA/ASIA",
     targetMarkets:
-      "Africa & Asia · Camera Angles 30+ · Language Studio de/yo/ha/ig · YouTube Automation · Avatar twins",
+      "Africa & Asia · BOT Director · YouTube OS · Language Studio de/yo/ha/ig · Avatar twins · Camera Angles",
   },
   how: {
-    eyebrow: "INFOGRAPHIC · CAMERA ANGLES · LANGUAGE · FACTORY MAP",
+    eyebrow: "INFOGRAPHIC · FACTORY MAP · OS LAYERS",
     title: "How the storm",
     titleMuted: "makes a master.",
     body: "From vibe to vault — Camera Angle prompts, Language Studio dubs, YouTube Automation 7 agents, Studio Set lock, no Premiere scrubbing.",

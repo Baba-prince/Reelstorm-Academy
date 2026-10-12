@@ -4,20 +4,22 @@ import Link from "next/link";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { HeroVisual } from "@/components/marketing/HeroVisual";
 import { PipelineInfographic } from "@/components/marketing/PipelineInfographic";
+import { OS_LAYERS } from "@/lib/marketing/os-layers";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 export default function LandingPage() {
   const t = useT();
+  const cameraLayer = OS_LAYERS.find((l) => l.slug === "camera-angles");
 
   return (
     <div className="min-h-screen bg-[#080808] text-white">
-      {/* HERO — brand, headline, sentence, CTAs, full-bleed visual */}
+      {/* HERO — brand, headline, sentence, CTAs, full-bleed visual (no OS product cards) */}
       <section className="relative min-h-[100svh] flex flex-col">
         <HeroVisual />
         <MarketingNav />
 
         <div className="relative z-10 flex-1 flex flex-col justify-end pb-16 md:pb-24 px-5 md:px-8">
-          <div className="mx-auto w-full max-w-[1280px] grid lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-14 items-end">
+          <div className="mx-auto w-full max-w-[1280px]">
             <div className="hero-copy max-w-[920px]">
               <h1 className="display text-[clamp(3.2rem,12vw,8.5rem)] leading-[0.88] tracking-[-0.05em]">
                 REELSTORM
@@ -28,16 +30,16 @@ export default function LandingPage() {
               <p className="mt-3 text-[12px] text-cyan/80 max-w-[34rem]">{t("marketing.targetMarkets")}</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/camera"
+                  href="/signup"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs bg-orange text-black font-bold text-[14px] md:text-[15px] hover:brightness-110 transition"
                 >
-                  {t("marketing.ctaForge")}
+                  {t("marketing.closeCtaFactory")}
                 </Link>
                 <Link
-                  href="/translate"
+                  href="/os"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-cyan/40 text-cyan font-medium text-[14px] md:text-[15px] hover:bg-cyan/10 transition"
                 >
-                  Language Studio
+                  {t("marketing.ctaFactory")}
                 </Link>
                 <Link
                   href="/studio-set"
@@ -47,30 +49,43 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Camera Angle Prompt Studio — interactive hero display */}
+      {/* Camera Angles — separate below-fold card (not in hero banner) */}
+      {cameraLayer && (
+        <section className="relative px-5 md:px-8 py-12 md:py-16 border-t border-white/[0.06]">
+          <div className="mx-auto max-w-[1280px]">
             <Link
-              href="/camera"
-              className="group relative block w-full max-w-[420px] lg:max-w-none justify-self-end rounded-rs-xl border border-[#00f0ff]/40 bg-[#0A0A0A]/85 backdrop-blur-md overflow-hidden hover:border-[#00f0ff]/70 hover:bg-[#0C1214]/95 transition-all duration-300 hero-copy"
-              style={{ animationDelay: "0.15s" }}
+              href={`/os/${cameraLayer.slug}`}
+              className="group relative block rounded-rs-xl border border-[#00f0ff]/40 bg-[#0A0A0A] overflow-hidden hover:border-[#00f0ff]/70 transition-all"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/15 via-transparent to-[#ff7a00]/15 pointer-events-none" />
-              <div className="relative p-5 md:p-6">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="mono text-[10px] text-[#00f0ff] tracking-[0.16em]">
-                    {t("marketing.heroCameraEyebrow")}
-                  </span>
-                  <span className="mono text-[9px] px-2 py-1 rounded-full bg-[#ff7a00] text-black font-bold">
-                    LIVE
-                  </span>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/12 via-transparent to-[#ff7a00]/12 pointer-events-none" />
+              <div className="relative p-6 md:p-8 grid md:grid-cols-[1.2fr_0.8fr] gap-8 items-center">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="mono text-[10px] text-[#00f0ff] tracking-[0.16em]">
+                      {t("marketing.heroCameraEyebrow")}
+                    </span>
+                    <span className="mono text-[9px] px-2 py-1 rounded-full bg-[#ff7a00] text-black font-bold">
+                      OS LAYER
+                    </span>
+                  </div>
+                  <div className="display text-[clamp(1.8rem,4vw,2.6rem)] leading-none">
+                    {t("marketing.heroCameraTitle")}
+                  </div>
+                  <p className="mt-3 text-[14px] text-white/60 leading-relaxed max-w-[36rem]">
+                    {t("marketing.heroCameraBody")}
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <span className="inline-flex h-11 px-5 items-center rounded-rs bg-[#00f0ff] text-black text-[13px] font-bold group-hover:brightness-110">
+                      View marketing demo →
+                    </span>
+                    <span className="mono text-[10px] text-white/35">{t("marketing.heroCameraMeta")}</span>
+                  </div>
                 </div>
-                <div className="display text-[28px] md:text-[32px] leading-none">
-                  {t("marketing.heroCameraTitle")}
-                </div>
-                <p className="mt-3 text-[13px] text-white/60 leading-relaxed">
-                  {t("marketing.heroCameraBody")}
-                </p>
-                <div className="mt-5 grid grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-5 gap-1.5">
                   {[
                     { code: "/BTS", c: "#ff7a00" },
                     { code: "/Ad", c: "#ff7a00" },
@@ -80,24 +95,18 @@ export default function LandingPage() {
                   ].map((l) => (
                     <div
                       key={l.code}
-                      className="rounded-md border py-2 text-center mono text-[9px] font-bold group-hover:scale-[1.03] transition-transform truncate px-0.5"
+                      className="rounded-md border py-3 text-center mono text-[10px] font-bold group-hover:scale-[1.03] transition-transform"
                       style={{ borderColor: `${l.c}66`, color: l.c }}
                     >
                       {l.code}
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 flex items-center justify-between gap-3">
-                  <span className="mono text-[9px] text-white/35">{t("marketing.heroCameraMeta")}</span>
-                  <span className="inline-flex h-10 px-4 items-center rounded-rs bg-[#00f0ff] text-black text-[12px] font-bold group-hover:brightness-110">
-                    {t("marketing.heroCameraCta")} →
-                  </span>
-                </div>
               </div>
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Pipeline */}
       <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06]">
@@ -112,6 +121,40 @@ export default function LandingPage() {
             <p className="mt-4 text-white/55 text-[15px] leading-relaxed">{t("marketing.pipelineBody")}</p>
           </div>
           <PipelineInfographic />
+        </div>
+      </section>
+
+      {/* All OS layers — marketing demos */}
+      <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06]">
+        <div className="mx-auto max-w-[1280px]">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-10 md:mb-14">
+            <div className="max-w-[560px]">
+              <div className="mono text-[11px] text-cyan mb-3 tracking-[0.14em]">OS LAYERS · STATIC INFOGRAPHICS</div>
+              <h2 className="display text-[clamp(2rem,5vw,3.5rem)] leading-[0.95]">
+                Every factory room.
+                <br />
+                <span className="text-white/40">Open the demo map.</span>
+              </h2>
+            </div>
+            <Link href="/os" className="mono text-[12px] text-cyan hover:underline shrink-0">
+              View all OS pages →
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {OS_LAYERS.map((l) => (
+              <Link
+                key={l.slug}
+                href={`/os/${l.slug}`}
+                className="rounded-rs border border-white/10 bg-white/[0.02] px-4 py-4 hover:border-white/25 transition"
+              >
+                <div className="mono text-[9px] tracking-[0.12em]" style={{ color: l.accent }}>
+                  {l.eyebrow.split("·")[0]?.trim()}
+                </div>
+                <div className="font-semibold mt-1 text-[15px]">{l.title}</div>
+                <p className="text-[12px] text-white/45 mt-1 line-clamp-2">{l.body}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -190,8 +233,14 @@ export default function LandingPage() {
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link
-                href="/camera"
+                href="/os/camera-angles"
                 className="inline-flex h-12 px-6 items-center rounded-rs bg-[#00f0ff] text-black font-bold text-[14px]"
+              >
+                Marketing demo
+              </Link>
+              <Link
+                href="/camera"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-[#00f0ff]/40 text-[#00f0ff] font-medium text-[14px] hover:bg-[#00f0ff]/10"
               >
                 {t("marketing.cameraCta")}
               </Link>
@@ -200,12 +249,6 @@ export default function LandingPage() {
                 className="inline-flex h-12 px-6 items-center rounded-rs border border-[#8b5cf6]/40 text-[#c4b5fd] font-medium text-[14px] hover:bg-[#8b5cf6]/10"
               >
                 World Builder
-              </Link>
-              <Link
-                href="/training"
-                className="inline-flex h-12 px-6 items-center rounded-rs border border-white/20 text-white/80 font-medium text-[14px] hover:bg-white/[0.05]"
-              >
-                {t("marketing.ctaTraining")}
               </Link>
             </div>
           </div>
@@ -635,26 +678,29 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1280px] flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="mono text-[10px] text-white/35">{t("marketing.footerCopy")}</div>
           <div className="flex flex-wrap gap-5 text-[13px] text-white/50">
+            <Link href="/os" className="hover:text-white">
+              OS Layers
+            </Link>
             <Link href="/how-it-works" className="hover:text-white">
               {t("nav.howItWorks")}
             </Link>
-            <Link href="/camera" className="hover:text-white">
+            <Link href="/os/camera-angles" className="hover:text-white">
               Camera Angles
             </Link>
-            <Link href="/translate" className="hover:text-white">
+            <Link href="/os/language-studio" className="hover:text-white">
               Language Studio
             </Link>
-            <Link href="/yt-os" className="hover:text-white">
+            <Link href="/os/youtube-os" className="hover:text-white">
               YouTube OS
             </Link>
-            <Link href="/studio-set" className="hover:text-white">
+            <Link href="/os/studio-set" className="hover:text-white">
               Studio Set
             </Link>
-            <Link href="/download" className="hover:text-white">
-              Studio
+            <Link href="/os/bot-director" className="hover:text-white">
+              BOT Director
             </Link>
-            <Link href="/tools/clone" className="hover:text-white">
-              Clone
+            <Link href="/os/clone-factory" className="hover:text-white">
+              Clone Factory
             </Link>
             <Link href="/producers" className="hover:text-white">
               {t("nav.producers")}
