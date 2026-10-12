@@ -79,6 +79,7 @@ model User {
   contentCalendar      ContentCalendarEntry[]
   studioLicenses       StudioLicense[]
   avatars              Avatar[]
+  translationJobs      TranslationJob[]
 }
 
 model Team {
@@ -890,4 +891,51 @@ model AvatarTemplate {
   rtcCost              Int      @default(5)
   sortOrder            Int      @default(0)
   createdAt            DateTime @default(now())
+}
+
+enum TranslateSourceType {
+  YOUTUBE_URL
+  INSTAGRAM_URL
+  UPLOAD
+}
+
+enum TranslationStatus {
+  DOWNLOADING
+  TRANSCRIBING
+  TRANSLATING
+  TTS
+  LIPSYNC
+  MUXING
+  DONE
+  FAILED
+}
+
+/// Language Studio — Video Translate OS (EN → de/yo/ha/ig + body sync)
+model TranslationJob {
+  id                 String              @id @default(cuid())
+  userId             String
+  sourceType         TranslateSourceType
+  sourceUrl          String              @default("")
+  sourceR2Url        String?
+  sourceR2Key        String?
+  originalLang       String              @default("en")
+  targetLangs        String[]            @default(["de", "yo", "ha", "ig"])
+  status             TranslationStatus   @default(DOWNLOADING)
+  transcriptOriginal Json?
+  translations       Json?
+  ttsUrls            Json?
+  finalVideos        Json?
+  subtitleUrls       Json?
+  avatarId           String?
+  voiceMode          String              @default("clone") // clone | library
+  useAvatarTwin      Boolean             @default(false)
+  rtcCost            Int                 @default(0)
+  error              String?
+  logs               Json                @default("[]")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
 }

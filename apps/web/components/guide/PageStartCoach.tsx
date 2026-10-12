@@ -24,6 +24,7 @@ const CHIP_LABELS: Record<string, string> = {
   "/merge-studio": "Merge",
   "/model-center": "Models",
   "/model-center/avatar": "Avatar",
+  "/translate": "Language Studio",
 };
 
 /** Open STORM Guide with a prefilled “where do I start?” ask */

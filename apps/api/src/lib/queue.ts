@@ -11,6 +11,7 @@ export const QUEUES = {
   fetchTemplateIntros: "fetchTemplateIntros",
   cloneReproduce: "cloneReproduce",
   youtubeAutomation: "youtubeAutomation",
+  translateAutomation: "translateAutomation",
 } as const;
 
 export type QueueName = keyof typeof QUEUES;

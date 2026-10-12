@@ -79,6 +79,7 @@ const { soundStudioJob } = await import("./jobs/soundStudio.js");
 const { fetchTemplateIntrosJob } = await import("./jobs/fetchTemplateIntros.js");
 const { cloneReproduceJob } = await import("./jobs/cloneReproduce.js");
 const { youtubeAutomationJob } = await import("./jobs/youtubeAutomation.js");
+const { translateAutomationJob } = await import("./jobs/translateAutomation.js");
 
 const connection = redis();
 const prefix = bullPrefix();
@@ -111,6 +112,7 @@ start("soundStudio", soundStudioJob);
 start("fetchTemplateIntros", fetchTemplateIntrosJob);
 start("cloneReproduce", cloneReproduceJob);
 start("youtubeAutomation", youtubeAutomationJob);
+start("translateAutomation", translateAutomationJob);
 
 const { startPodIdleWatcher } = await import("./podIdleStop.js");
 startPodIdleWatcher();

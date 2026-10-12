@@ -41,6 +41,7 @@ export const en: MessageTree = {
     mergeStudio: "Merge Studio",
     modelCenter: "Model Center",
     avatarStudio: "Avatar Studio",
+    translate: "Language Studio",
     team: "Team",
     brand: "Brand",
     wallet: "RTC Wallet",

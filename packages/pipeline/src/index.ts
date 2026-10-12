@@ -77,3 +77,13 @@ export {
   agentAnalytics,
   runOrchestrator,
 } from "./youtubeAgents.js";
+
+export {
+  stepDownload,
+  stepTranscribe,
+  stepTranslate,
+  stepTts,
+  stepLipsync,
+  stepMuxSubtitles,
+  runTranslateOrchestrator,
+} from "./translateAgents.js";

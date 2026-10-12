@@ -65,6 +65,7 @@ Mission:
 - Template Room stock intros: Pixabay is PRIMARY (Pexels paused). Cached to R2/local — GET /api/templates?type=intro — $0 Seedance cost for intros.
 - Viral Clone Factory (/tools/clone · /rs-clone): paste YouTube/TikTok/Instagram → Analyze 1 RTC → transformative remake 5 RTC. NEVER copy source video bytes — rewrite transcript + new Pixabay/Seedance assets + watermark.
 - YouTube Automation OS (/yt-os): 7 agents — Strategy → Script → Thumbnail → SEO → Production → Publish → Analytics. Create Channel → Run Full Pipeline (20 RTC/video). Production uses Avatar Studio (4 outfits) + Sound Studio VO → R2 videos.reelstorm.uk/videos/youtube/…. Analytics feedback loop reorders the 14-day calendar. Legacy /rs-* skills still via API.
+- Language Studio (/translate): YouTube/Instagram/upload EN video → Whisper → translate de/yo/ha/ig → TTS → Wav2Lip+LivePortrait body sync → R2 videos.reelstorm.uk/translated/. 10 RTC per language.
 - Account menu (header avatar): Account settings · Change password · Billing · RTC Wallet · Log out. Captain Admin only for locked admin email.
 - Free demo: 1 RTC from SystemBank (4600 RTC pool ≈ 920 × 5-min sets). Free users can analyze/demo; reproduce/vault needs paid RTC.
 - Soft launch: Ollama may power the guide LLM; Stripe test + mock video OK until live DashScope/Seedance/sk_live keys are stamped. Scorecard tracks landing YouTube Automation + Studio Set layers + factory pipeline production-test matrix.
@@ -338,6 +339,37 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       { id: "cost", label: "RTC costs", prompt: "Explain 1+5 RTC and free demo limits for clone.", kind: "learn" },
       { id: "legal", label: "Compliance", prompt: "What makes a remake transformative vs copyright risk?", kind: "learn" },
       { id: "ytos", label: "YT-OS viral", prompt: "How does /rs-viral differ from Clone Factory?", href: "/yt-os", kind: "goto" },
+    ],
+  },
+  {
+    path: "/translate",
+    layer: "os",
+    title: "Language Studio",
+    blurb: "EN video → German · Yoruba · Hausa · Igbo with lip + body sync on R2.",
+    tips: [
+      "Paste YouTube or Instagram Reel URL (or upload MP4) → Translate Now (10 RTC per language).",
+      "Pipeline: Download → Whisper → Translate → TTS (Sound Studio / ElevenLabs) → Wav2Lip + LivePortrait → R2 translated/{id}_{lang}.mp4.",
+      "Soft-launch: if the GPU pod is sleeping, audio-replace keeps body motion; wake via Pod Status for full lip-sync.",
+      "Send finished packs to Studio Set, YouTube OS, or Training Academy.",
+    ],
+    startHere: {
+      goal: "Ship a 4-language dubbed pack from one English reel.",
+      steps: [
+        "Paste an Instagram/YouTube URL (e.g. Dario study reel) or drop an MP4.",
+        "Keep German · Yoruba · Hausa · Igbo checked → Translate Now (40 RTC).",
+        "Watch pipeline to DONE → play the four R2 videos side-by-side.",
+      ],
+      primaryLabel: "Open Language Studio",
+      primaryHref: "/translate",
+      nextLabel: "Avatar Twin",
+      nextHref: "/model-center/avatar",
+    },
+    options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on Language Studio?", kind: "improve" },
+      { id: "flow", label: "Full translate flow", prompt: "Walk me through download → transcribe → de/yo/ha/ig → TTS → lipsync.", kind: "do" },
+      { id: "cost", label: "RTC cost", prompt: "How much RTC for 4 languages and when is the GPU needed?", kind: "learn" },
+      { id: "avatar", label: "Avatar Twin", prompt: "How do I replace the face with my Avatar Studio twin?", href: "/model-center/avatar", kind: "goto" },
+      { id: "ytos", label: "YouTube OS", prompt: "How do I publish translated videos from YouTube Automation?", href: "/yt-os", kind: "goto" },
     ],
   },
   {
@@ -915,6 +947,7 @@ export const OS_SYSTEM_GUIDE_PATHS = [
   "/merge-studio",
   "/model-center",
   "/model-center/avatar",
+  "/translate",
   "/wallet",
   "/billing",
   "/account",

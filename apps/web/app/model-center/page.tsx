@@ -37,6 +37,16 @@ export default function ModelCenterPage() {
           1 photo → 4 outfit variants → niche script → videos.reelstorm.uk. Active AI coach on the page.
         </p>
       </Link>
+      <Link
+        href="/translate"
+        className="block rounded-rs-xl border border-orange/40 bg-orange/10 px-5 py-4 hover:bg-orange/15 transition"
+      >
+        <div className="mono text-[10px] text-orange">NEW · VIDEO TRANSLATE OS</div>
+        <div className="font-bold text-lg mt-1">Language Studio</div>
+        <p className="text-sm text-white/60 mt-1">
+          YouTube / Instagram → German · Yoruba · Hausa · Igbo with lip + body sync on R2.
+        </p>
+      </Link>
       <div className="rounded-rs-xl border border-orange/30 bg-orange/10 px-4 py-3 text-sm text-white/75">
         <span className="mono text-[10px] text-orange mr-2">SOFT-LAUNCH TESTABLE</span>
         UI saves keys locally for demos. Production engines stamped in VPS{" "}

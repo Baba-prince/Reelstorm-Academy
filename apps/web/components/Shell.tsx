@@ -26,6 +26,7 @@ const NAV = [
   { href: "/merge-studio", key: "nav.mergeStudio" },
   { href: "/model-center", key: "nav.modelCenter" },
   { href: "/model-center/avatar", key: "nav.avatarStudio" },
+  { href: "/translate", key: "nav.translate" },
   { href: "/team", key: "nav.team" },
   { href: "/brand", key: "nav.brand" },
   { href: "/wallet", key: "nav.wallet" },
