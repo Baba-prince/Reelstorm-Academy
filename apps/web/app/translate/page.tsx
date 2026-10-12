@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
@@ -30,6 +31,9 @@ const STEPS = [
   "DONE",
 ] as const;
 
+const LS_ACTIVE = "rs_translate_active";
+const LS_JOBS = "rs_translate_jobs";
+
 type FinalVideo = {
   r2Url: string;
   lipSync?: boolean;
@@ -42,7 +46,9 @@ type FinalVideo = {
 type Job = {
   id: string;
   status: string;
+  sourceUrl?: string | null;
   sourceR2Url?: string | null;
+  targetLangs?: string[] | null;
   transcriptOriginal?: { text?: string; segments?: Array<{ start: number; end: number; text: string }> } | null;
   translations?: Record<string, { text?: string; segments?: unknown[] }> | null;
   ttsUrls?: Record<string, { url?: string }> | null;
@@ -51,6 +57,8 @@ type Job = {
   logs?: string[] | null;
   rtcCost?: number;
   error?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 function stepIndex(status?: string) {
@@ -58,16 +66,41 @@ function stepIndex(status?: string) {
   return i < 0 ? 0 : i;
 }
 
+function readSavedIds(): string[] {
+  try {
+    const raw = localStorage.getItem(LS_JOBS);
+    const arr = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.isArray(arr) ? arr.filter(Boolean).slice(0, 40) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberJobId(id: string) {
+  const next = [id, ...readSavedIds().filter((x) => x !== id)].slice(0, 40);
+  localStorage.setItem(LS_JOBS, JSON.stringify(next));
+  localStorage.setItem(LS_ACTIVE, id);
+}
+
+function jobTitle(j: Job) {
+  const src = j.sourceUrl || j.sourceR2Url || "";
+  const name = src.split("/").pop() || j.id.slice(0, 10);
+  const langs = (j.targetLangs || Object.keys(j.finalVideos || {})).join("·") || "—";
+  return `${decodeURIComponent(name).slice(0, 42)} · ${langs}`;
+}
+
 function TranslateInner() {
   const { user } = useAuth();
+  const search = useSearchParams();
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [langs, setLangs] = useState<string[]>(["de", "yo", "ha", "ig"]);
   const [showExtra, setShowExtra] = useState(false);
   const [useAvatar, setUseAvatar] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [asyncMode, setAsyncMode] = useState(false);
+  const [asyncMode, setAsyncMode] = useState(true);
   const [job, setJob] = useState<Job | null>(null);
+  const [saved, setSaved] = useState<Job[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
 
@@ -85,22 +118,94 @@ function TranslateInner() {
     }
   }, []);
 
+  const openJob = useCallback(async (id: string, announce = true) => {
+    const res = await api<{ job?: Job; ok?: boolean }>(`/api/translate/status?id=${encodeURIComponent(id)}`);
+    if (!res.job) throw new Error("Saved project not found");
+    const j = res.job as Job;
+    setJob(j);
+    rememberJobId(j.id);
+    if (j.targetLangs?.length) setLangs(j.targetLangs);
+    if (announce) {
+      setMsg(
+        j.status === "DONE"
+          ? "Recovered saved project — outputs restored."
+          : `Recovered project · status ${j.status}`,
+      );
+    }
+    return j;
+  }, []);
+
+  const loadSaved = useCallback(async () => {
+    const ids = readSavedIds();
+    const qs = new URLSearchParams();
+    if (user?.email) qs.set("ownerEmail", user.email);
+    if (ids.length) qs.set("ids", ids.join(","));
+    try {
+      const res = await api<{ jobs?: Job[] }>(`/api/translate/list?${qs.toString()}`);
+      const jobs = res.jobs || [];
+      setSaved(jobs);
+      // Keep local index in sync with server
+      if (jobs.length) {
+        localStorage.setItem(
+          LS_JOBS,
+          JSON.stringify([...new Set([...jobs.map((j) => j.id), ...ids])].slice(0, 40)),
+        );
+      }
+      return jobs;
+    } catch {
+      setSaved([]);
+      return [];
+    }
+  }, [user?.email]);
+
   useEffect(() => {
     void loadBalance();
   }, [loadBalance]);
 
+  // Recover on mount: ?job=… → localStorage active → newest saved DONE/in-progress
   useEffect(() => {
-    if (!job?.id || job.status === "DONE" || job.status === "FAILED" || !asyncMode) return;
+    let cancelled = false;
+    (async () => {
+      const fromQuery = search.get("job");
+      const fromLs = typeof window !== "undefined" ? localStorage.getItem(LS_ACTIVE) : null;
+      const list = await loadSaved();
+      if (cancelled) return;
+      const prefer =
+        fromQuery ||
+        fromLs ||
+        list.find((j) => j.status !== "FAILED")?.id ||
+        list[0]?.id;
+      if (!prefer) return;
+      try {
+        await openJob(prefer, Boolean(fromQuery || fromLs));
+      } catch {
+        /* ignore missing */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSaved, openJob, search]);
+
+  // Keep polling while job is in-flight (refresh-safe)
+  useEffect(() => {
+    if (!job?.id || job.status === "DONE" || job.status === "FAILED") return;
     const t = window.setInterval(async () => {
       try {
         const res = await api<{ job?: Job }>(`/api/translate/status?id=${job.id}`);
-        if (res.job) setJob(res.job as Job);
+        if (res.job) {
+          setJob(res.job as Job);
+          if (res.job.status === "DONE") {
+            setMsg("Translation pack ready.");
+            void loadSaved();
+          }
+        }
       } catch {
         /* ignore */
       }
     }, 2500);
     return () => window.clearInterval(t);
-  }, [job?.id, job?.status, asyncMode]);
+  }, [job?.id, job?.status, loadSaved]);
 
   function toggleLang(code: string) {
     setLangs((prev) =>
@@ -130,7 +235,6 @@ function TranslateInner() {
     }
     setBusy(true);
     setMsg(null);
-    setJob(null);
     try {
       const body: Record<string, unknown> = {
         url: url.trim() || undefined,
@@ -150,14 +254,23 @@ function TranslateInner() {
         path,
         { method: "POST", body: JSON.stringify(body) },
       );
-      if (res.async && res.jobId) {
-        setJob({ id: res.jobId, status: "DOWNLOADING", rtcCost });
-        setMsg("Queued on BullMQ — watching progress…");
+      const id = res.jobId || res.id;
+      if (!id) throw new Error("No job id returned");
+      rememberJobId(id);
+      if (res.async) {
+        setJob({ id, status: "DOWNLOADING", rtcCost, targetLangs: langs });
+        setMsg("Queued — project saved. You can refresh; it will recover.");
       } else {
-        setJob({ ...res, id: res.jobId || res.id });
-        setMsg(res.status === "DONE" ? "Translation pack ready." : `Status: ${res.status}`);
+        const full = { ...res, id, targetLangs: langs } as Job;
+        setJob(full);
+        setMsg(res.status === "DONE" ? "Translation pack ready — project saved." : `Status: ${res.status}`);
       }
       void loadBalance();
+      void loadSaved();
+      // Keep URL shareable
+      const u = new URL(window.location.href);
+      u.searchParams.set("job", id);
+      window.history.replaceState({}, "", u.toString());
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Translate failed");
     } finally {
@@ -167,7 +280,8 @@ function TranslateInner() {
 
   const finals = useMemo(() => {
     const fv = job?.finalVideos || {};
-    return langs
+    const codes = job?.targetLangs?.length ? job.targetLangs : langs;
+    return codes
       .map((code) => {
         const row = fv[code];
         return row
@@ -175,7 +289,7 @@ function TranslateInner() {
           : null;
       })
       .filter(Boolean) as Array<FinalVideo & { code: string; label: string }>;
-  }, [job?.finalVideos, langs]);
+  }, [job?.finalVideos, job?.targetLangs, langs]);
 
   return (
     <div className="max-w-[1200px] space-y-8 forge-in pb-16">
@@ -209,6 +323,66 @@ function TranslateInner() {
           </div>
         </div>
       </div>
+
+      <section className="rounded-rs-xl border border-white/[0.08] bg-deep overflow-hidden">
+        <div className="h-11 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel">
+          <span className="mono text-[11px] text-cyan tracking-[0.12em]">00 — SAVED PROJECTS</span>
+          <button
+            type="button"
+            onClick={() => void loadSaved()}
+            className="mono text-[10px] text-white/50 hover:text-cyan"
+          >
+            Refresh list
+          </button>
+        </div>
+        <div className="p-4">
+          {saved.length === 0 ? (
+            <p className="text-[13px] text-white/45">
+              No saved Language Studio jobs yet. After you translate, projects stay here and recover on refresh.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-auto">
+              {saved.map((j) => {
+                const active = job?.id === j.id;
+                const outs = Object.keys(j.finalVideos || {}).length;
+                return (
+                  <button
+                    key={j.id}
+                    type="button"
+                    onClick={() => {
+                      void openJob(j.id).then(() => {
+                        const u = new URL(window.location.href);
+                        u.searchParams.set("job", j.id);
+                        window.history.replaceState({}, "", u.toString());
+                      });
+                    }}
+                    className={clsx(
+                      "w-full text-left rounded-rs border px-3 py-2.5 transition",
+                      active
+                        ? "border-cyan/50 bg-cyan/10"
+                        : "border-white/10 hover:border-white/25 bg-void/40",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-medium truncate">{jobTitle(j)}</div>
+                        <div className="mono text-[10px] text-white/40 mt-0.5">
+                          {j.id.slice(0, 12)} · {j.status}
+                          {outs ? ` · ${outs} output${outs > 1 ? "s" : ""}` : ""}
+                          {j.createdAt ? ` · ${new Date(j.createdAt).toLocaleString()}` : ""}
+                        </div>
+                      </div>
+                      <span className="mono text-[10px] text-cyan shrink-0">
+                        {active ? "OPEN" : "RECOVER"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="rounded-rs-xl border border-white/[0.08] bg-deep overflow-hidden">
         <div className="h-11 px-5 flex items-center border-b border-white/[0.06] bg-panel mono text-[11px] text-cyan tracking-[0.12em]">
@@ -468,7 +642,13 @@ function TranslateInner() {
 export default function TranslatePage() {
   return (
     <AuthProvider>
-      <TranslateInner />
+      <Suspense
+        fallback={
+          <div className="mono text-[12px] text-white/40 p-8">Loading Language Studio…</div>
+        }
+      >
+        <TranslateInner />
+      </Suspense>
     </AuthProvider>
   );
 }

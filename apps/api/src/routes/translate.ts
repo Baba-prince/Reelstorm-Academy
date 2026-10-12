@@ -68,12 +68,35 @@ export async function translateRoutes(app: FastifyInstance) {
   }));
 
   app.get("/api/translate/list", async (req) => {
-    const user = await resolveUser(req);
-    const jobs = await prisma.translationJob.findMany({
+    const q = req.query as { ownerEmail?: string; ids?: string };
+    const user = await resolveUser(req, q.ownerEmail);
+    const idList = (q.ids || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 40);
+
+    const byUser = await prisma.translationJob.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 40,
     });
+
+    // Also recover jobs remembered in the browser (localStorage ids) even if
+    // they were created under the guest producer email before login.
+    let byIds: typeof byUser = [];
+    if (idList.length) {
+      byIds = await prisma.translationJob.findMany({
+        where: { id: { in: idList } },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    const map = new Map<string, (typeof byUser)[number]>();
+    for (const j of [...byIds, ...byUser]) map.set(j.id, j);
+    const jobs = [...map.values()].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
     return { jobs };
   });
 
@@ -87,18 +110,9 @@ export async function translateRoutes(app: FastifyInstance) {
   app.get("/api/translate/status", async (req) => {
     const q = req.query as { id?: string };
     if (!q.id) return { ok: false, error: "id required" };
+    // Full job — UI recovers source + outputs after refresh
     const job = await prisma.translationJob.findUnique({
       where: { id: q.id },
-      select: {
-        id: true,
-        status: true,
-        error: true,
-        sourceR2Url: true,
-        finalVideos: true,
-        logs: true,
-        rtcCost: true,
-        updatedAt: true,
-      },
     });
     return { ok: Boolean(job), job };
   });

@@ -35,10 +35,13 @@ export const WS_URL =
 
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const base = getApiBase();
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("rs_access_token") : null;
   const res = await fetch(`${base}${path}`, {
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   });
