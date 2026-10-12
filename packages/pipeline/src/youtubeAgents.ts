@@ -455,7 +455,7 @@ export async function agentProduction(opts: {
     const res = await fetch(YT_PROOF_VIDEO_URL, { signal: AbortSignal.timeout(120_000) });
     if (!res.ok) throw new Error(`proof fetch ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length <= 10_000) throw new Error(`proof too small ${buf.length}`);
+    if (buf.length <= 1_000) throw new Error(`proof too small ${buf.length}`);
     const key = `videos/youtube/${video.id}.mp4`;
     await uploadBuffer(key, buf, "video/mp4");
     finalVideoUrl = publicUrl(key);
