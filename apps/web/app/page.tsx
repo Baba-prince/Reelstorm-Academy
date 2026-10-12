@@ -17,7 +17,7 @@ export default function LandingPage() {
         <MarketingNav />
 
         <div className="relative z-10 flex-1 flex flex-col justify-end pb-16 md:pb-24 px-5 md:px-8">
-          <div className="mx-auto w-full max-w-[1280px]">
+          <div className="mx-auto w-full max-w-[1280px] grid lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-14 items-end">
             <div className="hero-copy max-w-[920px]">
               <h1 className="display text-[clamp(3.2rem,12vw,8.5rem)] leading-[0.88] tracking-[-0.05em]">
                 REELSTORM
@@ -28,25 +28,72 @@ export default function LandingPage() {
               <p className="mt-3 text-[12px] text-cyan/80 max-w-[34rem]">{t("marketing.targetMarkets")}</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/yt-os"
+                  href="/translate"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs bg-orange text-black font-bold text-[14px] md:text-[15px] hover:brightness-110 transition"
                 >
                   {t("marketing.ctaForge")}
                 </Link>
                 <Link
-                  href="/studio-set"
+                  href="/yt-os"
                   className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-cyan/40 text-cyan font-medium text-[14px] md:text-[15px] hover:bg-cyan/10 transition"
+                >
+                  YouTube OS
+                </Link>
+                <Link
+                  href="/studio-set"
+                  className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-white/20 text-white font-medium text-[14px] md:text-[15px] hover:bg-white/[0.05] transition"
                 >
                   {t("marketing.ctaStudio")}
                 </Link>
-                <Link
-                  href="/tools/clone"
-                  className="h-12 md:h-14 px-7 inline-flex items-center rounded-rs border border-white/20 text-white font-medium text-[14px] md:text-[15px] hover:bg-white/[0.05] transition"
-                >
-                  {t("marketing.ctaClone")}
-                </Link>
               </div>
             </div>
+
+            {/* Language Studio — interactive hero display */}
+            <Link
+              href="/translate"
+              className="group relative block w-full max-w-[420px] lg:max-w-none justify-self-end rounded-rs-xl border border-cyan/35 bg-[#0A0A0A]/85 backdrop-blur-md overflow-hidden hover:border-cyan/60 hover:bg-[#0C1214]/95 transition-all duration-300 hero-copy"
+              style={{ animationDelay: "0.15s" }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan/15 via-transparent to-orange/10 pointer-events-none" />
+              <div className="relative p-5 md:p-6">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="mono text-[10px] text-cyan tracking-[0.16em]">
+                    {t("marketing.heroLangEyebrow")}
+                  </span>
+                  <span className="mono text-[9px] px-2 py-1 rounded-full bg-orange text-black font-bold">
+                    LIVE
+                  </span>
+                </div>
+                <div className="display text-[28px] md:text-[32px] leading-none">
+                  {t("marketing.heroLangTitle")}
+                </div>
+                <p className="mt-3 text-[13px] text-white/60 leading-relaxed">
+                  {t("marketing.heroLangBody")}
+                </p>
+                <div className="mt-5 grid grid-cols-4 gap-2">
+                  {[
+                    { code: "DE", c: "#00D9FF" },
+                    { code: "YO", c: "#C4B5FD" },
+                    { code: "HA", c: "#FF7A00" },
+                    { code: "IG", c: "#7C3AED" },
+                  ].map((l) => (
+                    <div
+                      key={l.code}
+                      className="rounded-md border py-2.5 text-center mono text-[11px] font-bold group-hover:scale-[1.03] transition-transform"
+                      style={{ borderColor: `${l.c}66`, color: l.c }}
+                    >
+                      {l.code}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <span className="mono text-[9px] text-white/35">{t("marketing.heroLangMeta")}</span>
+                  <span className="inline-flex h-10 px-4 items-center rounded-rs bg-cyan text-black text-[12px] font-bold group-hover:brightness-110">
+                    {t("marketing.heroLangCta")} →
+                  </span>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -120,6 +167,70 @@ export default function LandingPage() {
               </text>
               <text x="32" y="330" fill="rgba(255,255,255,0.28)" fontSize="10" fontFamily="monospace">
                 WORLD BUILDER = QUICK SOUL/ROOM STUB
+              </text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* Language Studio OS Layer */}
+      <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00D9FF]/14 via-transparent to-[#7C3AED]/12" />
+        <div className="relative mx-auto max-w-[1280px] grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div>
+            <div className="mono text-[11px] text-cyan mb-3">{t("marketing.langEyebrow")}</div>
+            <h2 className="display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95]">
+              {t("marketing.langTitle")}
+              <br />
+              <span className="text-white/40">{t("marketing.langTitleMuted")}</span>
+            </h2>
+            <p className="mt-4 text-white/55 text-[15px] leading-relaxed max-w-[420px]">
+              {t("marketing.langBody")}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link
+                href="/translate"
+                className="inline-flex h-12 px-6 items-center rounded-rs bg-cyan text-black font-bold text-[14px]"
+              >
+                {t("marketing.langCta")}
+              </Link>
+              <Link
+                href="/sound-studio"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-white/20 text-white/80 font-medium text-[14px] hover:bg-white/[0.05]"
+              >
+                Sound Studio
+              </Link>
+              <Link
+                href="/training"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-white/20 text-white/80 font-medium text-[14px] hover:bg-white/[0.05]"
+              >
+                {t("marketing.ctaTraining")}
+              </Link>
+            </div>
+          </div>
+          <div className="relative aspect-[4/3] rounded-rs-xl border border-white/[0.08] bg-[#0A0A0A] overflow-hidden">
+            <svg viewBox="0 0 480 360" className="w-full h-full" aria-hidden>
+              <rect width="480" height="360" fill="#0A0A0A" />
+              <text x="28" y="36" fill="#00D9FF" fontSize="11" fontFamily="monospace" letterSpacing="2">
+                LANGUAGE STUDIO · EN → DE / YO / HA / IG
+              </text>
+              {[
+                { y: 56, label: "01 DOWNLOAD — YouTube · Instagram · MP4", w: 400, c: "#00D9FF" },
+                { y: 96, label: "02 WHISPER — English transcript + segments", w: 380, c: "#C4B5FD" },
+                { y: 136, label: "03 TRANSLATE — NLLB / LLM dub packs", w: 360, c: "#FF7A00" },
+                { y: 176, label: "04 TTS — cloned voice · multilingual", w: 340, c: "#7C3AED" },
+                { y: 216, label: "05 LIP + BODY SYNC — Wav2Lip · LivePortrait", w: 410, c: "#00D9FF" },
+                { y: 256, label: "06 R2 — videos.reelstorm.uk/translated/", w: 370, c: "#FF7A00" },
+              ].map((row) => (
+                <g key={row.label}>
+                  <rect x="24" y={row.y} width={row.w} height="30" rx="6" fill="#12121a" stroke={`${row.c}66`} />
+                  <text x="40" y={row.y + 20} fill="rgba(255,255,255,0.8)" fontSize="11" fontFamily="monospace">
+                    {row.label}
+                  </text>
+                </g>
+              ))}
+              <text x="28" y="330" fill="rgba(255,255,255,0.35)" fontSize="10" fontFamily="monospace">
+                10 RTC / LANG · BODY SYNC · AFRICA + GLOBAL
               </text>
             </svg>
           </div>
@@ -453,6 +564,9 @@ export default function LandingPage() {
           <div className="flex flex-wrap gap-5 text-[13px] text-white/50">
             <Link href="/how-it-works" className="hover:text-white">
               {t("nav.howItWorks")}
+            </Link>
+            <Link href="/translate" className="hover:text-white">
+              Language Studio
             </Link>
             <Link href="/yt-os" className="hover:text-white">
               YouTube OS

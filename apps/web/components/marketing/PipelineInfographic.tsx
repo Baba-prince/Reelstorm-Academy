@@ -1,9 +1,9 @@
 "use client";
 
 const STEPS = [
-  { n: "01", name: "YT AUTOMATION", sub: "7 agents · Avatar twin · no filming", color: "#C4B5FD" },
-  { n: "02", name: "STUDIO SET", sub: "Room · Artist · Imagery lock", color: "#7C3AED" },
-  { n: "03", name: "STORYBOARD", sub: "Lock first frames before pixels move", color: "#00D9FF" },
+  { n: "01", name: "LANGUAGE", sub: "EN → DE · YO · HA · IG · body sync", color: "#C4B5FD" },
+  { n: "02", name: "YT AUTOMATION", sub: "7 agents · Avatar twin · no filming", color: "#7C3AED" },
+  { n: "03", name: "STUDIO SET", sub: "Room · Artist · Imagery lock", color: "#00D9FF" },
   { n: "04", name: "STORM", sub: "Render · Sound · Pixabay intros $0", color: "#00D9FF" },
   { n: "05", name: "ARCHIVE5", sub: "Immutable 5-min IP · 5 RTC", color: "#FF7A00" },
   { n: "06", name: "MERGE", sub: "FFmpeg concat to bankable master", color: "#FF7A00" },
