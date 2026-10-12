@@ -213,43 +213,93 @@ async function whisperOrFallback(localPath: string, durationSec: number): Promis
   };
 }
 
+async function translatePlainChunk(lang: string, label: string, english: string): Promise<string> {
+  const raw = await orchestrate(
+    [
+      {
+        role: "system",
+        content: `You are a professional dubbing translator into ${label}. Reply with ONLY the ${label} translation — no quotes, no English, no commentary.`,
+      },
+      {
+        role: "user",
+        content: english,
+      },
+    ],
+    {
+      json: false,
+      timeoutMs: 90_000,
+      model: process.env.OLLAMA_MODEL || process.env.TRANSLATE_LLM_MODEL || "qwen2.5:1.5b",
+    },
+  );
+  return raw
+    .replace(/^```[\w]*\s*|\s*```$/g, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+
 async function translateLang(
   lang: string,
   transcript: Transcript,
 ): Promise<{ text: string; segments: Segment[]; engine: string }> {
   const meta = TRANSLATE_LANG_META[lang];
   const label = meta?.label || lang;
+  const segs = transcript.segments?.length
+    ? transcript.segments
+    : [{ start: 0, end: 12, text: transcript.text }];
 
+  // Chunk by segments so small local models (qwen2.5:1.5b) don't time out / drop JSON
   try {
-    const raw = await orchestrate(
-      [
-        {
-          role: "system",
-          content:
-            "You translate video dubbing transcripts. Return ONLY valid JSON: {\"text\":\"...\",\"segments\":[{\"start\":0,\"end\":1,\"text\":\"...\"}]}. Preserve segment count and approximate timings. Conversational tone for lip-sync.",
-        },
-        {
-          role: "user",
-          content: `Translate this English transcript to ${label} (${lang}).\n\n${JSON.stringify(transcript.segments)}`,
-        },
-      ],
-      { json: true, timeoutMs: 60_000 },
-    );
-    const parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, "").trim());
-    if (parsed?.text && Array.isArray(parsed.segments) && parsed.segments.length) {
-      return {
-        text: String(parsed.text),
-        segments: parsed.segments as Segment[],
-        engine: "llm",
-      };
+    const outSegs: Segment[] = [];
+    const batchSize = 6;
+    for (let i = 0; i < segs.length; i += batchSize) {
+      const batch = segs.slice(i, i + batchSize);
+      const joined = batch.map((s, idx) => `${idx + 1}. ${s.text}`).join("\n");
+      const translated = await translatePlainChunk(
+        lang,
+        label,
+        `Translate each numbered line to ${label}. Keep the same numbering.\n\n${joined}`,
+      );
+      const lines = translated
+        .split(/\n+/)
+        .map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
+        .filter(Boolean);
+      batch.forEach((s, idx) => {
+        outSegs.push({
+          start: s.start,
+          end: s.end,
+          text: lines[idx] || lines[0] || s.text,
+        });
+      });
+    }
+    const text = outSegs.map((s) => s.text).join(" ").trim();
+    if (text && text !== transcript.text) {
+      return { text, segments: outSegs, engine: "llm-chunked" };
     }
   } catch {
-    /* seed fallback */
+    /* try whole-text */
   }
 
+  try {
+    const whole = await translatePlainChunk(lang, label, transcript.text.slice(0, 6000));
+    if (whole && whole.length > 20) {
+      const scale = segs.length || 1;
+      const parts = whole.split(/(?<=[.!?。])\s+/).filter(Boolean);
+      const segments = segs.map((s, i) => ({
+        start: s.start,
+        end: s.end,
+        text: parts[i] || parts[Math.min(i, parts.length - 1)] || whole,
+      }));
+      return { text: whole, segments, engine: "llm-plain" };
+    }
+  } catch {
+    /* fall through */
+  }
+
+  // Seed ONLY when STT itself was seed (demo path). Never dub wrong script over a real reel.
+  const usedSeedStt = (transcript.engine || "").includes("seed");
   const seed = TRANSLATE_SEED_TRANSLATIONS[lang];
-  if (seed) {
-    const last = transcript.segments[transcript.segments.length - 1]?.end || 12;
+  if (usedSeedStt && seed) {
+    const last = segs[segs.length - 1]?.end || 12;
     const seedLast = seed.segments[seed.segments.length - 1]?.end || 12;
     const scale = last / seedLast;
     return {
@@ -263,11 +313,9 @@ async function translateLang(
     };
   }
 
-  return {
-    text: transcript.text,
-    segments: transcript.segments,
-    engine: "passthrough",
-  };
+  throw new Error(
+    `Translate → ${lang} failed (Ollama/DashScope). Set OLLAMA_MODEL=qwen2.5:1.5b or DASHSCOPE_API_KEY. Refusing seed dub over real transcript.`,
+  );
 }
 
 /** Meta MMS-TTS (yo/ha/ig/de) via tools/lang-studio — real voice, no beep */

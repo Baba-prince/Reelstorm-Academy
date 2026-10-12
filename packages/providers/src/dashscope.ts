@@ -46,7 +46,7 @@ export async function orchestrate(
       headers: { "Content-Type": "application/json" },
       signal: ac.signal,
       body: JSON.stringify({
-        model: opts?.model || process.env.OLLAMA_MODEL || "llama3.1:8b",
+        model: opts?.model || process.env.OLLAMA_MODEL || "qwen2.5:1.5b",
         messages,
         stream: false,
         format: opts?.json ? "json" : undefined,
