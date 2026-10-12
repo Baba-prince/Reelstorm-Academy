@@ -10,6 +10,7 @@ export const QUEUES = {
   soundStudio: "soundStudio",
   fetchTemplateIntros: "fetchTemplateIntros",
   cloneReproduce: "cloneReproduce",
+  youtubeAutomation: "youtubeAutomation",
 } as const;
 
 export type QueueName = keyof typeof QUEUES;

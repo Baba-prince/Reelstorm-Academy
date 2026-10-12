@@ -78,6 +78,7 @@ const { mergeMasterJob } = await import("./jobs/mergeMaster.js");
 const { soundStudioJob } = await import("./jobs/soundStudio.js");
 const { fetchTemplateIntrosJob } = await import("./jobs/fetchTemplateIntros.js");
 const { cloneReproduceJob } = await import("./jobs/cloneReproduce.js");
+const { youtubeAutomationJob } = await import("./jobs/youtubeAutomation.js");
 
 const connection = redis();
 const prefix = bullPrefix();
@@ -109,5 +110,6 @@ start("mergeMaster", mergeMasterJob);
 start("soundStudio", soundStudioJob);
 start("fetchTemplateIntros", fetchTemplateIntrosJob);
 start("cloneReproduce", cloneReproduceJob);
+start("youtubeAutomation", youtubeAutomationJob);
 
 console.log("REELSTORM Worker online — queues ready");

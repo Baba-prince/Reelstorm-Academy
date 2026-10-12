@@ -225,6 +225,7 @@ export * from "./cover-art.js";
 export * from "./admin.js";
 export * from "./yt-hooks.js";
 export * from "./yt-os.js";
+export * from "./youtube-automation.js";
 export * from "./clone.js";
 export * from "./studio.js";
 export * from "./studio-set.js";

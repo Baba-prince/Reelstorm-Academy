@@ -16,7 +16,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@reelstorm/db": "*",
     "@reelstorm/domain": "*",
+    "@reelstorm/media": "*",
     "@reelstorm/providers": "*"
   },
   "devDependencies": {

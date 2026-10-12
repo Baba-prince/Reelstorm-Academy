@@ -577,18 +577,99 @@ model CloneJob {
 model YtChannel {
   id                String    @id @default(cuid())
   userId            String
-  youtubeChannelId  String?
-  channelName       String?
-  niche             String?
-  oauthAccessToken  String?
-  oauthRefreshToken String?
+  youtubeChannelId  String? // UC...
+  title             String    @default("My Channel")
+  channelName       String? // legacy alias of title
+  niche             String? // Real Estate, Health, Finance, AI, Coaching
+  accessToken       String?   @db.Text
+  refreshToken      String?   @db.Text
+  oauthAccessToken  String? // legacy
+  oauthRefreshToken String? // legacy
   connectedAt       DateTime?
   isConnected       Boolean   @default(false)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendars         YtContentCalendar[]
+  videos            YtOsVideo[]
 
   @@index([userId])
+}
+
+/// YouTube Automation OS — 14-day calendar + winning topics (Ray/MissTechy loop)
+model YtContentCalendar {
+  id             String   @id @default(cuid())
+  channelId      String
+  weekStart      DateTime
+  topics         Json // [{id, title, status, winningScore, audienceGap, competitorSaturation, hook, estimatedViews, priority}]
+  winningTopics  Json // Winning Topics Identified
+  createdAt      DateTime @default(now())
+  channel        YtChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  videos         YtOsVideo[]
+
+  @@index([channelId])
+}
+
+enum YtOsVideoStatus {
+  STRATEGY
+  SCRIPTING
+  THUMBNAIL
+  SEO
+  PRODUCTION
+  PUBLISHING
+  PUBLISHED
+  ANALYTICS
+  FAILED
+}
+
+enum YtOsAgent {
+  STRATEGY
+  SCRIPT
+  THUMBNAIL
+  SEO
+  PRODUCTION
+  PUBLISHING
+  ANALYTICS
+}
+
+/// One video flowing through the 7-agent YouTube Automation OS pipeline
+model YtOsVideo {
+  id                  String          @id @default(cuid())
+  channelId           String
+  calendarId          String?
+  title               String
+  status              YtOsVideoStatus @default(STRATEGY)
+  trendData           Json?
+  scriptJson          Json?
+  thumbnailVariants   Json?
+  selectedThumbnailId String?
+  seoJson             Json?
+  productionJson      Json?
+  publishingJson      Json?
+  analyticsJson       Json?
+  r2FinalUrl          String?
+  rtcCost             Int             @default(20)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  channel             YtChannel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  calendar            YtContentCalendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
+  agentRuns           YtAgentRun[]
+
+  @@index([channelId, status])
+}
+
+model YtAgentRun {
+  id                 String    @id @default(cuid())
+  videoId            String
+  agent              YtOsAgent
+  status             String    @default("queued") // queued, running, done, failed
+  input              Json?
+  output             Json?
+  feedbackToStrategy Json?
+  createdAt          DateTime  @default(now())
+  video              YtOsVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId, agent])
 }
 
 model ViralBreakdown {
