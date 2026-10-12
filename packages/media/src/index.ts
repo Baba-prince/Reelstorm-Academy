@@ -7,4 +7,5 @@ export * from "./pixabay.js";
 export * from "./pexels.js";
 export * from "./templateFetcher.js";
 export * from "./viral-meta.js";
+export * from "./podManager.js";
 

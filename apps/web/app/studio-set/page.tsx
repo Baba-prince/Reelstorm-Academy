@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { api } from "@/lib/api";
+import { PodStatusIndicator } from "@/components/PodStatusIndicator";
 
 type PlateMap = Record<string, string | undefined>;
 
@@ -376,6 +377,9 @@ export default function StudioSetPage() {
             Design every camera angle for locations and cast before Director generate.
             Courtroom pack + prompt-custom backgrounds + import artists from image/video URLs.
           </p>
+          <div className="mt-3">
+            <PodStatusIndicator compact />
+          </div>
         </div>
         <div className="rounded-rs-xl border border-white/[0.08] bg-panel px-6 py-5 min-w-[180px] text-center">
           <div className="mono text-[10px] text-white/40">READINESS</div>

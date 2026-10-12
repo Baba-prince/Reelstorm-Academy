@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { openStormGuide } from "@/components/guide/PageStartCoach";
+import { PodStatusIndicator } from "@/components/PodStatusIndicator";
 
 const NICHES = ["Real Estate", "Health", "Finance", "AI", "Coaching"] as const;
 
@@ -392,6 +393,7 @@ function YtOsInner() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <PodStatusIndicator compact />
           <select
             value={niche}
             onChange={(e) => setNiche(e.target.value as (typeof NICHES)[number])}

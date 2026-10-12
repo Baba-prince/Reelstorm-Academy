@@ -53,14 +53,15 @@ export function getQueue(name: QueueName) {
 export async function enqueue<T extends Record<string, unknown>>(
   name: QueueName,
   data: T,
-  opts?: { jobId?: string },
+  opts?: { jobId?: string; delay?: number; attempts?: number },
 ) {
   const queue = getQueue(name);
   return queue.add(name, data, {
     jobId: opts?.jobId,
+    delay: opts?.delay,
     removeOnComplete: 100,
     removeOnFail: 200,
-    attempts: 3,
+    attempts: opts?.attempts ?? 3,
     backoff: { type: "exponential", delay: 2000 },
   });
 }

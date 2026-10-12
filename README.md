@@ -125,6 +125,31 @@ Tokens live in `reelstorm-tokens.json`:
 - Display: Montserrat ExtraBold • Body: Inter
 - Radius: 16px / 24px • Grid: 72px • Logo: **RS**
 
+## GPU Pod — No Manual
+
+Previously you had to manually resume pod `xuvnute4l51iog` in the RunPod dashboard. Now it’s autonomous:
+
+- **Avatar Studio Generate** → auto-wakes pod via RunPod GraphQL `podResume` if `/health` 404s
+- **YouTube OS Production** → auto-wakes + re-queues BullMQ with 60s delay (doesn’t hard-fail)
+- **Pod Status Indicator** on `/model-center/avatar`, `/yt-os`, `/studio-set` (RUNNING / WAKING / SLEEPING)
+- **Fallback** to `HEYGEN_API_KEY` if wake fails — still lands on `videos.reelstorm.uk`
+- **Idle stop** after `POD_AUTO_STOP_IDLE_MIN` (default 15) — or use Serverless (scales to 0)
+
+### Production 1K (recommended): Serverless
+
+1. Stop the On-Demand pod in RunPod (stops idle `$/hr`)
+2. Pods → Export Template → Serverless → New Endpoint → Min Workers **0**, Max **3**, Idle **60s**
+3. Set in `.env`:
+   ```
+   RUNPOD_SERVERLESS_URL=https://api.runpod.ai/v2/xxxxx/runsync
+   RUNPOD_API_KEY=rp_xxx
+   AVATAR_ENGINE=auto
+   POD_AUTO_START=1
+   ```
+4. `pm2 restart reelstorm-api reelstorm-worker --update-env`
+
+APIs: `GET /api/pod/status` · `POST /api/pod/wake` · `POST /api/pod/stop`
+
 ## Security note
 
 Never commit `.env`. Rotate Supabase keys if they were shared in chat.

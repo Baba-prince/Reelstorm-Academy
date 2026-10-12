@@ -1,7 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 import { prisma, AvatarType } from "@reelstorm/db";
-import { uploadBuffer, publicUrl } from "@reelstorm/media";
+import {
+  uploadBuffer,
+  publicUrl,
+  generateWithAutonomousPod,
+  getPodStatus,
+  probePodHealth,
+} from "@reelstorm/media";
 import { orchestrate } from "@reelstorm/providers";
 import { resolveUserFromAuthHeader } from "./auth.js";
 import { debitRtc, ensureUserWallet } from "../lib/rtc.js";
@@ -40,13 +46,6 @@ type OutfitVariant = {
 
 function engineMode() {
   return (process.env.AVATAR_ENGINE || "heygen").toLowerCase();
-}
-
-function saverGenerateUrl() {
-  const raw = (process.env.RUNPOD_SAVER_URL || "").trim();
-  if (raw) return raw.replace(/\/$/, "");
-  const pod = (process.env.RUNPOD_POD_ID || "xuvnute4l51iog").trim();
-  return `https://${pod}-8000.proxy.runpod.net/generate`;
 }
 
 function fingerprintFrom(req: FastifyRequest, body?: { fingerprint?: string }) {
@@ -104,30 +103,31 @@ async function generateScript(opts: {
 }
 
 async function renderViaSaver(prompt: string, duration = 30) {
-  const url = saverGenerateUrl();
-  const saverRes = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, duration, resolution: "720x1280" }),
-    signal: AbortSignal.timeout(600_000),
+  const out = await generateWithAutonomousPod({
+    prompt,
+    duration,
+    resolution: "720x1280",
   });
-  const saverJson = (await saverRes.json().catch(() => ({}))) as {
-    r2_url?: string;
-    error?: string;
-    engine?: string;
-    mock?: boolean;
-    real_r2?: boolean;
-    note?: string;
-  };
-  if (!saverRes.ok || !saverJson.r2_url) {
-    throw new Error(saverJson.error || `Saver generate failed (${saverRes.status})`);
+  if (out.engine === "heygen") {
+    throw new Error(
+      out.note ||
+        "Pod unavailable — HeyGen fallback selected (set AVATAR_ENGINE or wait for wake). Retry generate.",
+    );
+  }
+  if (!out.r2_url) {
+    const pod = await probePodHealth();
+    throw new Error(
+      out.error ||
+        `Saver generate failed (pod ${pod.status}). Wake via POST /api/pod/wake or set RUNPOD_SERVERLESS_URL.`,
+    );
   }
   return {
-    r2_url: saverJson.r2_url,
-    engine: saverJson.engine || "r2-upload-placeholder",
-    mock: Boolean(saverJson.mock),
-    real_r2: saverJson.real_r2 !== false,
-    note: saverJson.note,
+    r2_url: out.r2_url,
+    engine: `${out.engine}:${out.saverEngine || "saver"}`,
+    mock: Boolean(out.mock),
+    real_r2: out.real_r2 !== false,
+    note: out.note,
+    podStatus: out.podStatus || (await getPodStatus()),
   };
 }
 
@@ -419,7 +419,7 @@ export async function avatarRoutes(app: FastifyInstance) {
 
     const mode = engineMode();
     try {
-      // Sync path always lands on our R2 via saver. HeyGen is optional async bridge.
+      // Auto-wake pod (or serverless). HeyGen only if AVATAR_ENGINE=heygen or pod wake fails.
       if (mode === "heygen" && process.env.HEYGEN_API_KEY) {
         try {
           await renderViaHeygen({
@@ -428,17 +428,23 @@ export async function avatarRoutes(app: FastifyInstance) {
             background: template.backgroundJson,
           });
         } catch {
-          /* expected until HeyGen poll/webhook — fall through to saver */
+          /* expected until HeyGen poll/webhook — fall through to autonomous saver */
         }
       }
       rendered = await renderViaSaver(prompt, template.duration);
       if (mode === "heygen" && process.env.HEYGEN_API_KEY) {
-        rendered.engine = `heygen→saver:${rendered.engine}`;
+        rendered.engine = `heygen→${rendered.engine}`;
       } else if (mode === "liveportrait") {
         rendered.engine = `liveportrait→${rendered.engine}`;
       }
     } catch (e) {
-      return reply.code(502).send({ error: (e as Error).message });
+      const pod = await probePodHealth().catch(() => null);
+      return reply.code(503).send({
+        ok: false,
+        error: (e as Error).message,
+        podStatus: pod?.status || (await getPodStatus().catch(() => "UNKNOWN")),
+        hint: "Pod auto-wake may still be running — retry in ~60s or POST /api/pod/wake",
+      });
     }
 
     await debitRtc({

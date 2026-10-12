@@ -11,6 +11,11 @@ import {
   sha256Hex,
 } from "../lib/studio-license.js";
 import { resolveUserFromAuthHeader } from "./auth.js";
+import {
+  generateWithAutonomousPod,
+  probePodHealth,
+  getPodStatus,
+} from "@reelstorm/media";
 
 type GenBody = {
   prompt?: string;
@@ -181,36 +186,30 @@ export async function handleStudioGenerate(req: FastifyRequest, reply: FastifyRe
     return reply.code(503).send({ error: "RUNPOD_SAVER_URL not configured" });
   }
 
-  let saverRes: Response;
-  try {
-    saverRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, duration: durationSec }),
-      signal: AbortSignal.timeout(600_000),
-    });
-  } catch (e) {
-    return reply.code(502).send({
-      error: "GPU saver unreachable",
-      detail: (e as Error).message,
+  const gen = await generateWithAutonomousPod({
+    prompt,
+    duration: durationSec,
+  });
+  if (!gen.r2_url) {
+    const pod = await probePodHealth();
+    return reply.code(503).send({
+      error: gen.error || "GPU saver unreachable / wake failed",
+      podStatus: gen.podStatus || pod.status,
+      engine: gen.engine,
+      hint:
+        pod.status === "SLEEPING" || pod.status === "WAKING"
+          ? "Pod is waking automatically — retry in ~60s or POST /api/pod/wake"
+          : "Set RUNPOD_API_KEY + POD_AUTO_START=1, or RUNPOD_SERVERLESS_URL",
       saver: url.replace(/https?:\/\//, "").split("/")[0],
     });
   }
-
-  const saverJson = (await saverRes.json().catch(() => ({}))) as {
-    r2_url?: string;
-    error?: string;
-    duration?: number;
-    engine?: string;
-    cost_usd_est?: number;
-    note?: string;
+  const saverJson = {
+    r2_url: gen.r2_url,
+    duration: durationSec,
+    engine: gen.saverEngine || gen.engine,
+    note: gen.note,
+    cost_usd_est: undefined as number | undefined,
   };
-  if (!saverRes.ok || !saverJson.r2_url) {
-    return reply.code(502).send({
-      error: saverJson.error || "Saver generate failed",
-      status: saverRes.status,
-    });
-  }
 
   const promptHash = hashPrompt(prompt);
   const videoHash = sha256Hex(saverJson.r2_url);
@@ -257,39 +256,26 @@ export async function handleStudioGenerate(req: FastifyRequest, reply: FastifyRe
 export async function studioGenerateRoutes(app: FastifyInstance) {
   app.post("/api/studio/generate", handleStudioGenerate);
   /** Health of saver proxy (no license) */
-  app.get("/api/studio/saver-health", async (_req, reply) => {
+  app.get("/api/studio/saver-health", async () => {
     const base = saverUrl().replace(/\/generate$/, "");
-    const pod = (process.env.RUNPOD_POD_ID || "xuvnute4l51iog").trim();
-    try {
-      const r = await fetch(`${base}/health`, { signal: AbortSignal.timeout(12_000) });
-      const text = await r.text();
-      let health: unknown = {};
-      try {
-        health = JSON.parse(text);
-      } catch {
-        health = { raw: text.slice(0, 200) };
-      }
-      if (!r.ok) {
-        return {
-          ok: false,
-          saver: base,
-          httpStatus: r.status,
-          health,
-          hint:
-            r.status === 404
-              ? `RunPod proxy 404 — pod must be RUNNING and this HTTP port must appear under Connect → HTTP services (proxy URL port must match). Local curl on the pod is not enough. Pod=${pod}`
-              : "Saver returned non-OK status",
-        };
-      }
-      return { ok: true, saver: base, httpStatus: r.status, health };
-    } catch (e) {
-      return reply.code(502).send({
-        ok: false,
-        saver: base,
-        error: (e as Error).message,
-        hint: `Cannot reach RunPod proxy. Confirm pod ${pod} is up and the HTTP port in RUNPOD_SAVER_URL is exposed. Do not run pm2 on the pod — pm2 is VPS-only.`,
-      });
-    }
+    const pod = await probePodHealth();
+    return {
+      ok: pod.status === "RUNNING" && pod.ok,
+      saver: base,
+      podStatus: pod.status,
+      r2_ok: pod.r2_ok,
+      mode: pod.mode,
+      isServerless: pod.isServerless,
+      autoStart: pod.autoStart,
+      health: pod,
+      hint:
+        pod.status === "SLEEPING"
+          ? "Pod sleeping — Generate auto-wakes via RUNPOD_API_KEY (POST /api/pod/wake). Prefer RUNPOD_SERVERLESS_URL for Production 1K (pay per generate)."
+          : pod.status === "WAKING"
+            ? "Pod waking — wait ~45–90s then retry Generate"
+            : undefined,
+      status: await getPodStatus(),
+    };
   });
 }
 

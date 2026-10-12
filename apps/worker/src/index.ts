@@ -112,4 +112,7 @@ start("fetchTemplateIntros", fetchTemplateIntrosJob);
 start("cloneReproduce", cloneReproduceJob);
 start("youtubeAutomation", youtubeAutomationJob);
 
+const { startPodIdleWatcher } = await import("./podIdleStop.js");
+startPodIdleWatcher();
+
 console.log("REELSTORM Worker online — queues ready");

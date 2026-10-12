@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { getApiBase } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { PodStatusIndicator } from "@/components/PodStatusIndicator";
 
 type OutfitVariant = {
   id: string;
@@ -232,16 +233,19 @@ export default function AvatarStudioPage() {
             <span className="text-cyan">videos.reelstorm.uk</span>. Sound Studio owns voice; STORM Guide coaches each step.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/model-center" className="h-10 px-4 rounded-rs border border-white/15 text-sm grid place-items-center">
-            API keys
-          </Link>
-          <Link href="/studio-set" className="h-10 px-4 rounded-rs bg-cyan text-black font-bold text-sm grid place-items-center">
-            Open Studio Set
-          </Link>
-          <Link href="/wizard" className="h-10 px-4 rounded-rs border border-violet/40 text-violet-soft text-sm grid place-items-center">
-            BOT Director
-          </Link>
+        <div className="flex flex-col items-stretch sm:items-end gap-2">
+          <PodStatusIndicator />
+          <div className="flex flex-wrap gap-2">
+            <Link href="/model-center" className="h-10 px-4 rounded-rs border border-white/15 text-sm grid place-items-center">
+              API keys
+            </Link>
+            <Link href="/studio-set" className="h-10 px-4 rounded-rs bg-cyan text-black font-bold text-sm grid place-items-center">
+              Open Studio Set
+            </Link>
+            <Link href="/wizard" className="h-10 px-4 rounded-rs border border-violet/40 text-violet-soft text-sm grid place-items-center">
+              BOT Director
+            </Link>
+          </div>
         </div>
       </div>
 

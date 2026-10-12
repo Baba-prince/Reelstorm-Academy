@@ -7,6 +7,7 @@ import { YT_OS_NICHES, YT_OS_RTC_PER_VIDEO, YT_OS_AGENTS } from "@reelstorm/doma
 import { resolveUserFromAuthHeader } from "./auth.js";
 import { debitRtc, ensureUserWallet } from "../lib/rtc.js";
 import { enqueue } from "../lib/queue.js";
+import { getPodStatus, wakePod, ensurePodAliveOrFallback } from "@reelstorm/media";
 import {
   agentStrategy,
   agentScript,
@@ -237,9 +238,48 @@ export async function youtubeRoutes(app: FastifyInstance) {
       avatarId?: string;
       variantId?: string;
       ownerEmail?: string;
+      async?: boolean;
     };
     if (!body.videoId) return reply.code(400).send({ error: "videoId required" });
     const user = await resolveUser(req, body.ownerEmail);
+
+    // If GPU needed and pod sleeping — wake + optionally re-queue instead of hard 404
+    if (body.avatarId) {
+      const engine = await ensurePodAliveOrFallback();
+      if (engine === "failed") {
+        const status = await getPodStatus();
+        if (status === "SLEEPING" || status === "WAKING") {
+          void wakePod();
+          if (body.async !== false) {
+            const job = await enqueue(
+              "youtubeAutomation",
+              {
+                channelId: "deferred",
+                productionOnly: true,
+                videoId: body.videoId,
+                avatarId: body.avatarId,
+                variantId: body.variantId,
+                userId: user.id,
+              },
+              {
+                jobId: `yt-prod-wake-${body.videoId}-${Date.now()}`,
+                delay: 60_000,
+                attempts: 5,
+              },
+            );
+            // BullMQ delay via job opts — use queue.add with delay in enqueue extension
+            return {
+              status: "waking",
+              message: "Pod was sleeping, waking up, job re-queued",
+              podStatus: status,
+              jobId: job.id,
+              videoId: body.videoId,
+            };
+          }
+        }
+      }
+    }
+
     try {
       await chargeYt(user.id, 10, "production assemble", body.videoId);
     } catch (e) {
@@ -247,11 +287,19 @@ export async function youtubeRoutes(app: FastifyInstance) {
         error: (e as Error).message,
       });
     }
-    return agentProduction({
+    const result = await agentProduction({
       videoId: body.videoId,
       avatarId: body.avatarId,
       variantId: body.variantId,
     });
+    if ((result.productionJson as { waking?: boolean })?.waking) {
+      return {
+        status: "waking",
+        message: "Pod was sleeping, waking up — proof R2 ready; retry for GPU avatar render",
+        ...result,
+      };
+    }
+    return result;
   });
 
   app.post("/api/youtube/publish/upload", async (req, reply) => {

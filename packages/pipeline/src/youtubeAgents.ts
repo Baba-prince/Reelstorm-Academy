@@ -4,7 +4,14 @@
 import { randomUUID } from "node:crypto";
 import { deflateSync } from "node:zlib";
 import { prisma, YtOsAgent, YtOsVideoStatus } from "@reelstorm/db";
-import { uploadBuffer, publicUrl } from "@reelstorm/media";
+import {
+  uploadBuffer,
+  publicUrl,
+  generateWithAutonomousPod,
+  getPodStatus,
+  wakePod,
+  ensurePodAliveOrFallback,
+} from "@reelstorm/media";
 import { orchestrate } from "@reelstorm/providers";
 import {
   YT_PROOF_VIDEO_URL,
@@ -464,27 +471,30 @@ export async function agentProduction(opts: {
     console.warn("[yt-os production] proof copy failed", (err as Error).message);
   }
 
-  // Try saver for avatar-specific render when available
-  if (opts.avatarId && process.env.RUNPOD_SAVER_URL) {
-    try {
-      const saverBase = process.env.RUNPOD_SAVER_URL.replace(/\/$/, "").replace(/\/generate$/, "");
-      const saverRes = await fetch(`${saverBase}/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+  // Auto-wake pod / serverless for avatar-specific render when requested
+  let podWaking = false;
+  if (opts.avatarId) {
+    const engine = await ensurePodAliveOrFallback();
+    if (engine === "pod" || engine === "serverless") {
+      try {
+        const gen = await generateWithAutonomousPod({
           prompt: `YouTube talking head ${avatarMeta.variantName || "avatar"}: ${video.title}`,
           duration: 30,
           resolution: "720x1280",
-        }),
-        signal: AbortSignal.timeout(180_000),
-      });
-      const sj = (await saverRes.json().catch(() => ({}))) as { r2_url?: string };
-      if (sj.r2_url) {
-        finalVideoUrl = sj.r2_url;
-        realR2 = true;
+        });
+        if (gen.r2_url) {
+          finalVideoUrl = gen.r2_url;
+          realR2 = gen.real_r2 !== false;
+        }
+      } catch {
+        /* keep proof copy */
       }
-    } catch {
-      /* keep proof copy */
+    } else if (engine === "failed") {
+      const status = await getPodStatus();
+      if (status === "SLEEPING" || status === "WAKING") {
+        void wakePod();
+        podWaking = true;
+      }
     }
   }
 
@@ -504,6 +514,11 @@ export async function agentProduction(opts: {
     avatarVariantId: avatarMeta.variantId,
     avatarVariantName: avatarMeta.variantName,
     realR2,
+    waking: podWaking,
+    status: podWaking ? ("waking" as const) : ("ready" as const),
+    message: podWaking
+      ? "Pod was sleeping — waking up; retry assemble in ~60s or use proof R2 now"
+      : undefined,
   };
 
   await prisma.ytOsVideo.update({
