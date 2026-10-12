@@ -10,7 +10,7 @@ const DISMISS_KEY = "rs_page_coach_dismissed";
 
 const CHIP_LABELS: Record<string, string> = {
   "/wizard": "Wizard",
-  "/yt-os": "YT-OS",
+  "/yt-os": "YouTube Automation",
   "/tools/clone": "Clone",
   "/dashboard": "Dashboard",
   "/templates-room": "Templates",

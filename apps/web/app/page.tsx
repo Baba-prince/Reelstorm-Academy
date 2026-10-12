@@ -126,9 +126,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* YT-OS */}
+      {/* YouTube Automation OS Layer */}
       <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06] overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00D9FF]/12 via-transparent to-[#7C3AED]/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00D9FF]/12 via-transparent to-[#FF7A00]/10" />
         <div className="relative mx-auto max-w-[1280px] grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div>
             <div className="mono text-[11px] text-cyan mb-3">{t("marketing.ytosEyebrow")}</div>
@@ -140,44 +140,59 @@ export default function LandingPage() {
             <p className="mt-4 text-white/55 text-[15px] leading-relaxed max-w-[420px]">
               {t("marketing.ytosBody")}
             </p>
-            <Link
-              href="/yt-os"
-              className="mt-8 inline-flex h-12 px-6 items-center rounded-rs bg-cyan text-black font-bold text-[14px]"
-            >
-              {t("marketing.ytosCta")}
-            </Link>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link
+                href="/yt-os"
+                className="inline-flex h-12 px-6 items-center rounded-rs bg-cyan text-black font-bold text-[14px]"
+              >
+                {t("marketing.ytosCta")}
+              </Link>
+              <Link
+                href="/model-center/avatar"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-orange/40 text-orange font-medium text-[14px] hover:bg-orange/10"
+              >
+                Avatar Studio
+              </Link>
+              <Link
+                href="/training"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-white/20 text-white/80 font-medium text-[14px] hover:bg-white/[0.05]"
+              >
+                {t("marketing.ctaTraining")}
+              </Link>
+            </div>
           </div>
           <div className="relative aspect-[4/3] rounded-rs-xl border border-white/[0.08] bg-[#0A0A0A] overflow-hidden">
             <svg viewBox="0 0 480 360" className="w-full h-full" aria-hidden>
               <rect width="480" height="360" fill="#0A0A0A" />
-              <text x="32" y="40" fill="#00D9FF" fontSize="11" fontFamily="monospace" letterSpacing="2">
-                /rs-* · 11 SKILLS
+              <text x="32" y="36" fill="#00D9FF" fontSize="11" fontFamily="monospace" letterSpacing="2">
+                YOUTUBE AUTOMATION OS · 7 AGENTS
               </text>
               {[
-                { y: 70, label: "/rs-viral", w: 200 },
-                { y: 108, label: "/rs-hooks · 21", w: 240 },
-                { y: 146, label: "/rs-titles · thumbs", w: 280 },
-                { y: 184, label: "/rs-edit · voice", w: 220 },
-                { y: 222, label: "/rs-calendar · 30d", w: 260 },
-                { y: 260, label: "/rs-publish", w: 180 },
-              ].map((row, i) => (
+                { y: 56, label: "01 STRATEGY — winning topics · 14-day calendar", w: 400, c: "#00D9FF" },
+                { y: 92, label: "02 SCRIPT — HOOK · INTRO · BEATS · CTA", w: 360, c: "#C4B5FD" },
+                { y: 128, label: "03 THUMBNAIL — I FIRED MYSELF · A/B CTR", w: 380, c: "#FF7A00" },
+                { y: 164, label: "04 SEO — keywords · titles · tags 15–20", w: 340, c: "#00D9FF" },
+                { y: 200, label: "05 PRODUCTION — Avatar · VO · R2 assemble", w: 390, c: "#7C3AED" },
+                { y: 236, label: "06 PUBLISH — YouTube upload · schedule", w: 350, c: "#FF7A00" },
+                { y: 272, label: "07 ANALYTICS — feedback loop → calendar", w: 370, c: "#00D9FF" },
+              ].map((row) => (
                 <g key={row.label}>
                   <rect
-                    x="32"
+                    x="24"
                     y={row.y}
                     width={row.w}
                     height="28"
                     rx="6"
-                    fill={i % 2 ? "#151515" : "#12121a"}
-                    stroke={i < 2 ? "#00D9FF" : "rgba(255,255,255,0.1)"}
+                    fill="#12121a"
+                    stroke={`${row.c}66`}
                   />
-                  <text x="48" y={row.y + 18} fill="rgba(255,255,255,0.75)" fontSize="12" fontFamily="monospace">
+                  <text x="40" y={row.y + 18} fill="rgba(255,255,255,0.8)" fontSize="11" fontFamily="monospace">
                     {row.label}
                   </text>
                 </g>
               ))}
               <text x="32" y="330" fill="rgba(255,255,255,0.35)" fontSize="10" fontFamily="monospace">
-                RTC WALLET · NOT AN EXTERNAL BOT
+                20 RTC / VIDEO · AVATAR TWIN · NO FILMING
               </text>
             </svg>
           </div>
@@ -440,7 +455,7 @@ export default function LandingPage() {
               {t("nav.howItWorks")}
             </Link>
             <Link href="/yt-os" className="hover:text-white">
-              YT-OS
+              YouTube OS
             </Link>
             <Link href="/studio-set" className="hover:text-white">
               Studio Set

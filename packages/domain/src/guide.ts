@@ -1,8 +1,8 @@
 /**
  * STORM Guide — system knowledge + workflow improvement options
  * Used by API (LLM grounding) and web (instant page tips).
- * Keep in sync with shipped OS: YT-OS v2, Viral Clone Factory, Full Studio Set v1.6.4,
- * landing Studio Set layer, factory pipeline (Storyboard→Merge), World Builder, Pixabay PRIMARY.
+ * Keep in sync with shipped OS: YouTube Automation OS (7 agents), Viral Clone Factory,
+ * Full Studio Set v1.6.4, landing Studio Set + YT Automation layers, Avatar Studio, Pixabay PRIMARY.
  */
 
 export type GuideOption = {
@@ -47,28 +47,28 @@ export const FACTORY_START_PATH = [
   { href: "/merge-studio", label: "07 Merge" },
 ] as const;
 
-export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.6.4 / YT-OS v2.
+export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.6.4 / YouTube Automation OS.
 
 Mission:
-- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Full Studio Set, STORM pipeline, BOT Director Wizard, YT-OS 11 skills, Viral Clone Factory, Avatar Studio).
+- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Full Studio Set, STORM pipeline, BOT Director Wizard, YouTube Automation 7 agents, Viral Clone Factory, Avatar Studio).
 - You are the explanatory wizard on EVERY screen. Default assumption: the operator feels lost (“where can I start?”). Lead with Start Here steps from page context before anything else.
 - When the user asks “where do I start?” give ONE recommended first click + the next 2 steps on the current screen, then the factory path.
 - Improve the operator's workflow with concrete next actions.
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer factory order: BOT Director Wizard (or /yt-os / /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Prefer factory order: YouTube Automation (/yt-os) or BOT Director Wizard (or /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
 - Full Studio Set (/studio-set) is READY FOR PRODUCTION TESTING on app.reelstorm.uk: Seed Courtroom → Generate room/artist plates → Imagery upsert (refreshes all rooms) → Apply to Director when readiness is green (or Force soft launch ≥60%). Soft-launch plates are SVG/URL stamps until real still gen — coach the lock flow, not photoreal claims.
 - World Builder (/world-builder) is legacy quick Soul + Room lock — also READY FOR PRODUCTION TESTING; always prefer / deep-link into Full Studio Set for multi-angle cast + imagery.
 - Storyboard / Studio / Sound / Archive / Merge are READY FOR PRODUCTION TESTING for soft-launch queues. Real GPU /generate needs green RunPod saver-health; Archive split needs uploadId; Merge needs vault blockIds; Sound clone/TTS needs ElevenLabs only when testing voice forge.
 - Sound Studio is the voice OS (sync · extract · mux · library · TTS). Hosted TTS/clone providers are optional — never block operators on ElevenLabs.
 - Template Room stock intros: Pixabay is PRIMARY (Pexels paused). Cached to R2/local — GET /api/templates?type=intro — $0 Seedance cost for intros.
 - Viral Clone Factory (/tools/clone · /rs-clone): paste YouTube/TikTok/Instagram → Analyze 1 RTC → transformative remake 5 RTC. NEVER copy source video bytes — rewrite transcript + new Pixabay/Seedance assets + watermark.
-- YT-OS v2 (/yt-os): 11 slash skills /rs-viral · /rs-script (21 hooks) · /rs-package · /rs-video · /rs-voice · /rs-thumb · /rs-comments · /rs-plan · /rs-publish · /rs-analytics · /rs-clone — all inside REELSTORM (not external Claude).
+- YouTube Automation OS (/yt-os): 7 agents — Strategy → Script → Thumbnail → SEO → Production → Publish → Analytics. Create Channel → Run Full Pipeline (20 RTC/video). Production uses Avatar Studio (4 outfits) + Sound Studio VO → R2 videos.reelstorm.uk/videos/youtube/…. Analytics feedback loop reorders the 14-day calendar. Legacy /rs-* skills still via API.
 - Account menu (header avatar): Account settings · Change password · Billing · RTC Wallet · Log out. Captain Admin only for locked admin email.
 - Free demo: 1 RTC from SystemBank (4600 RTC pool ≈ 920 × 5-min sets). Free users can analyze/demo; reproduce/vault needs paid RTC.
-- Soft launch: Ollama may power the guide LLM; Stripe test + mock video OK until live DashScope/Seedance/sk_live keys are stamped. Scorecard v1.6.4 tracks landing Studio Set layer + full factory pipeline production-test matrix.
-- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. Tiers: Free Test $0 (1 RTC demo) · Storm / Storm Pro / Premium Pro via /billing + /wallet. Clone: 1 RTC analyze + 5 RTC reproduce.
+- Soft launch: Ollama may power the guide LLM; Stripe test + mock video OK until live DashScope/Seedance/sk_live keys are stamped. Scorecard tracks landing YouTube Automation + Studio Set layers + factory pipeline production-test matrix.
+- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. YouTube Automation video = 20 RTC. Tiers: Free Test $0 (1 RTC demo) · Storm / Storm Pro / Premium Pro via /billing + /wallet. Clone: 1 RTC analyze + 5 RTC reproduce.
 
 Tone: sharp producer, not corporate. Brand colors mentally: violet / cyan / orange on void black.
 Compliance: Clone Factory is transformative fair-use remake for inspiration — original assets only.`;
@@ -78,17 +78,17 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/",
     layer: "marketing",
     title: "Landing",
-    blurb: "Brand-first entry to the production OS factory + YT-OS.",
+    blurb: "Brand-first entry — YouTube Automation OS Layer + Studio Set factory.",
     tips: [
       "REELSTORM is not a course player — it is a factory that vaults ARCHIVE5 IP.",
-      "New: YT-OS (/yt-os) runs 11 YouTube skills inside the OS; Clone Factory remakes viral links transformatively.",
-      "Start with BOT Director Wizard, YT-OS, or Template Forge.",
+      "New OS Layer: YouTube Automation (/yt-os) — 7 agents, no filming, 20 RTC/video. Avatar Studio twins + Sound VO.",
+      "Start with YouTube Automation, BOT Director Wizard, or Template Forge.",
     ],
     options: [
-      { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual path.", href: "/training", kind: "goto" },
-      { id: "ytos", label: "Open YT-OS", prompt: "What are the 11 /rs-* skills and which should I try first?", href: "/yt-os", kind: "goto" },
+      { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual — especially YouTube Automation pages.", href: "/training", kind: "goto" },
+      { id: "ytos", label: "YouTube Automation", prompt: "How do I use the 7-agent YouTube Automation OS from channel create to publish?", href: "/yt-os", kind: "goto" },
+      { id: "avatar", label: "Avatar Studio", prompt: "How do I lock an avatar twin for Production?", href: "/model-center/avatar", kind: "goto" },
       { id: "clone", label: "Viral Clone Factory", prompt: "How does link-to-video clone work and what does it cost?", href: "/tools/clone", kind: "goto" },
-      { id: "forge", label: "Open Template Forge", prompt: "What should I do first in Template Forge?", href: "/template-forge", kind: "do" },
       { id: "pricing", label: "RTC pricing", prompt: "Explain RTC, free demo SystemBank, and paid tiers.", href: "/pricing", kind: "learn" },
     ],
   },
@@ -96,35 +96,35 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/training",
     layer: "marketing",
     title: "Training Manual",
-    blurb: "Flip-over artifact — screen-by-screen operator training.",
+    blurb: "Flip-over artifact — screen-by-screen operator training including YouTube Automation.",
     tips: [
       "Use arrow keys or Flip to advance; Index jumps to any chapter.",
+      "Flip to YouTube Automation OS (page 17) and Avatar Studio (page 18) for the no-filming path.",
       "Match each system image to the live OS screen before moving on.",
-      "Also learn live: YT-OS, Viral Clone, Account menu, Pixabay intros in Templates Room.",
     ],
     options: [
       { id: "rules", label: "System rules first", prompt: "Summarize Section A system rules I must not break.", kind: "learn" },
-      { id: "wizard", label: "BOT Director path", prompt: "How does BOT Director Wizard fit before Template Forge?", href: "/wizard", kind: "goto" },
-      { id: "ytos", label: "YT-OS chapter", prompt: "Explain YT-OS v2 eleven skills for a new YouTuber.", href: "/yt-os", kind: "goto" },
-      { id: "ops", label: "Operator path", prompt: "Give me the fastest operator path Wizard→Merge including Clone optional.", kind: "improve" },
+      { id: "ytos", label: "YouTube Automation chapter", prompt: "Teach me Create Channel → Run Full Pipeline → Approve & Publish step by step.", href: "/yt-os", kind: "goto" },
+      { id: "avatar", label: "Avatar chapter", prompt: "How do I attach a 4-outfit avatar twin before Production?", href: "/model-center/avatar", kind: "goto" },
+      { id: "ops", label: "Operator path", prompt: "Give me the fastest no-filming path: YT Automation → Avatar → Publish.", kind: "improve" },
     ],
   },
   {
     path: "/how-it-works",
     layer: "marketing",
     title: "Factory Map",
-    blurb: "STORM stages · YT-OS · Clone · zero timeline scrubbing.",
+    blurb: "YouTube Automation · Studio Set · STORM · zero timeline scrubbing.",
     tips: [
-      "Lock intent before pixels — Story Contract, Wizard, or paste a viral link into Clone Factory.",
-      "After templates: Full Studio Set locks Room · Artist · Imagery before Storyboard / STORM render.",
+      "Primary growth loop: /yt-os 7 agents (Strategy→Analytics) at 20 RTC/video — no filming.",
+      "Alternate: Wizard or Clone → Full Studio Set locks Room · Artist · Imagery before Storyboard / STORM.",
       "World Builder is a quick Soul/Room stub — prefer /studio-set for production testing.",
       "Sound Studio owns voice after Studio QC — before or alongside vault.",
     ],
     options: [
       { id: "stages", label: "Explain STORM stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
+      { id: "ytos", label: "YouTube Automation", prompt: "How does the 7-agent YouTube Automation OS Layer fit the factory map?", href: "/yt-os", kind: "goto" },
       { id: "set", label: "Studio Set lock", prompt: "Where does Full Studio Set fit and how do I test Room · Artist · Imagery?", href: "/studio-set", kind: "goto" },
-      { id: "wizard", label: "Start with Wizard", prompt: "Should I use BOT Director Wizard, YT-OS, or Template Forge first?", href: "/wizard", kind: "improve" },
-      { id: "start", label: "Start production", prompt: "I am ready — what is my first click?", href: "/template-forge", kind: "do" },
+      { id: "start", label: "Start production", prompt: "I am ready — what is my first click for no-filming YouTube?", href: "/yt-os", kind: "do" },
     ],
   },
   {
@@ -274,39 +274,40 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       nextHref: "/model-center/avatar",
     },
     options: [
-      { id: "viral", label: "Run /rs-viral", prompt: "How does Virality Engine find and rebuild niche winners?", kind: "do" },
-      { id: "script", label: "21 hooks", prompt: "Explain hook formulas and write a Shorts script for my niche.", kind: "learn" },
-      { id: "plan", label: "30-day calendar", prompt: "How do I generate a Long/Short calendar?", href: "/yt-os/plan", kind: "goto" },
-      { id: "clone", label: "Open Clone", prompt: "Take me to link-to-video remake.", href: "/tools/clone", kind: "goto" },
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on YouTube Automation OS right now?", kind: "improve" },
+      { id: "pipeline", label: "Run Full Pipeline", prompt: "Walk me through Create Channel → Run Full Pipeline → each of the 7 agents → Approve & Publish.", kind: "do" },
+      { id: "avatar", label: "Avatar Twin", prompt: "How do I lock an Avatar Studio outfit before Production?", href: "/model-center/avatar", kind: "goto" },
+      { id: "agents", label: "Explain 7 agents", prompt: "Explain Strategy, Script, Thumbnail, SEO, Production, Publish, Analytics and what each outputs.", kind: "learn" },
+      { id: "plan", label: "Content calendar", prompt: "How does Strategy build the 14-day calendar and how does Analytics reorder it?", href: "/yt-os/plan", kind: "goto" },
     ],
   },
   {
     path: "/yt-os/plan",
     layer: "os",
     title: "Content Calendar",
-    blurb: "/rs-plan — 30-day Long/Short schedule from bank RTC.",
+    blurb: "14–30 day Long/Short schedule — fed by Strategy + Analytics feedback loop.",
     tips: [
-      "Long Mon/Wed/Fri (~5 RTC) · Short other days (~1 RTC).",
-      "Lean on Pixabay intros to keep Short cost near zero.",
-      "Generate plan then produce via /rs-script → Studio / Clone.",
+      "Strategy agent seeds winning topics into the calendar after channel create.",
+      "Analytics after publish can reorder upcoming slots toward what worked.",
+      "Produce from calendar via Run Full Pipeline on /yt-os (20 RTC/video).",
     ],
     startHere: {
-      goal: "Generate a 30-day Long/Short calendar you can actually produce.",
+      goal: "Read the calendar Strategy built, then produce the next slot.",
       steps: [
-        "Hit Generate plan — read Long vs Short day costs.",
-        "Pick tomorrow’s Short → /rs-script or Clone Factory.",
-        "Produce via Studio; keep Pixabay intros for near-$0 Shorts.",
+        "Open the calendar — confirm niche topics for the next 14 days.",
+        "Pick tomorrow’s slot → return to /yt-os → Run Full Pipeline (or step agents).",
+        "After Analytics runs, refresh — slots may reorder toward winners.",
       ],
-      primaryLabel: "Generate plan",
+      primaryLabel: "Open calendar",
       primaryHref: "/yt-os/plan",
-      nextLabel: "Back to YT-OS",
+      nextLabel: "Back to Automation",
       nextHref: "/yt-os",
     },
     options: [
       { id: "start", label: "Where do I start?", prompt: "Where do I start on the content calendar?", kind: "improve" },
-      { id: "gen", label: "Generate plan", prompt: "How do I generate and read the 30-day calendar?", kind: "do" },
-      { id: "cost", label: "RTC budget", prompt: "Estimate RTC for 30 Shorts + 12 Longs from SystemBank.", kind: "learn" },
-      { id: "back", label: "Back to skills", prompt: "Return to YT-OS dashboard.", href: "/yt-os", kind: "goto" },
+      { id: "gen", label: "Read the plan", prompt: "How do I read Strategy’s calendar and pick the next video?", kind: "do" },
+      { id: "cost", label: "RTC budget", prompt: "Estimate RTC if I run Full Pipeline for 7 videos this week (20 RTC each).", kind: "learn" },
+      { id: "back", label: "Back to Automation", prompt: "Return to YouTube Automation dashboard.", href: "/yt-os", kind: "goto" },
     ],
   },
   {

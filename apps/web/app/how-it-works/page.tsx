@@ -11,15 +11,17 @@ export default function HowItWorksPage() {
 
       <section className="px-5 md:px-8 pt-16 md:pt-24 pb-12">
         <div className="mx-auto max-w-[960px]">
-          <div className="mono text-[11px] text-cyan mb-3">INFOGRAPHIC · YT-OS · CLONE · FACTORY</div>
+          <div className="mono text-[11px] text-cyan mb-3">
+            INFOGRAPHIC · YOUTUBE AUTOMATION · STUDIO SET · FACTORY
+          </div>
           <h1 className="display text-[clamp(2.5rem,8vw,5.5rem)] leading-[0.9]">
             How the storm
             <br />
             <span className="text-white/40">makes a master.</span>
           </h1>
           <p className="mt-5 text-white/55 text-[16px] max-w-[520px] leading-relaxed">
-            Idea or viral link in. YT-OS skills, Clone Factory, and Pixabay intros feed the same factory —
-            World → Studio → ARCHIVE5 → Merge. Free 1-RTC demo from SystemBank.
+            YouTube Automation OS (7 agents) or a viral link in. Avatar twins, Sound Studio VO, and Pixabay
+            intros feed the same factory — Studio Set → STORM → ARCHIVE5 → Merge.
           </p>
         </div>
       </section>
@@ -34,14 +36,14 @@ export default function HowItWorksPage() {
         <div className="mx-auto max-w-[800px] space-y-16">
           {[
             {
-              t: "Idea, viral link, or DNA",
-              d: "Start in BOT Director Wizard, YT-OS (/rs-* skills), Template Forge, or Viral Clone Factory. Paste YouTube / TikTok / Instagram — we extract structure, never the source bytes.",
-              c: "#7C3AED",
+              t: "YouTube Automation OS Layer",
+              d: "Open /yt-os → create a channel → Run Full Pipeline. Seven agents fire in order: Strategy, Script, Thumbnail, SEO, Production (Avatar + VO → R2), Publish, Analytics. Feedback loop reorders your next 14-day calendar. Cost: 20 RTC per video.",
+              c: "#00D9FF",
             },
             {
-              t: "Transformative remake + Pixabay",
-              d: "Clone analyze (1 RTC) then reproduce (5 RTC) with rewritten script, Pixabay B-roll, and Seedance prompts. Stock intros in Templates Room ship at $0 Seedance cost.",
-              c: "#00D9FF",
+              t: "Idea, viral link, or Studio Set",
+              d: "BOT Director Wizard, Template Forge, or Viral Clone Factory still feed Full Studio Set — Room · Artist · Imagery. Paste YouTube / TikTok / Instagram — we extract structure, never the source bytes.",
+              c: "#7C3AED",
             },
             {
               t: "World · STORM · ARCHIVE5 · Merge",
@@ -68,13 +70,13 @@ export default function HowItWorksPage() {
             href="/yt-os"
             className="inline-flex h-14 px-8 items-center rounded-rs bg-orange text-black font-bold"
           >
-            Open YT-OS
+            Open YouTube Automation
           </Link>
           <Link
-            href="/tools/clone"
+            href="/model-center/avatar"
             className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
           >
-            Clone Factory
+            Avatar Studio
           </Link>
           <Link
             href="/wizard"

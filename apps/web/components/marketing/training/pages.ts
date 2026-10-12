@@ -25,6 +25,8 @@ export type TrainingPage = {
     | "merge"
     | "wallet"
     | "sound"
+    | "ytos"
+    | "avatar"
     | "whitelabel"
     | "developers"
     | "pricing"
@@ -37,7 +39,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 0,
     section: "COVER",
     title: "REELSTORM — Training Manual",
-    lead: "Flip-over operator guide for Academy Studio. Learn the factory screen by screen — including BOT Director Wizard and Sound Studio.",
+    lead: "Flip-over operator guide for Academy Studio — YouTube Automation OS, Avatar Studio, BOT Director, Sound Studio.",
     steps: [],
     mock: "cover",
   },
@@ -45,7 +47,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 1,
     section: "INDEX",
     title: "Table of Contents — Flip Index",
-    lead: "Tap any chapter to flip instantly. Four sections · 21 pages · soft-launch verified.",
+    lead: "Tap any chapter to flip instantly. Four sections · 23 pages · YouTube Automation included.",
     steps: [],
     mock: "index",
   },
@@ -245,6 +247,32 @@ export const TRAINING_PAGES: TrainingPage[] = [
   },
   {
     id: 17,
+    section: "B — Operator Training",
+    title: "YouTube Automation OS — 7 Agents",
+    lead: "Without filming: Strategy → Script → Thumbnail → SEO → Production → Publish → Analytics. One Run Full Pipeline ships a video to R2 and reorders your calendar.",
+    steps: [
+      "Open /yt-os → Create Channel (niche + audience) → confirm 14-day calendar topics appear.",
+      "Click Run Full Pipeline (or run agents one-by-one). Watch Pod Status; GPU wakes automatically when Production needs video.",
+      "Open the video card → review script, thumbnail A/B, SEO pack → Approve & Publish when ready. Cost: 20 RTC per finished video.",
+    ],
+    mock: "ytos",
+    href: "/yt-os",
+  },
+  {
+    id: 18,
+    section: "B — Operator Training",
+    title: "Avatar Studio — Talking Head Twin",
+    lead: "MissTechy-style avatar with 4 outfits. Production agent uses your twin for talking-head clips — no camera day.",
+    steps: [
+      "Open /model-center/avatar → pick or generate a face · lock Soul ID · choose Casual / Formal / Street / Studio outfit.",
+      "Save the avatar to your channel so YouTube Automation Production can attach it.",
+      "Return to /yt-os → Run Production (or Full Pipeline) — VO from Sound Studio muxes onto the avatar clip on videos.reelstorm.uk.",
+    ],
+    mock: "avatar",
+    href: "/model-center/avatar",
+  },
+  {
+    id: 19,
     section: "C — Academy White-label",
     title: "White-label — Your Brand, Our Factory",
     lead: "Academies run ReelStorm under their brand with tenant keys and shared RTC ledgers.",
@@ -257,7 +285,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/white-label",
   },
   {
-    id: 18,
+    id: 20,
     section: "C — Academy White-label",
     title: "Developers — API Smoke Path",
     lead: "Health → generate → vault. Same RTC rules as the console.",
@@ -270,7 +298,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/developers",
   },
   {
-    id: 19,
+    id: 21,
     section: "C — Academy White-label",
     title: "Pricing — Free / Basic / Premium / Pro",
     lead: "Sell sets, meter minutes. Free Test $0 · Basic $49 (720p) · Premium $99 hero · Premium Pro $199.",
@@ -283,14 +311,14 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/pricing",
   },
   {
-    id: 20,
+    id: 22,
     section: "D — Launch",
     title: "Production Checklist + Final",
     lead: "Ship when scorecard is green. Soft launch accepts Ollama LLM, Stripe test, and mock video until live keys arrive.",
     steps: [
       "Open /scorecard → RE-SCAN — target grade A (API /api/readiness).",
-      "Confirm ffmpeg/ffprobe, Redis db 17, worker concurrency ≥8, Sound Studio PASS.",
-      "Operators trained on Wizard or Forge → Sound → Vault → Merge.",
+      "Confirm ffmpeg/ffprobe, Redis db 17, YouTube Automation /yt-os, Avatar Studio, Sound Studio PASS.",
+      "Operators trained on YouTube Automation or Wizard → Sound → Vault → Merge.",
     ],
     mock: "checklist",
     href: "/scorecard",
@@ -312,7 +340,7 @@ export const INDEX_SECTIONS = [
   },
   {
     title: "Section B: Operator Training",
-    pages: "Pages 7–16",
+    pages: "Pages 7–18",
     color: "#00D9FF",
     items: [
       { id: 7, label: "Dashboard Navigation" },
@@ -325,22 +353,24 @@ export const INDEX_SECTIONS = [
       { id: 14, label: "Merge Studio" },
       { id: 15, label: "RTC Wallet" },
       { id: 16, label: "Sound Studio" },
+      { id: 17, label: "YouTube Automation OS" },
+      { id: 18, label: "Avatar Studio" },
     ],
   },
   {
     title: "Section C: Academy White-label",
-    pages: "Pages 17–19",
+    pages: "Pages 19–21",
     color: "#FF7A00",
     items: [
-      { id: 17, label: "White-label Tenant" },
-      { id: 18, label: "Developers API" },
-      { id: 19, label: "Pricing Tiers" },
+      { id: 19, label: "White-label Tenant" },
+      { id: 20, label: "Developers API" },
+      { id: 21, label: "Pricing Tiers" },
     ],
   },
   {
     title: "Section D: Launch",
-    pages: "Page 20",
+    pages: "Page 22",
     color: "#E5E7EB",
-    items: [{ id: 20, label: "Production Checklist" }],
+    items: [{ id: 22, label: "Production Checklist" }],
   },
 ];

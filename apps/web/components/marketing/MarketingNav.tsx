@@ -33,7 +33,7 @@ export function MarketingNav({ variant = "overlay" }: { variant?: "overlay" | "s
           </div>
           <div className="leading-none">
             <div className="display text-[12px] md:text-[13px]">REELSTORM</div>
-            <div className="mono text-[8px] text-cyan mt-1 tracking-[0.18em]">ACADEMY OS · YT-OS</div>
+            <div className="mono text-[8px] text-cyan mt-1 tracking-[0.18em]">ACADEMY OS · YT AUTOMATION</div>
           </div>
         </Link>
 

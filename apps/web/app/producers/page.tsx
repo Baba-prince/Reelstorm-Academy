@@ -6,11 +6,11 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 const AUDIENCES = [
   {
     title: "YouTubers",
-    line: "YT-OS + Clone Factory: ship 14–21 videos a week without a 20-person edit team.",
+    line: "YouTube Automation OS + Avatar twin: ship weekly without filming or a 20-person edit team.",
     points: [
-      "Eleven /rs-* skills — hooks, titles, calendar, publish",
-      "Paste a viral link → transformative remake (1+5 RTC)",
-      "Pixabay intros at $0 Seedance · ARCHIVE5 seasons",
+      "7 agents — Strategy → Script → Thumb → SEO → Prod → Publish → Analytics",
+      "Avatar Studio talking heads + Sound VO → R2 (20 RTC/video)",
+      "Clone Factory remakes viral DNA (1+5 RTC) · Pixabay intros $0",
     ],
     accent: "#7C3AED",
   },
@@ -43,15 +43,15 @@ export default function ProducersPage() {
 
       <section className="px-5 md:px-8 pt-16 md:pt-24 pb-12">
         <div className="mx-auto max-w-[960px]">
-          <div className="mono text-[11px] text-orange mb-3">FOR PRODUCERS · YT-OS · CLONE</div>
+          <div className="mono text-[11px] text-orange mb-3">FOR PRODUCERS · YOUTUBE AUTOMATION · CLONE</div>
           <h1 className="display text-[clamp(2.5rem,8vw,5rem)] leading-[0.9]">
             Built for people
             <br />
             <span className="text-white/40">who ship every week.</span>
           </h1>
           <p className="mt-5 text-white/55 text-[16px] max-w-[520px]">
-            REELSTORM doesn’t compete with studios. Free 1-RTC demo from SystemBank — then YT-OS and Clone
-            Factory let creators become studios across Africa and Asia.
+            REELSTORM doesn’t compete with studios. Free 1-RTC demo from SystemBank — then YouTube
+            Automation and Clone Factory let creators become studios across Africa and Asia.
           </p>
         </div>
       </section>
@@ -89,7 +89,7 @@ export default function ProducersPage() {
             href="/yt-os"
             className="inline-flex h-14 px-8 items-center rounded-rs border border-white/20 font-medium"
           >
-            Open YT-OS
+            Open YouTube Automation
           </Link>
           <Link
             href="/tools/clone"

@@ -1,7 +1,7 @@
 "use client";
 
 const STEPS = [
-  { n: "01", name: "IDEA / LINK", sub: "Wizard · YT-OS · Clone viral URL", color: "#C4B5FD" },
+  { n: "01", name: "YT AUTOMATION", sub: "7 agents · Avatar twin · no filming", color: "#C4B5FD" },
   { n: "02", name: "STUDIO SET", sub: "Room · Artist · Imagery lock", color: "#7C3AED" },
   { n: "03", name: "STORYBOARD", sub: "Lock first frames before pixels move", color: "#00D9FF" },
   { n: "04", name: "STORM", sub: "Render · Sound · Pixabay intros $0", color: "#00D9FF" },

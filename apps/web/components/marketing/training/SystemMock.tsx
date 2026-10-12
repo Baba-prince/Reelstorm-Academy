@@ -69,9 +69,9 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
         <div className="relative z-10 flex items-end justify-between gap-4">
           <p className="text-[12px] text-white/55 max-w-[220px] leading-relaxed">
-            Flip each page. Match the screen. Run the factory — Wizard · Forge · Sound.
+            Flip each page. Match the screen — YouTube Automation · Avatar · Wizard · Sound.
           </p>
-          <div className="mono text-[9px] text-orange tracking-[0.16em]">21 PAGES</div>
+          <div className="mono text-[9px] text-orange tracking-[0.16em]">23 PAGES</div>
         </div>
       </div>
     );
@@ -399,6 +399,68 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
       </div>,
       "#00D9FF",
+    );
+  }
+
+  if (kind === "ytos") {
+    return shell(
+      ["YouTube OS", "Calendar", "Agents"],
+      <div className="space-y-2">
+        <div className="flex justify-between text-[8px]">
+          <span className="text-cyan font-bold">RUN FULL PIPELINE</span>
+          <span className="text-orange">20 RTC</span>
+        </div>
+        {[
+          ["01 Strategy", "done"],
+          ["02 Script", "done"],
+          ["03 Thumbnail", "run"],
+          ["04 SEO", "wait"],
+          ["05 Production", "wait"],
+          ["06 Publish", "wait"],
+          ["07 Analytics", "wait"],
+        ].map(([a, s]) => (
+          <div key={a} className="flex justify-between text-[8px] border-b border-white/[0.06] py-0.5">
+            <span className="text-white/70">{a}</span>
+            <span
+              className={
+                s === "done" ? "text-cyan" : s === "run" ? "text-orange" : "text-white/30"
+              }
+            >
+              {s.toUpperCase()}
+            </span>
+          </div>
+        ))}
+      </div>,
+      "#00D9FF",
+    );
+  }
+
+  if (kind === "avatar") {
+    return shell(
+      ["Avatar", "Outfits", "Soul"],
+      <div className="space-y-2">
+        <div className="rounded-md bg-void border border-cyan/30 aspect-video flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-10 h-10 rounded-full bg-violet/40 border border-violet mx-auto mb-1" />
+            <div className="text-[8px] text-cyan">TALKING HEAD · LOCKED</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-1">
+          {["Casual", "Formal", "Street", "Studio"].map((o, i) => (
+            <div
+              key={o}
+              className="rounded text-[7px] text-center py-1 border"
+              style={{
+                borderColor: i === 0 ? "#00D9FF" : "rgba(255,255,255,0.1)",
+                color: i === 0 ? "#00D9FF" : "rgba(255,255,255,0.45)",
+              }}
+            >
+              {o}
+            </div>
+          ))}
+        </div>
+      </div>,
+      "#FF7A00",
     );
   }
 
