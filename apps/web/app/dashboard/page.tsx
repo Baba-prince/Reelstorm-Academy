@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
@@ -23,6 +23,8 @@ const PIPELINE = [
   { step: "06", name: "MERGE STUDIO", href: "/merge-studio", color: "text-orange" },
 ];
 
+const CLEARABLE = new Set(["DRAFT", "FAILED", "WORLD_BUILDING", "STORYBOARD", "GENERATING"]);
+
 function firstNameFrom(user: { name?: string | null; email?: string } | null): string {
   if (!user) return "Producer";
   const raw = (user.name || "").trim() || (user.email || "").split("@")[0] || "Producer";
@@ -30,13 +32,37 @@ function firstNameFrom(user: { name?: string | null; email?: string } | null): s
   return part.charAt(0).toUpperCase() + part.slice(1);
 }
 
+function statusTone(status: string) {
+  if (status === "FAILED") return "border-orange/40 text-orange";
+  if (status === "DRAFT") return "border-white/15 text-white/50";
+  if (status === "GENERATING" || status === "WORLD_BUILDING") return "border-cyan/40 text-cyan";
+  if (status === "ARCHIVED" || status === "MERGED") return "border-violet/40 text-violet-soft";
+  return "border-white/10 text-white/60";
+}
+
 function DashboardInner() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [creating, setCreating] = useState(false);
   const [justOnboarded, setJustOnboarded] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
 
   const displayName = useMemo(() => firstNameFrom(user), [user]);
+  const clearableCount = useMemo(
+    () => projects.filter((p) => CLEARABLE.has(p.status)).length,
+    [projects],
+  );
+  const draftCount = useMemo(() => projects.filter((p) => p.status === "DRAFT").length, [projects]);
+  const failedCount = useMemo(() => projects.filter((p) => p.status === "FAILED").length, [projects]);
+
+  const reload = useCallback(() => {
+    return api<{ projects: Project[] }>("/api/projects")
+      .then((d) => setProjects(d.projects))
+      .catch(() => setProjects([]));
+  }, []);
 
   useEffect(() => {
     try {
@@ -50,10 +76,8 @@ function DashboardInner() {
   }, []);
 
   useEffect(() => {
-    api<{ projects: Project[] }>("/api/projects")
-      .then((d) => setProjects(d.projects))
-      .catch(() => setProjects([]));
-  }, []);
+    void reload();
+  }, [reload]);
 
   async function createProject() {
     setCreating(true);
@@ -65,6 +89,52 @@ function DashboardInner() {
       setProjects((p) => [project, ...p]);
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function deleteProject(id: string, title: string) {
+    if (!window.confirm(`Delete “${title}”? This cannot be undone.`)) return;
+    setBusyId(id);
+    setFlash(null);
+    try {
+      await api(`/api/projects/${id}`, { method: "DELETE" });
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      setFlash("Project deleted.");
+    } catch (e) {
+      setFlash(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function clearStatuses(statuses: string[], label: string) {
+    const n = projects.filter((p) => statuses.includes(p.status)).length;
+    if (!n) {
+      setFlash(`No ${label.toLowerCase()} to clear.`);
+      setMenuOpen(false);
+      return;
+    }
+    if (!window.confirm(`Clear ${n} ${label.toLowerCase()} project${n === 1 ? "" : "s"}? This cannot be undone.`)) {
+      return;
+    }
+    setClearing(true);
+    setMenuOpen(false);
+    setFlash(null);
+    try {
+      const res = await api<{ deleted: number; attempted: number; errors: string[] }>("/api/projects/clear", {
+        method: "POST",
+        body: JSON.stringify({ statuses }),
+      });
+      await reload();
+      setFlash(
+        res.errors?.length
+          ? `Cleared ${res.deleted}/${res.attempted}. ${res.errors.length} failed.`
+          : `Cleared ${res.deleted} ${label.toLowerCase()}.`,
+      );
+    } catch (e) {
+      setFlash(e instanceof Error ? e.message : "Clear failed");
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -106,6 +176,7 @@ function DashboardInner() {
             Upload Video
           </Link>
           <button
+            type="button"
             onClick={createProject}
             disabled={creating}
             className="h-11 px-5 rounded-rs border border-white/10 bg-white/[0.04] text-[13px] font-medium"
@@ -129,12 +200,76 @@ function DashboardInner() {
       </div>
 
       <section className="rounded-rs-xl border border-white/[0.08] bg-deep overflow-hidden">
-        <div className="h-12 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel">
+        <div className="h-12 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel gap-3">
           <span className="mono text-[11px] tracking-[0.14em]">PROJECTS</span>
-          <span className="mono text-[9px] px-2 py-1 rounded-full bg-cyan text-black font-bold">
-            {projects.length} ACTIVE
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="mono text-[9px] px-2 py-1 rounded-full bg-cyan text-black font-bold">
+              {projects.length} ACTIVE
+            </span>
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Project list actions"
+                aria-expanded={menuOpen}
+                disabled={clearing || projects.length === 0}
+                onClick={() => setMenuOpen((o) => !o)}
+                className="h-8 w-8 rounded-rs border border-white/15 text-white/70 hover:bg-white/[0.06] mono text-[14px] leading-none disabled:opacity-40"
+                title="Clear / delete options"
+              >
+                ···
+              </button>
+              {menuOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-10 cursor-default"
+                    aria-label="Close menu"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-9 z-20 w-56 rounded-rs border border-white/10 bg-[#121212] shadow-xl py-1 text-[12px]">
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2.5 hover:bg-white/[0.06] text-white/80 disabled:opacity-40"
+                      disabled={!draftCount || clearing}
+                      onClick={() => void clearStatuses(["DRAFT"], "Draft")}
+                    >
+                      Clear drafts ({draftCount})
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2.5 hover:bg-white/[0.06] text-orange/90 disabled:opacity-40"
+                      disabled={!failedCount || clearing}
+                      onClick={() => void clearStatuses(["FAILED"], "Failed")}
+                    >
+                      Clear failed ({failedCount})
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2.5 hover:bg-white/[0.06] text-white/80 disabled:opacity-40 border-t border-white/[0.06]"
+                      disabled={!clearableCount || clearing}
+                      onClick={() =>
+                        void clearStatuses(
+                          ["DRAFT", "FAILED", "WORLD_BUILDING", "STORYBOARD", "GENERATING"],
+                          "Stuck / unfinished",
+                        )
+                      }
+                    >
+                      Clear unfinished ({clearableCount})
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
+        {flash && (
+          <div className="px-5 py-2.5 text-[12px] border-b border-white/[0.06] bg-white/[0.03] text-cyan/90 flex justify-between gap-3">
+            <span>{flash}</span>
+            <button type="button" className="text-white/40 hover:text-white" onClick={() => setFlash(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
         <div className="divide-y divide-white/[0.06]">
           {projects.length === 0 && (
             <div className="p-8 text-white/40 text-sm">
@@ -142,21 +277,31 @@ function DashboardInner() {
             </div>
           )}
           {projects.map((p) => (
-            <Link
+            <div
               key={p.id}
-              href={`/projects/${p.id}`}
-              className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors"
+              className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-white/[0.03] transition-colors"
             >
-              <div>
-                <div className="font-semibold">{p.title}</div>
+              <Link href={`/projects/${p.id}`} className="min-w-0 flex-1">
+                <div className="font-semibold truncate">{p.title}</div>
                 <div className="mono text-[10px] text-white/40 mt-1">
                   {p.template?.stylePreset || "No template"} • {p.blocks?.length || 0} blocks
                 </div>
+              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`mono text-[9px] px-2 py-1 rounded-full border ${statusTone(p.status)}`}>
+                  {p.status}
+                </span>
+                <button
+                  type="button"
+                  title="Delete project"
+                  disabled={busyId === p.id || clearing}
+                  onClick={() => void deleteProject(p.id, p.title)}
+                  className="h-8 px-2.5 rounded-rs border border-white/10 text-[11px] text-white/50 hover:text-orange hover:border-orange/40 disabled:opacity-40"
+                >
+                  {busyId === p.id ? "…" : "Delete"}
+                </button>
               </div>
-              <span className="mono text-[9px] px-2 py-1 rounded-full border border-white/10 text-white/60">
-                {p.status}
-              </span>
-            </Link>
+            </div>
           ))}
         </div>
       </section>
