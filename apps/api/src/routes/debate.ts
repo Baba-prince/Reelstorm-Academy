@@ -182,7 +182,11 @@ export async function debateRoutes(app: FastifyInstance) {
       const body = (req.body || {}) as CreateBody;
       const { job, cost } = await createDebateJob(req, body);
       if (body.async !== false) {
-        await enqueue("debateStudio", { jobId: job.id, userId: job.userId }, { jobId: `debate-${job.id}` });
+        await enqueue(
+          "debateStudio",
+          { jobId: job.id, userId: job.userId },
+          { jobId: `debate-${job.id}`, attempts: 2 },
+        );
       }
       return {
         ok: true,
@@ -242,6 +246,24 @@ export async function debateRoutes(app: FastifyInstance) {
     }
   });
 
+  app.post("/api/debate/job/:id/retry", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const job = await prisma.debateJob.findUnique({ where: { id } });
+    if (!job) return reply.code(404).send({ error: "Not found" });
+    await prisma.debateJob.update({
+      where: { id },
+      data: { status: "EXTRACTING", error: null },
+    });
+    const bullId = `debate-${id}-r${Date.now()}`;
+    await enqueue("debateStudio", { jobId: id, userId: job.userId }, { jobId: bullId, attempts: 2 });
+    return {
+      ok: true,
+      jobId: id,
+      status: "EXTRACTING",
+      message: "Re-queued debateStudio — poll GET /api/debate/job/:id",
+    };
+  });
+
   app.post("/api/debate/orchestrate", async (req, reply) => {
     try {
       const body = (req.body || {}) as CreateBody;
@@ -249,7 +271,11 @@ export async function debateRoutes(app: FastifyInstance) {
       const { job, cost } = await createDebateJob(req, { ...body, async: !sync });
 
       if (!sync) {
-        await enqueue("debateStudio", { jobId: job.id, userId: job.userId }, { jobId: `debate-${job.id}` });
+        await enqueue(
+          "debateStudio",
+          { jobId: job.id, userId: job.userId },
+          { jobId: `debate-${job.id}`, attempts: 2 },
+        );
         return {
           ok: true,
           jobId: job.id,

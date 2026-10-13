@@ -167,6 +167,26 @@ function DebateInner() {
     }
   }
 
+  async function retryJob() {
+    if (!job?.id) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await api<{ ok?: boolean; jobId?: string; error?: string }>(
+        `/api/debate/job/${job.id}/retry`,
+        { method: "POST", body: "{}" },
+      );
+      if (!res.ok && !res.jobId) throw new Error(res.error || "Retry failed");
+      setMsg("Re-queued — audio will generate even if GPU is sleeping");
+      const j = await poll(job.id);
+      if (j) setJob(j);
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   useEffect(() => {
     try {
       const id = localStorage.getItem("rs_debate_job");
@@ -400,6 +420,17 @@ function DebateInner() {
               ))}
             </div>
             {job?.error && <div className="mt-3 text-[12px] text-red-300">{job.error}</div>}
+            {(job?.status === "FAILED" ||
+              (job?.error && !job.audioUrl && job.status !== "DONE")) && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void retryJob()}
+                className="mt-3 h-9 px-3 rounded-rs border border-orange/50 text-orange text-[11px] font-bold disabled:opacity-40"
+              >
+                Retry pipeline (audio fallback OK)
+              </button>
+            )}
             <div className="mt-3 max-h-36 overflow-auto mono text-[10px] text-white/35 space-y-1">
               {(job?.logs || ["Awaiting generate…"]).slice(-12).map((l, i) => (
                 <div key={i}>{l}</div>

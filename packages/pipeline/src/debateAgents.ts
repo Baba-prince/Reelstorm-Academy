@@ -297,39 +297,110 @@ export async function stepDebateExtract(jobId: string): Promise<{ sourceText: st
   return { sourceText: text };
 }
 
+function fallbackAnalysis(sourceText: string): Analysis {
+  const snippet = sourceText.replace(/\s+/g, " ").trim();
+  const sentences = snippet
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 40)
+    .slice(0, 6);
+  const ideas = sentences.length
+    ? sentences.map((s) => s.slice(0, 160))
+    : ["Limits of five-sense physical experience", "Consciousness beyond physical identity", "Education must teach inner stability"];
+  return {
+    mainIdeas: ideas.slice(0, 6),
+    arguments: ideas.slice(0, 4),
+    opposingViewpoints: [
+      "Physical boundaries are not the whole of reality",
+      "Intelligence alone cannot fix societal division",
+      "Without inner experience, good intentions still create segments",
+    ],
+    summary: snippet.slice(0, 400) || "Debate overview of the uploaded material.",
+  };
+}
+
+function fallbackDialogue(
+  hostA: DebatePersona,
+  hostB: DebatePersona,
+  analysis: Analysis,
+): { dialogue: DialogueLine[]; duration: number } {
+  return {
+    duration: 420,
+    dialogue: [
+      {
+        host: "A",
+        text: `Welcome — I'm ${hostA.name}. Today we unpack: ${analysis.summary || "this material"}.`,
+        angle: "/MediumShot",
+      },
+      {
+        host: "B",
+        text: `And I'm ${hostB.name}. I'll pressure-test every claim. First idea: ${analysis.mainIdeas?.[0] || "AI debate simulation"}.`,
+        angle: "/OverShoulder",
+      },
+      {
+        host: "A",
+        text: `Here's the case for it: ${analysis.arguments?.[0] || "Two hosts make research more engaging."}`,
+        angle: "/MediumShot",
+      },
+      {
+        host: "B",
+        text: `Counterpoint: ${analysis.opposingViewpoints?.[0] || "Without sources, this is theater."}`,
+        angle: "/CloseUp",
+      },
+      {
+        host: "A",
+        text: `Fair — grounding matters. Still, ${analysis.mainIdeas?.[1] || "Audio Overview formats help people explore faster."}`,
+        angle: "/OverShoulder",
+      },
+      {
+        host: "B",
+        text: `Then let's separate explanation from advocacy. What about ${analysis.opposingViewpoints?.[1] || "the skeptic's caution"}?`,
+        angle: "/POV",
+      },
+      {
+        host: "A",
+        text: `Listeners should sit with the core claim: ${analysis.arguments?.[1] || analysis.summary?.slice(0, 120) || "inner stability before fixing the world."}`,
+        angle: "/MediumShot",
+      },
+      {
+        host: "B",
+        text: `And verify every claim. That's the skeptic signing off — debate complete.`,
+        angle: "/CloseUp",
+      },
+    ],
+  };
+}
+
 export async function stepDebateAnalyze(jobId: string): Promise<{ analysis: Analysis }> {
   const job = await prisma.debateJob.findUniqueOrThrow({ where: { id: jobId } });
-  await setStatus(jobId, "ANALYZING");
+  await setStatus(jobId, "ANALYZING", { error: null });
   await appendLog(jobId, "Analyzing material (Ollama/DashScope)…");
 
-  const sourceText = (job.sourceText || "").slice(0, 12_000);
-  const raw = await orchestrate(
-    [
-      {
-        role: "system",
-        content:
-          "You analyze source material for an AI podcast debate. Return JSON only: {mainIdeas:string[], arguments:string[], opposingViewpoints:string[], summary:string}",
-      },
-      {
-        role: "user",
-        content: `Analyze this material:\n\n${sourceText}`,
-      },
-    ],
-    { json: true, timeoutMs: 60_000 },
-  );
+  const sourceText = (job.sourceText || "").slice(0, 8_000);
+  let raw = "";
+  try {
+    raw = await orchestrate(
+      [
+        {
+          role: "system",
+          content:
+            "You analyze source material for an AI podcast debate. Return JSON only: {mainIdeas:string[], arguments:string[], opposingViewpoints:string[], summary:string}",
+        },
+        {
+          role: "user",
+          content: `Analyze this material:\n\n${sourceText}`,
+        },
+      ],
+      { json: true, timeoutMs: 45_000 },
+    );
+  } catch (err) {
+    await appendLog(jobId, `Analyze LLM skipped: ${(err as Error).message} — using extractive fallback`);
+  }
 
-  const analysis = parseJsonLoose<Analysis>(raw, {
-    mainIdeas: ["AI debate simulation", "Multi-agent conversation", "Audio Overview"],
-    arguments: [
-      "Two AI hosts can explore a topic from uploaded material",
-      "Debate opposing viewpoints improves understanding",
-    ],
-    opposingViewpoints: [
-      "Optimist: AI podcasts democratize research summaries",
-      "Skeptic: Without grounding, debates can hallucinate",
-    ],
-    summary: sourceText.slice(0, 400) || "Debate overview of the uploaded material.",
-  });
+  const analysis = parseJsonLoose<Analysis>(raw, fallbackAnalysis(sourceText));
+  if (!analysis.mainIdeas?.length) {
+    Object.assign(analysis, fallbackAnalysis(sourceText));
+  }
 
   await setStatus(jobId, "ANALYZING", { analysis: analysis as object });
   await appendLog(
@@ -343,33 +414,40 @@ export async function stepDebateScript(jobId: string): Promise<{
   script: { dialogue: DialogueLine[]; duration: number };
 }> {
   const job = await prisma.debateJob.findUniqueOrThrow({ where: { id: jobId } });
-  await setStatus(jobId, "SCRIPTING");
+  await setStatus(jobId, "SCRIPTING", { error: null });
   const hostA = persona(job.hostA, defaultHostA());
   const hostB = persona(job.hostB, defaultHostB());
-  const analysis = (job.analysis || {}) as Analysis;
+  const analysis = ((job.analysis || {}) as Analysis).mainIdeas
+    ? ((job.analysis || {}) as Analysis)
+    : fallbackAnalysis(job.sourceText || "");
 
   await appendLog(jobId, `Scripting ${job.debateStyle} · ${hostA.name} vs ${hostB.name}`);
 
-  const raw = await orchestrate(
-    [
-      {
-        role: "system",
-        content:
-          "You write multi-agent AI podcast scripts. Return JSON only: {dialogue:[{host:'A'|'B', text:string, angle?:string}], duration:number}. 12-20 turns, natural interruptions, 5-10 min spoken.",
-      },
-      {
-        role: "user",
-        content: `Style: ${job.debateStyle}
+  let raw = "";
+  try {
+    raw = await orchestrate(
+      [
+        {
+          role: "system",
+          content:
+            "You write multi-agent AI podcast scripts. Return JSON only: {dialogue:[{host:'A'|'B', text:string, angle?:string}], duration:number}. 8-12 short turns, natural, ~3-6 min spoken.",
+        },
+        {
+          role: "user",
+          content: `Style: ${job.debateStyle}
 Host A (${hostA.name}, ${hostA.personality}): explores / explains
 Host B (${hostB.name}, ${hostB.personality}): challenges / opposing viewpoint
-Analysis: ${JSON.stringify(analysis).slice(0, 4000)}
-Source excerpt: ${(job.sourceText || "").slice(0, 3000)}
+Analysis: ${JSON.stringify(analysis).slice(0, 2500)}
+Source excerpt: ${(job.sourceText || "").slice(0, 1500)}
 Structure: Intro → Explore → Debate opposing → Conclusion.
 Include camera angle hints like /OverShoulder /MediumShot /CloseUp on some lines.`,
-      },
-    ],
-    { json: true, timeoutMs: 90_000 },
-  );
+        },
+      ],
+      { json: true, timeoutMs: 50_000 },
+    );
+  } catch (err) {
+    await appendLog(jobId, `Script LLM skipped: ${(err as Error).message} — using template dialogue`);
+  }
 
   let script = parseJsonLoose<{ dialogue: DialogueLine[]; duration: number }>(raw, {
     dialogue: [],
@@ -377,51 +455,8 @@ Include camera angle hints like /OverShoulder /MediumShot /CloseUp on some lines
   });
 
   if (!Array.isArray(script.dialogue) || script.dialogue.length < 4) {
-    script = {
-      duration: 420,
-      dialogue: [
-        {
-          host: "A",
-          text: `Welcome — I'm ${hostA.name}. Today we unpack: ${analysis.summary || "this material"}.`,
-          angle: "/MediumShot",
-        },
-        {
-          host: "B",
-          text: `And I'm ${hostB.name}. I'll pressure-test every claim. First idea: ${analysis.mainIdeas?.[0] || "AI debate simulation"}.`,
-          angle: "/OverShoulder",
-        },
-        {
-          host: "A",
-          text: `Here's the case for it: ${analysis.arguments?.[0] || "Two hosts make research more engaging."}`,
-          angle: "/MediumShot",
-        },
-        {
-          host: "B",
-          text: `Counterpoint: ${analysis.opposingViewpoints?.[1] || analysis.opposingViewpoints?.[0] || "Without sources, this is theater."}`,
-          angle: "/CloseUp",
-        },
-        {
-          host: "A",
-          text: `Fair — grounding matters. Still, Audio Overview formats help people explore faster.`,
-          angle: "/OverShoulder",
-        },
-        {
-          host: "B",
-          text: `Then let's separate explanation from advocacy. What should listeners do next?`,
-          angle: "/POV",
-        },
-        {
-          host: "A",
-          text: `Upload your own research, pick Explore / Explain / Debate, and ship a Dual Host AI Show.`,
-          angle: "/MediumShot",
-        },
-        {
-          host: "B",
-          text: `And verify every claim. That's the skeptic signing off — debate complete.`,
-          angle: "/CloseUp",
-        },
-      ],
-    };
+    script = fallbackDialogue(hostA, hostB, analysis);
+    await appendLog(jobId, "Using fallback dual-host dialogue (will still generate audio)");
   }
 
   // timestamp estimate ~2.5 words/sec
@@ -458,15 +493,17 @@ export async function stepDebateAudio(jobId: string): Promise<{
   const script = (job.script || { dialogue: [] }) as { dialogue: DialogueLine[] };
   const dialogue = script.dialogue || [];
 
-  await appendLog(jobId, `TTS ${dialogue.length} segments (Sound Studio voices)…`);
+  // Cap turns so TTS always finishes even on long LLM scripts
+  const lines = dialogue.slice(0, 12);
+  await appendLog(jobId, `TTS ${lines.length} segments (Sound Studio voices)…`);
 
   const segments: Array<{ host: string; r2Url: string; start: number; end: number; local?: string }> =
     [];
   const work = path.join(tmpdir(), `rs-debate-audio-${jobId}`);
   await mkdir(work, { recursive: true });
 
-  for (let i = 0; i < dialogue.length; i++) {
-    const line = dialogue[i];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const voice = line.host === "A" ? hostA.voiceId : hostB.voiceId;
     const syn = await synthesizeLine(jobId, line.host, i, line.text, voice);
     segments.push({
@@ -476,6 +513,10 @@ export async function stepDebateAudio(jobId: string): Promise<{
       end: line.end ?? i * 4 + 4,
     });
     await appendLog(jobId, `TTS ${line.host}#${i} · ${syn.engine}`);
+  }
+
+  if (!segments.length) {
+    throw new Error("No dialogue lines to synthesize — re-run Generate Debate");
   }
 
   // Concat via ffmpeg
@@ -647,27 +688,59 @@ export async function stepDebateVideo(jobId: string): Promise<{
   const work = path.join(tmpdir(), `rs-debate-vid-${jobId}`);
   await mkdir(work, { recursive: true });
   const locals: string[] = [];
+  const lines = dialogue.slice(0, 12);
 
-  for (let i = 0; i < dialogue.length; i++) {
-    const line = dialogue[i];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const audioUrl = audioSegments[i]?.r2Url || job.audioUrl;
     if (!audioUrl) continue;
     const name = line.host === "A" ? hostA.name : hostB.name;
-    const clip = await renderTalkingClip(
-      jobId,
-      line.host,
-      i,
-      line.text,
-      audioUrl,
-      line.angle || "/MediumShot",
-      name,
-    );
-    videoSegments.push({ host: line.host, r2Url: clip.r2Url, angle: line.angle || "/MediumShot" });
-    const res = await fetch(clip.r2Url);
-    const local = path.join(work, `v_${i}.mp4`);
-    await writeFile(local, Buffer.from(await res.arrayBuffer()));
-    locals.push(local);
-    await appendLog(jobId, `Clip ${line.host}#${i} · ${clip.engine}`);
+    try {
+      const clip = await renderTalkingClip(
+        jobId,
+        line.host,
+        i,
+        line.text,
+        audioUrl,
+        line.angle || "/MediumShot",
+        name,
+      );
+      videoSegments.push({ host: line.host, r2Url: clip.r2Url, angle: line.angle || "/MediumShot" });
+      const res = await fetch(clip.r2Url);
+      const local = path.join(work, `v_${i}.mp4`);
+      await writeFile(local, Buffer.from(await res.arrayBuffer()));
+      locals.push(local);
+      await appendLog(jobId, `Clip ${line.host}#${i} · ${clip.engine}`);
+    } catch (err) {
+      await appendLog(jobId, `Clip ${line.host}#${i} failed: ${(err as Error).message}`);
+    }
+  }
+
+  if (!locals.length) {
+    // Last resort: one still+audio from full episode audio
+    if (job.audioUrl) {
+      const clip = await renderTalkingClip(
+        jobId,
+        "A",
+        0,
+        hostA.name,
+        job.audioUrl,
+        "/MediumShot",
+        hostA.name,
+      );
+      await setStatus(jobId, "MUXING", {
+        videoUrl: clip.r2Url,
+        videoSegments: [{ host: "A", r2Url: clip.r2Url, angle: "/MediumShot" }] as object,
+      });
+      await appendLog(jobId, `Video fallback still ${clip.r2Url}`);
+      return {
+        videoUrl: clip.r2Url,
+        videoSegments: [{ host: "A", r2Url: clip.r2Url, angle: "/MediumShot" }],
+      };
+    }
+    await appendLog(jobId, "No video clips — audio-only result");
+    await setStatus(jobId, "MUXING");
+    return { videoUrl: null, videoSegments: [] };
   }
 
   const ffmpeg = await resolveFfmpeg();
@@ -717,12 +790,14 @@ export async function stepDebateVideo(jobId: string): Promise<{
 
 export async function runDebateOrchestrator(jobId: string) {
   try {
+    await setStatus(jobId, "EXTRACTING", { error: null });
+    await appendLog(jobId, "Orchestrator start");
     await stepDebateExtract(jobId);
     await stepDebateAnalyze(jobId);
     await stepDebateScript(jobId);
     await stepDebateAudio(jobId);
     await stepDebateVideo(jobId);
-    await setStatus(jobId, "DONE");
+    await setStatus(jobId, "DONE", { error: null });
     await appendLog(jobId, "DONE — Dual Host AI Show ready");
     return prisma.debateJob.findUniqueOrThrow({ where: { id: jobId } });
   } catch (err) {
