@@ -71,7 +71,7 @@ export function SystemMock({ kind }: { kind: MockKind }) {
           <p className="text-[12px] text-white/55 max-w-[220px] leading-relaxed">
             Flip each page. Match the screen — Debate Studio · Camera Angles · YouTube · Avatar · Wizard.
           </p>
-          <div className="mono text-[9px] text-orange tracking-[0.16em]">24 PAGES</div>
+          <div className="mono text-[9px] text-orange tracking-[0.16em]">25 PAGES</div>
         </div>
       </div>
     );
