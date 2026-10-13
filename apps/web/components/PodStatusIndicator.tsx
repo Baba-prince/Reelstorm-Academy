@@ -13,6 +13,7 @@ type PodPayload = {
   autoStart: boolean;
   heygenFallback: boolean;
   error?: string;
+  hint?: string;
 };
 
 const DOT: Record<string, string> = {
@@ -103,6 +104,11 @@ export function PodStatusIndicator({ compact }: { compact?: boolean }) {
       )}
       {!compact && pod?.heygenFallback && status !== "RUNNING" && (
         <span className="mono text-[8px] text-white/35">HeyGen fallback ready</span>
+      )}
+      {!compact && status !== "RUNNING" && /not enough free GPUs/i.test(pod?.error || "") && (
+        <span className="mono text-[8px] text-orange/90 max-w-[280px] leading-snug">
+          Host full — retry wake later · Avatar can still ship photo+TTS
+        </span>
       )}
     </div>
   );

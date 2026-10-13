@@ -43,7 +43,7 @@ export async function podRoutes(app: FastifyInstance) {
           detail ||
           "Wake failed — check RUNPOD_API_KEY + RUNPOD_POD_ID, or set RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY",
         hint: detail?.includes("not enough free GPUs")
-          ? "Host machine is full — retry later, or deploy a new pod on the same network volume from the RunPod console"
+          ? "Host machine is full (balance OK). Retry Wake later, deploy a new pod on another host in RunPod console, or Avatar Generate will use photo+TTS fallback. Optional: RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY."
           : detail?.toLowerCase().includes("balance") || detail?.toLowerCase().includes("credit")
             ? "Top up RunPod balance, then retry POST /api/pod/wake"
             : undefined,

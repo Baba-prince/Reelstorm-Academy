@@ -29,6 +29,8 @@ export type PodStatusPayload = {
 
 let wakingUntil = 0;
 let lastGpuJobAt = 0;
+/** Last wake/resume error (for API responses) */
+let lastWakeError: string | null = null;
 
 export function markGpuJobActivity() {
   lastGpuJobAt = Date.now();
@@ -164,7 +166,7 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
       r2_ok: false,
       mode: data.mode || null,
       engine: data.engine || null,
-      error: `health ${res.status}`,
+      error: lastWakeError || `health ${res.status}`,
     };
   } catch (e) {
     return {
@@ -174,7 +176,7 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
       r2_ok: false,
       mode: null,
       engine: null,
-      error: (e as Error).message,
+      error: lastWakeError || (e as Error).message,
     };
   }
 }
@@ -206,9 +208,6 @@ async function runpodGraphql(query: string) {
   return json.data;
 }
 
-/** Last wake/resume error (for API responses) */
-let lastWakeError: string | null = null;
-
 export function getLastWakeError(): string | null {
   return lastWakeError;
 }
@@ -235,30 +234,38 @@ export async function wakePod(): Promise<boolean> {
   wakingUntil = Date.now() + Number(process.env.POD_WAKE_TIMEOUT_MS || 90_000);
   lastWakeError = null;
 
-  try {
-    await runpodGraphql(
-      `mutation { podResume(input:{podId:"${podId()}"}) { id desiredStatus } }`,
-    );
-  } catch (err) {
-    const msg = (err as Error).message;
-    console.error("[podManager] podResume failed", msg);
-    lastWakeError = msg;
-    // Some accounts use podStart / resumePod naming — try alternate
+  // Host capacity can free up within a minute — retry resume a few times
+  const resumeAttempts = Number(process.env.POD_WAKE_RETRIES || 4);
+  let resumed = false;
+  for (let attempt = 1; attempt <= resumeAttempts; attempt++) {
     try {
       await runpodGraphql(
-        `mutation { podStart(input:{podId:"${podId()}"}) { id desiredStatus } }`,
+        `mutation { podResume(input:{podId:"${podId()}"}) { id desiredStatus } }`,
       );
       lastWakeError = null;
-    } catch (err2) {
-      const msg2 = (err2 as Error).message;
-      console.error("[podManager] podStart failed", msg2);
-      // Keep the more actionable resume error (e.g. no free GPUs / low balance)
-      if (!/Cannot query field/.test(msg2) || !lastWakeError) {
-        lastWakeError = msg2;
+      resumed = true;
+      break;
+    } catch (err) {
+      const msg = (err as Error).message;
+      console.error(`[podManager] podResume failed (${attempt}/${resumeAttempts})`, msg);
+      lastWakeError = msg;
+      const hostFull = /not enough free GPUs/i.test(msg);
+      if (hostFull && attempt < resumeAttempts) {
+        await new Promise((r) => setTimeout(r, 12_000));
+        continue;
       }
-      wakingUntil = 0;
-      return false;
+      if (!hostFull) break;
     }
+  }
+
+  if (!resumed) {
+    wakingUntil = 0;
+    if (/not enough free GPUs/i.test(lastWakeError || "")) {
+      lastWakeError =
+        (lastWakeError || "Host full") +
+        " — Avatar Studio will use photo+TTS fallback until a GPU frees up. Or create a new pod on another host in RunPod (same image), set RUNPOD_POD_ID / RUNPOD_POD_URL, or add RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY.";
+    }
+    return false;
   }
 
   const timeout = Number(process.env.POD_WAKE_TIMEOUT_MS || 90_000);
@@ -444,7 +451,7 @@ export async function generateWithAutonomousPod(payload: {
   if (engine === "failed") {
     const wakeErr = getLastWakeError();
     const base =
-      "GPU pod sleeping and wake failed, and no HEYGEN_API_KEY fallback. Set RUNPOD_API_KEY or RUNPOD_SERVERLESS_URL.";
+      "GPU pod could not wake (host may be full). No HEYGEN_API_KEY / RUNPOD_SERVERLESS_URL fallback configured.";
     return {
       engine,
       error: wakeErr ? `${base} RunPod: ${wakeErr}` : base,

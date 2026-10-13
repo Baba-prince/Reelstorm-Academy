@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { prisma, AvatarType } from "@reelstorm/db";
@@ -16,10 +17,23 @@ import {
   videoUrlKindLabel,
   extractFrame,
   probeVideo,
+  resolveFfmpeg,
 } from "@reelstorm/media";
 import { orchestrate } from "@reelstorm/providers";
 import { resolveUserFromAuthHeader } from "./auth.js";
 import { debitRtc, ensureUserWallet } from "../lib/rtc.js";
+
+function runCmd(cmd: string, args: string[]): Promise<{ code: number; stderr: string }> {
+  return new Promise((resolve) => {
+    const proc = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stderr = "";
+    proc.stderr.on("data", (d) => {
+      stderr += d.toString();
+    });
+    proc.on("close", (code) => resolve({ code: code ?? 1, stderr }));
+    proc.on("error", (err) => resolve({ code: 1, stderr: err.message }));
+  });
+}
 
 const OUTFIT_PRESETS = [
   {
@@ -54,7 +68,137 @@ type OutfitVariant = {
 };
 
 function engineMode() {
-  return (process.env.AVATAR_ENGINE || "heygen").toLowerCase();
+  return (process.env.AVATAR_ENGINE || "auto").toLowerCase();
+}
+
+/** Local fallback when RunPod host is full / HeyGen missing — photo Ken Burns + TTS → R2 */
+async function renderStillTalkingFromImage(opts: {
+  imageUrl: string;
+  script: string;
+  duration: number;
+  userId: string;
+  avatarId: string;
+}): Promise<{
+  r2_url: string;
+  engine: string;
+  mock: boolean;
+  real_r2: boolean;
+  note?: string;
+}> {
+  const work = path.join(tmpdir(), `rs-avatar-still-${opts.avatarId}-${Date.now()}`);
+  await mkdir(work, { recursive: true });
+  const imgPath = path.join(work, "face.jpg");
+  const audioPath = path.join(work, "vo.mp3");
+  const outPath = path.join(work, "out.mp4");
+
+  const imgRes = await fetch(opts.imageUrl, { signal: AbortSignal.timeout(60_000) });
+  if (!imgRes.ok) throw new Error(`Avatar image fetch failed ${imgRes.status}`);
+  await writeFile(imgPath, Buffer.from(await imgRes.arrayBuffer()));
+
+  const elevenKey = (process.env.ELEVENLABS_API_KEY || "").trim();
+  const voice = process.env.AVATAR_VOICE_ID || process.env.DEBATE_VOICE_A || "21m00Tcm4TlvDq8ikWAM";
+  let gotAudio = false;
+  if (elevenKey) {
+    try {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
+        method: "POST",
+        headers: {
+          "xi-api-key": elevenKey,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text: opts.script.slice(0, 2500),
+          model_id: "eleven_multilingual_v2",
+          voice_settings: { stability: 0.45, similarity_boost: 0.75 },
+        }),
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (res.ok) {
+        await writeFile(audioPath, Buffer.from(await res.arrayBuffer()));
+        gotAudio = true;
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  if (!gotAudio) {
+    const q = encodeURIComponent(opts.script.slice(0, 180));
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${q}&tl=en&client=tw-ob`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (res.ok) {
+      await writeFile(audioPath, Buffer.from(await res.arrayBuffer()));
+      gotAudio = true;
+    }
+  }
+  if (!gotAudio) {
+    const ffmpeg = await resolveFfmpeg();
+    const dur = Math.max(8, Math.min(45, opts.duration || 30));
+    const tone = await runCmd(ffmpeg, [
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      `sine=frequency=220:duration=${dur}`,
+      "-af",
+      "volume=0.12",
+      audioPath,
+    ]);
+    if (tone.code !== 0) throw new Error("Could not synthesize avatar voiceover");
+  }
+
+  const ffmpeg = await resolveFfmpeg();
+  const dur = Math.max(8, Math.min(45, opts.duration || 30));
+  const frames = Math.max(240, Math.round(dur * 25));
+  const vf = `scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,zoompan=z='min(zoom+0.0008,1.12)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=720x1280:fps=25`;
+  const mux = await runCmd(ffmpeg, [
+    "-y",
+    "-loop",
+    "1",
+    "-i",
+    imgPath,
+    "-i",
+    audioPath,
+    "-vf",
+    vf,
+    "-c:v",
+    "libx264",
+    "-tune",
+    "stillimage",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "aac",
+    "-shortest",
+    "-t",
+    String(dur),
+    "-movflags",
+    "+faststart",
+    outPath,
+  ]);
+  if (mux.code !== 0) {
+    throw new Error(`Avatar still+TTS mux failed: ${mux.stderr.slice(0, 200)}`);
+  }
+
+  const key = `avatars/videos/${opts.userId}/${opts.avatarId}_${Date.now()}.mp4`;
+  await uploadFile(key, outPath, "video/mp4");
+  try {
+    await unlink(imgPath);
+    await unlink(audioPath);
+    await unlink(outPath);
+  } catch {
+    /* */
+  }
+  return {
+    r2_url: publicUrl(key),
+    engine: "still+tts-fallback",
+    mock: false,
+    real_r2: true,
+    note: "GPU host full — shipped photo Ken Burns + TTS. Wake RunPod later for full lip-sync.",
+  };
 }
 
 function fingerprintFrom(req: FastifyRequest, body?: { fingerprint?: string }) {
@@ -609,7 +753,7 @@ export async function avatarRoutes(app: FastifyInstance) {
 
     const mode = engineMode();
     try {
-      // Auto-wake pod (or serverless). HeyGen only if AVATAR_ENGINE=heygen or pod wake fails.
+      // Auto-wake pod (or serverless). HeyGen only if AVATAR_ENGINE=heygen + key set.
       if (mode === "heygen" && process.env.HEYGEN_API_KEY) {
         try {
           await renderViaHeygen({
@@ -628,13 +772,28 @@ export async function avatarRoutes(app: FastifyInstance) {
         rendered.engine = `liveportrait→${rendered.engine}`;
       }
     } catch (e) {
-      const pod = await probePodHealth().catch(() => null);
-      return reply.code(503).send({
-        ok: false,
-        error: (e as Error).message,
-        podStatus: pod?.status || (await getPodStatus().catch(() => "UNKNOWN")),
-        hint: "Pod auto-wake may still be running — retry in ~60s or POST /api/pod/wake",
-      });
+      // Host full / no HeyGen — still ship a real R2 video from photo + TTS
+      try {
+        const imageUrl = variant.r2Url || variant.thumbUrl || avatar.sourceUrl;
+        if (!imageUrl) throw e;
+        rendered = await renderStillTalkingFromImage({
+          imageUrl,
+          script,
+          duration: template.duration,
+          userId: user.id,
+          avatarId: avatar.id,
+        });
+        rendered.note = `${rendered.note || ""} · prior GPU error: ${(e as Error).message}`.trim();
+      } catch {
+        const pod = await probePodHealth().catch(() => null);
+        return reply.code(503).send({
+          ok: false,
+          error: (e as Error).message,
+          podStatus: pod?.status || (await getPodStatus().catch(() => "UNKNOWN")),
+          hint:
+            "RunPod host has no free GPUs right now. Retry Wake Pod later, deploy a new pod on another host, or set RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY.",
+        });
+      }
     }
 
     await debitRtc({
