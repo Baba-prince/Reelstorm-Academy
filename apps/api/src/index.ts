@@ -39,6 +39,7 @@ import { avatarRoutes } from "./routes/avatar.js";
 import { youtubeRoutes } from "./routes/youtube.js";
 import { translateRoutes } from "./routes/translate.js";
 import { cameraRoutes } from "./routes/camera.js";
+import { debateRoutes } from "./routes/debate.js";
 import { podRoutes } from "./routes/pod.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
@@ -141,6 +142,7 @@ async function main() {
   await youtubeRoutes(app);
   await translateRoutes(app);
   await cameraRoutes(app);
+  await debateRoutes(app);
   await podRoutes(app);
 
   await app.listen({ port: PORT, host: HOST });

@@ -28,6 +28,7 @@ const NAV = [
   { href: "/model-center/avatar", key: "nav.avatarStudio" },
   { href: "/translate", key: "nav.translate" },
   { href: "/camera", key: "nav.camera" },
+  { href: "/debate", key: "nav.debate" },
   { href: "/team", key: "nav.team" },
   { href: "/brand", key: "nav.brand" },
   { href: "/wallet", key: "nav.wallet" },

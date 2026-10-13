@@ -19,9 +19,12 @@
     "@reelstorm/db": "*",
     "@reelstorm/domain": "*",
     "@reelstorm/media": "*",
-    "@reelstorm/providers": "*"
+    "@reelstorm/providers": "*",
+    "mammoth": "^1.13.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
+    "@types/pdf-parse": "^1.1.5",
     "typescript": "^5.7.3"
   }
 }

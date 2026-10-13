@@ -95,3 +95,12 @@ export {
   stepCameraPreview,
   runCameraOrchestrator,
 } from "./cameraAgents.js";
+
+export {
+  stepDebateExtract,
+  stepDebateAnalyze,
+  stepDebateScript,
+  stepDebateAudio,
+  stepDebateVideo,
+  runDebateOrchestrator,
+} from "./debateAgents.js";

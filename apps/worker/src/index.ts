@@ -81,6 +81,7 @@ const { cloneReproduceJob } = await import("./jobs/cloneReproduce.js");
 const { youtubeAutomationJob } = await import("./jobs/youtubeAutomation.js");
 const { translateAutomationJob } = await import("./jobs/translateAutomation.js");
 const { cameraAngleGeneratorJob } = await import("./jobs/cameraAngleGenerator.js");
+const { debateStudioJob } = await import("./jobs/debateStudio.js");
 
 const connection = redis();
 const prefix = bullPrefix();
@@ -115,6 +116,7 @@ start("cloneReproduce", cloneReproduceJob);
 start("youtubeAutomation", youtubeAutomationJob);
 start("translateAutomation", translateAutomationJob);
 start("cameraAngleGenerator", cameraAngleGeneratorJob);
+start("debateStudio", debateStudioJob);
 
 const { startPodIdleWatcher } = await import("./podIdleStop.js");
 startPodIdleWatcher();

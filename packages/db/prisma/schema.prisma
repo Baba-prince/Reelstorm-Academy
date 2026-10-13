@@ -81,6 +81,7 @@ model User {
   avatars              Avatar[]
   translationJobs      TranslationJob[]
   cameraAngleJobs      CameraAngleJob[]
+  debateJobs           DebateJob[]
 }
 
 model Team {
@@ -977,6 +978,72 @@ model CameraAngleJob {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+enum DebateSourceType {
+  DOCUMENT
+  TRANSCRIPT
+  RECORDING
+  YOUTUBE_URL
+  INSTAGRAM_URL
+  TEXT_TOPIC
+  UPLOAD
+}
+
+enum DebateMode {
+  AUDIO_ONLY
+  VIDEO_TWO_AVATARS
+  VIDEO_ONE_AVATAR_SPLIT
+}
+
+enum DebateStyle {
+  EXPLORE_TOPIC
+  EXPLAIN_ARGUMENTS
+  DEBATE_OPPOSING
+}
+
+enum DebateStatus {
+  EXTRACTING
+  ANALYZING
+  SCRIPTING
+  GENERATING_AUDIO
+  GENERATING_VIDEO
+  MUXING
+  DONE
+  FAILED
+}
+
+/// AI Podcast Debate Studio — upload material → two AI hosts debate (audio + optional video)
+model DebateJob {
+  id               String           @id @default(cuid())
+  userId           String
+  sourceType       DebateSourceType @default(TEXT_TOPIC)
+  sourceUrl        String           @default("")
+  sourceR2Url      String?
+  sourceR2Key      String?
+  sourceText       String?          @db.Text
+  mode             DebateMode       @default(AUDIO_ONLY)
+  debateStyle      DebateStyle      @default(DEBATE_OPPOSING)
+  hostA            Json
+  hostB            Json
+  targetLangs      String[]         @default([])
+  status           DebateStatus     @default(EXTRACTING)
+  analysis         Json?
+  script           Json?
+  audioUrl         String?
+  audioSegments    Json?
+  videoUrl         String?
+  videoSegments    Json?
+  translatedVideos Json?
+  rtcCost          Int              @default(15)
+  error            String?
+  logs             Json             @default("[]")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([status, createdAt])
