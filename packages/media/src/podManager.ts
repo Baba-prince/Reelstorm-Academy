@@ -206,29 +206,56 @@ async function runpodGraphql(query: string) {
   return json.data;
 }
 
+/** Last wake/resume error (for API responses) */
+let lastWakeError: string | null = null;
+
+export function getLastWakeError(): string | null {
+  return lastWakeError;
+}
+
 export async function wakePod(): Promise<boolean> {
   if (isServerlessConfigured()) return true;
 
   const status = await getPodStatus();
-  if (status === "RUNNING") return true;
+  if (status === "RUNNING") {
+    lastWakeError = null;
+    return true;
+  }
 
-  if (!isAutoStartEnabled()) return false;
+  if (!isAutoStartEnabled()) {
+    lastWakeError = "POD_AUTO_START=0";
+    return false;
+  }
+
+  if (!apiKey()) {
+    lastWakeError = "RUNPOD_API_KEY missing — cannot resume pod via API";
+    return false;
+  }
 
   wakingUntil = Date.now() + Number(process.env.POD_WAKE_TIMEOUT_MS || 90_000);
+  lastWakeError = null;
 
   try {
     await runpodGraphql(
       `mutation { podResume(input:{podId:"${podId()}"}) { id desiredStatus } }`,
     );
   } catch (err) {
-    console.error("[podManager] podResume failed", (err as Error).message);
+    const msg = (err as Error).message;
+    console.error("[podManager] podResume failed", msg);
+    lastWakeError = msg;
     // Some accounts use podStart / resumePod naming — try alternate
     try {
       await runpodGraphql(
         `mutation { podStart(input:{podId:"${podId()}"}) { id desiredStatus } }`,
       );
+      lastWakeError = null;
     } catch (err2) {
-      console.error("[podManager] podStart failed", (err2 as Error).message);
+      const msg2 = (err2 as Error).message;
+      console.error("[podManager] podStart failed", msg2);
+      // Keep the more actionable resume error (e.g. no free GPUs / low balance)
+      if (!/Cannot query field/.test(msg2) || !lastWakeError) {
+        lastWakeError = msg2;
+      }
       wakingUntil = 0;
       return false;
     }
@@ -240,11 +267,13 @@ export async function wakePod(): Promise<boolean> {
     await new Promise((r) => setTimeout(r, 5000));
     if ((await getPodStatus()) === "RUNNING") {
       wakingUntil = 0;
+      lastWakeError = null;
       markGpuJobActivity();
       return true;
     }
   }
   wakingUntil = 0;
+  lastWakeError = lastWakeError || `Pod did not become healthy within ${timeout}ms`;
   return false;
 }
 
@@ -413,10 +442,12 @@ export async function generateWithAutonomousPod(payload: {
 }> {
   const engine = await ensurePodAliveOrFallback();
   if (engine === "failed") {
+    const wakeErr = getLastWakeError();
+    const base =
+      "GPU pod sleeping and wake failed, and no HEYGEN_API_KEY fallback. Set RUNPOD_API_KEY or RUNPOD_SERVERLESS_URL.";
     return {
       engine,
-      error:
-        "GPU pod sleeping and wake failed, and no HEYGEN_API_KEY fallback. Set RUNPOD_API_KEY or RUNPOD_SERVERLESS_URL.",
+      error: wakeErr ? `${base} RunPod: ${wakeErr}` : base,
       podStatus: await getPodStatus(),
     };
   }

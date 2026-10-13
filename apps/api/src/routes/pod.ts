@@ -7,6 +7,7 @@ import {
   wakePod,
   stopPod,
   getPodStatus,
+  getLastWakeError,
   isServerlessConfigured,
   markGpuJobActivity,
 } from "@reelstorm/media";
@@ -34,11 +35,18 @@ export async function podRoutes(app: FastifyInstance) {
     const woke = await wakePod();
     const after = await probePodHealth();
     if (!woke) {
+      const detail = getLastWakeError();
       return reply.code(503).send({
         ...after,
         ok: false,
         error:
+          detail ||
           "Wake failed — check RUNPOD_API_KEY + RUNPOD_POD_ID, or set RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY",
+        hint: detail?.includes("not enough free GPUs")
+          ? "Host machine is full — retry later, or deploy a new pod on the same network volume from the RunPod console"
+          : detail?.toLowerCase().includes("balance") || detail?.toLowerCase().includes("credit")
+            ? "Top up RunPod balance, then retry POST /api/pod/wake"
+            : undefined,
       });
     }
     return { ...after, ok: true };
