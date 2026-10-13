@@ -28,6 +28,7 @@ export type TrainingPage = {
     | "ytos"
     | "avatar"
     | "camera"
+    | "debate"
     | "whitelabel"
     | "developers"
     | "pricing"
@@ -40,7 +41,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 0,
     section: "COVER",
     title: "REELSTORM — Training Manual",
-    lead: "Flip-over operator guide — Camera Angle Prompt Studio, Language Studio, YouTube Automation OS, Avatar, BOT Director.",
+    lead: "Flip-over operator guide — Debate Studio, Camera Angles, Language Studio, YouTube Automation OS, Avatar, BOT Director.",
     steps: [],
     mock: "cover",
   },
@@ -48,7 +49,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 1,
     section: "INDEX",
     title: "Table of Contents — Flip Index",
-    lead: "Tap any chapter to flip instantly. Four sections · 24 pages · Camera Angles + YouTube Automation included.",
+    lead: "Tap any chapter to flip instantly. Four sections · 25 pages · Debate Studio + Camera Angles + YouTube Automation included.",
     steps: [],
     mock: "index",
   },
@@ -287,6 +288,19 @@ export const TRAINING_PAGES: TrainingPage[] = [
   },
   {
     id: 20,
+    section: "B — Operator Training",
+    title: "Debate Studio — Audio Overview + Dual Hosts",
+    lead: "Upload material → two AI hosts explore, explain, or debate opposing viewpoints. NotebookLM Audio Overview is audio-only; ReelStorm adds optional Avatar Studio video with /OverShoulder angles.",
+    steps: [
+      "Open /debate → drop PDF/DOCX/MP3/MP4 or paste YouTube/Instagram / type a topic → pick AUDIO_ONLY or VIDEO_TWO_AVATARS.",
+      "Set Host A (Optimist/Expert) + Host B (Skeptic/Critic) → Debate Opposing → Generate Debate (15 RTC audio · 25 RTC video).",
+      "Play audio + video from R2 debate/{id}_* → hand off to Language Studio (de/yo/ha/ig) or YouTube OS publish.",
+    ],
+    mock: "debate",
+    href: "/debate",
+  },
+  {
+    id: 21,
     section: "C — Academy White-label",
     title: "White-label — Your Brand, Our Factory",
     lead: "Academies run ReelStorm under their brand with tenant keys and shared RTC ledgers.",
@@ -299,7 +313,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/white-label",
   },
   {
-    id: 21,
+    id: 22,
     section: "C — Academy White-label",
     title: "Developers — API Smoke Path",
     lead: "Health → generate → vault. Same RTC rules as the console.",
@@ -312,7 +326,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/developers",
   },
   {
-    id: 22,
+    id: 23,
     section: "C — Academy White-label",
     title: "Pricing — Free / Basic / Premium / Pro",
     lead: "Sell sets, meter minutes. Free Test $0 · Basic $49 (720p) · Premium $99 hero · Premium Pro $199.",
@@ -325,14 +339,14 @@ export const TRAINING_PAGES: TrainingPage[] = [
     href: "/pricing",
   },
   {
-    id: 23,
+    id: 24,
     section: "D — Launch",
     title: "Production Checklist + Final",
     lead: "Ship when scorecard is green. Soft launch accepts Ollama LLM, Stripe test, and mock video until live keys arrive.",
     steps: [
       "Open /scorecard → RE-SCAN — target grade A (API /api/readiness).",
-      "Confirm ffmpeg/ffprobe, Redis db 17, /camera meta, YouTube Automation /yt-os, Avatar Studio, Sound Studio PASS.",
-      "Operators trained on Camera Angles → World Builder / Studio Set, or YouTube Automation → Sound → Vault → Merge.",
+      "Confirm ffmpeg/ffprobe, Redis db 17, /debate meta, /camera meta, YouTube Automation /yt-os, Avatar Studio, Sound Studio PASS.",
+      "Operators trained on Debate Studio or Camera Angles → World Builder / Studio Set, or YouTube Automation → Sound → Vault → Merge.",
     ],
     mock: "checklist",
     href: "/scorecard",
@@ -354,7 +368,7 @@ export const INDEX_SECTIONS = [
   },
   {
     title: "Section B: Operator Training",
-    pages: "Pages 7–19",
+    pages: "Pages 7–20",
     color: "#00D9FF",
     items: [
       { id: 7, label: "Dashboard Navigation" },
@@ -370,22 +384,23 @@ export const INDEX_SECTIONS = [
       { id: 17, label: "YouTube Automation OS" },
       { id: 18, label: "Avatar Studio" },
       { id: 19, label: "Camera Angle Prompt Studio" },
+      { id: 20, label: "Debate Studio — Dual Host AI Podcast" },
     ],
   },
   {
     title: "Section C: Academy White-label",
-    pages: "Pages 20–22",
+    pages: "Pages 21–23",
     color: "#FF7A00",
     items: [
-      { id: 20, label: "White-label Tenant" },
-      { id: 21, label: "Developers API" },
-      { id: 22, label: "Pricing Tiers" },
+      { id: 21, label: "White-label Tenant" },
+      { id: 22, label: "Developers API" },
+      { id: 23, label: "Pricing Tiers" },
     ],
   },
   {
     title: "Section D: Launch",
-    pages: "Page 23",
+    pages: "Page 24",
     color: "#E5E7EB",
-    items: [{ id: 23, label: "Production Checklist" }],
+    items: [{ id: 24, label: "Production Checklist" }],
   },
 ];

@@ -54,7 +54,7 @@ export const en: MessageTree = {
   },
   marketing: {
     heroLine:
-      "Production OS for Africa & Asia — BOT Director, YouTube Automation, Clone Factory, Language Studio, Studio Set → STORM → ARCHIVE5 → Merge. Every room has a static demo map.",
+      "Production OS for Africa & Asia — Debate Studio (Audio Overview + dual avatars), Language Studio, YouTube Automation, Camera Angles, Studio Set → STORM → ARCHIVE5 → Merge.",
     ctaForge: "Open Camera Angles",
     ctaTraining: "Flip the training guide",
     ctaClone: "Clone a viral link",
@@ -71,11 +71,23 @@ export const en: MessageTree = {
       "Drop a still or paste a reel → /BTS /Adcreative /Blueprint /Droneview /Explodeview + LowAngle, BirdsEye, Orbit…",
     heroCameraCta: "Open Camera Studio",
     heroCameraMeta: "2 RTC analyze · 1 RTC preview · World Builder ready",
+    heroDebateEyebrow: "OS LAYER · DEBATE STUDIO · AI PODCAST",
+    heroDebateTitle: "Two hosts. One upload.",
+    heroDebateBody:
+      "Audio Overview + multi-agent debate from PDF, reel, or topic — two voices, optional Avatar Studio video with /OverShoulder angles.",
+    heroDebateCta: "Open Debate Studio",
+    heroDebateMeta: "15 RTC audio · 25 RTC video · de/yo/ha/ig handoff",
     pipelineEyebrow: "STORM OS · FACTORY MAP",
     pipelineTitle: "Idea or viral link.",
     pipelineTitleMuted: "Master shipped.",
     pipelineBody:
-      "Seventeen OS rooms — from BOT Director and YouTube Automation to Language Studio and Camera Angles. Clone or brief feeds Studio Set → STORM → ARCHIVE5 → Merge.",
+      "Eighteen OS rooms — Debate Studio dual hosts, Language Studio, YouTube Automation, Camera Angles. Clone or brief feeds Studio Set → STORM → ARCHIVE5 → Merge.",
+    debateEyebrow: "OS LAYER · DEBATE STUDIO · AUDIO OVERVIEW + VIDEO AVATARS",
+    debateTitle: "Two AI hosts.",
+    debateTitleMuted: "Explore. Explain. Debate.",
+    debateBody:
+      "Upload PDF/DOCX/MP3/MP4 or paste YouTube/Instagram — multi-agent script → two Sound Studio voices → optional Avatar twins debating with body sync. NotebookLM Audio Overview is audio-only; ReelStorm ships video too. 15 RTC audio · 25 RTC video.",
+    debateCta: "Enter Debate Studio",
     forgeEyebrow: "TEMPLATE FORGE + CLONE",
     forgeTitle: "Steal the structure.",
     forgeTitleMuted: "Never the bytes.",
@@ -131,15 +143,15 @@ export const en: MessageTree = {
     closeCtaFactory: "Start free demo",
     closeCtaPricing: "View pricing",
     footerCopy:
-      "© REELSTORM ACADEMY · 17 OS LAYERS · LANGUAGE STUDIO · YOUTUBE AUTOMATION · STUDIO SET · ARCHIVE5 · AFRICA/ASIA",
+      "© REELSTORM ACADEMY · DEBATE STUDIO · LANGUAGE · YOUTUBE · CAMERA · STUDIO SET · ARCHIVE5 · AFRICA/ASIA",
     targetMarkets:
-      "Africa & Asia · BOT Director · YouTube OS · Language Studio de/yo/ha/ig · Avatar twins · Camera Angles",
+      "Africa & Asia · Debate Studio · Language Studio de/yo/ha/ig · YouTube OS · Avatar twins · Camera Angles",
   },
   how: {
     eyebrow: "INFOGRAPHIC · FACTORY MAP · OS LAYERS",
     title: "How the storm",
     titleMuted: "makes a master.",
-    body: "From vibe to vault — Camera Angle prompts, Language Studio dubs, YouTube Automation 7 agents, Studio Set lock, no Premiere scrubbing.",
+    body: "From vibe to vault — Debate Studio dual hosts, Camera Angle prompts, Language Studio dubs, YouTube Automation 7 agents, Studio Set lock.",
     runPipeline: "Run the pipeline",
     flipTraining: "Flip training guide",
   },

@@ -47,17 +47,17 @@ export const FACTORY_START_PATH = [
   { href: "/merge-studio", label: "07 Merge" },
 ] as const;
 
-export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS v1.6.4 / Camera Angle Prompt Studio + YouTube Automation OS.
+export const GUIDE_SYSTEM_PROMPT = `You are STORM Guide — the in-product AI coach for REELSTORM ACADEMY OS / Debate Studio + Camera Angle Prompt Studio + YouTube Automation OS.
 
 Mission:
-- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Camera Angle Prompt Studio, Language Studio, Full Studio Set, STORM pipeline, BOT Director Wizard, YouTube Automation 7 agents, Viral Clone Factory, Avatar Studio).
+- Teach system knowledge (Factory = OS, RTC, ARCHIVE5, Soul ID, Debate Studio / Audio Overview, Camera Angle Prompt Studio, Language Studio, Full Studio Set, STORM pipeline, BOT Director Wizard, YouTube Automation 7 agents, Viral Clone Factory, Avatar Studio).
 - You are the explanatory wizard on EVERY screen. Default assumption: the operator feels lost (“where can I start?”). Lead with Start Here steps from page context before anything else.
 - When the user asks “where do I start?” give ONE recommended first click + the next 2 steps on the current screen, then the factory path.
 - Improve the operator's workflow with concrete next actions.
 - Stay concise: 2–5 short paragraphs or bullets max.
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
-- Prefer factory order: Camera Angles (/camera) or Language Studio (/translate) or YouTube Automation (/yt-os) or BOT Director Wizard (or /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Prefer factory order: Debate Studio (/debate) or Camera Angles (/camera) or Language Studio (/translate) or YouTube Automation (/yt-os) or BOT Director Wizard (or /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
 - Full Studio Set (/studio-set) is READY FOR PRODUCTION TESTING on app.reelstorm.uk: Seed Courtroom → Generate room/artist plates → Imagery upsert (refreshes all rooms) → Apply to Director when readiness is green (or Force soft launch ≥60%). Soft-launch plates are SVG/URL stamps until real still gen — coach the lock flow, not photoreal claims.
 - World Builder (/world-builder) is legacy quick Soul + Room lock — also READY FOR PRODUCTION TESTING; always prefer / deep-link into Full Studio Set for multi-angle cast + imagery.
 - Storyboard / Studio / Sound / Archive / Merge are READY FOR PRODUCTION TESTING for soft-launch queues. Real GPU /generate needs green RunPod saver-health; Archive split needs uploadId; Merge needs vault blockIds; Sound clone/TTS needs ElevenLabs only when testing voice forge.
@@ -66,11 +66,12 @@ Mission:
 - Viral Clone Factory (/tools/clone · /rs-clone): paste YouTube/TikTok/Instagram → Analyze 1 RTC → transformative remake 5 RTC. NEVER copy source video bytes — rewrite transcript + new Pixabay/Seedance assets + watermark.
 - YouTube Automation OS (/yt-os): 7 agents — Strategy → Script → Thumbnail → SEO → Production → Publish → Analytics. Create Channel → Run Full Pipeline (20 RTC/video). Production uses Avatar Studio (4 outfits) + Sound Studio VO → R2 videos.reelstorm.uk/videos/youtube/…. Analytics feedback loop reorders the 14-day calendar. Legacy /rs-* skills still via API.
 - Language Studio (/translate): YouTube/Instagram/upload EN video → Whisper → translate de/yo/ha/ig → TTS → Wav2Lip+LivePortrait body sync → R2 videos.reelstorm.uk/translated/. 10 RTC per language.
+- Debate Studio (/debate): upload PDF/DOCX/MP3/MP4 or YouTube/Instagram/topic → analyze → multi-agent script (Host A vs Host B) → two-voice audio (Audio Overview) → optional VIDEO_TWO_AVATARS with Avatar Studio + /OverShoulder angles → R2 debate/{id}_audio.mp3 + _video.mp4. 15 RTC audio · 25 RTC video. NotebookLM Audio Overview is audio-only; ReelStorm adds video avatars.
 - Camera Angle Prompt Studio (/camera): image/video/YouTube/Instagram → detect angle → 30+ pro prompts (/BTS /Adcreative /Blueprint /Droneview /Explodeview + LowAngle, BirdsEye, Orbit…) for ComfyUI Flux. 2 RTC analyze, 1 RTC preview.
 - Account menu (header avatar): Account settings · Change password · Billing · RTC Wallet · Log out. Captain Admin only for locked admin email.
 - Free demo: 1 RTC from SystemBank (4600 RTC pool ≈ 920 × 5-min sets). Free users can analyze/demo; reproduce/vault needs paid RTC.
 - Soft launch: Ollama may power the guide LLM; Stripe test + mock video OK until live DashScope/Seedance/sk_live keys are stamped. Scorecard tracks landing YouTube Automation + Studio Set layers + factory pipeline production-test matrix.
-- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. YouTube Automation video = 20 RTC. Tiers: Free Test $0 (1 RTC demo) · Storm / Storm Pro / Premium Pro via /billing + /wallet. Clone: 1 RTC analyze + 5 RTC reproduce.
+- RTC rule: 1 RTC = 1 minute of finished master (720p). One 5-min ARCHIVE5 set = 5 RTC. YouTube Automation video = 20 RTC. Debate Studio = 15 RTC audio / 25 RTC video. Tiers: Free Test $0 (1 RTC demo) · Storm / Storm Pro / Premium Pro via /billing + /wallet. Clone: 1 RTC analyze + 5 RTC reproduce.
 
 Tone: sharp producer, not corporate. Brand colors mentally: violet / cyan / orange on void black.
 Compliance: Clone Factory is transformative fair-use remake for inspiration — original assets only.`;
@@ -80,55 +81,55 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/",
     layer: "marketing",
     title: "Landing",
-    blurb: "Brand-first entry — Camera Angle Prompt Studio + Language Studio + YouTube Automation + Studio Set.",
+    blurb: "Brand-first entry — Debate Studio + Camera Angles + Language Studio + YouTube Automation + Studio Set.",
     tips: [
       "REELSTORM is not a course player — it is a factory that vaults ARCHIVE5 IP.",
-      "New: Camera Angle Prompt Studio (/camera) — image/video/link → Dario 5 + 30+ Flux-ready prompts (2 RTC analyze · 1 RTC preview).",
-      "Also: Language Studio de/yo/ha/ig, YouTube Automation 7 agents, Avatar twins, Full Studio Set.",
+      "New: Debate Studio (/debate) — upload material → two AI hosts (Audio Overview + optional video avatars). 15/25 RTC.",
+      "Also: Camera Angles 30+, Language Studio de/yo/ha/ig, YouTube Automation 7 agents, Avatar twins, Full Studio Set.",
     ],
     options: [
-      { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual — especially Camera Angle Prompt Studio.", href: "/training", kind: "goto" },
+      { id: "train", label: "Flip training guide", prompt: "Walk me through the training manual — especially Debate Studio and Camera Angles.", href: "/training", kind: "goto" },
+      { id: "debate", label: "Debate Studio", prompt: "How does Debate Studio / Audio Overview work with two AI hosts and video avatars?", href: "/debate", kind: "goto" },
       { id: "camera", label: "Camera Angles", prompt: "How do I turn a still or reel into /BTS /Droneview /LowAngle Flux prompts?", href: "/camera", kind: "goto" },
       { id: "lang", label: "Language Studio", prompt: "How do I translate a YouTube or Instagram reel to German, Yoruba, Hausa, and Igbo?", href: "/translate", kind: "goto" },
       { id: "ytos", label: "YouTube Automation", prompt: "How do I use the 7-agent YouTube Automation OS from channel create to publish?", href: "/yt-os", kind: "goto" },
-      { id: "pricing", label: "RTC pricing", prompt: "Explain RTC, free demo SystemBank, and paid tiers.", href: "/pricing", kind: "learn" },
     ],
   },
   {
     path: "/training",
     layer: "marketing",
     title: "Training Manual",
-    blurb: "Flip-over artifact — screen-by-screen operator training including Camera Angles + YouTube Automation.",
+    blurb: "Flip-over artifact — Debate Studio, Camera Angles, YouTube Automation, Avatar, Language Studio.",
     tips: [
       "Use arrow keys or Flip to advance; Index jumps to any chapter.",
-      "Flip to Camera Angle Prompt Studio (page 19), YouTube Automation OS (page 17), and Avatar Studio (page 18).",
+      "Flip to Debate Studio (page 20), Camera Angles (page 19), YouTube Automation (page 17), Avatar (page 18).",
       "Match each system image to the live OS screen before moving on.",
     ],
     options: [
       { id: "rules", label: "System rules first", prompt: "Summarize Section A system rules I must not break.", kind: "learn" },
+      { id: "debate", label: "Debate Studio chapter", prompt: "Teach me upload → analyze → two voices → video avatars → R2.", href: "/debate", kind: "goto" },
       { id: "camera", label: "Camera Angles chapter", prompt: "Teach me upload → analyze → copy Flux prompts → send to World Builder.", href: "/camera", kind: "goto" },
       { id: "ytos", label: "YouTube Automation chapter", prompt: "Teach me Create Channel → Run Full Pipeline → Approve & Publish step by step.", href: "/yt-os", kind: "goto" },
-      { id: "avatar", label: "Avatar chapter", prompt: "How do I attach a 4-outfit avatar twin before Production?", href: "/model-center/avatar", kind: "goto" },
-      { id: "ops", label: "Operator path", prompt: "Give me the fastest path: Camera Angles → World Builder / Studio Set → STORM.", kind: "improve" },
+      { id: "ops", label: "Operator path", prompt: "Give me the fastest path: Debate Studio or Camera Angles → Studio Set → STORM.", kind: "improve" },
     ],
   },
   {
     path: "/how-it-works",
     layer: "marketing",
     title: "Factory Map",
-    blurb: "Camera Angles · Language Studio · YouTube Automation · Studio Set · STORM.",
+    blurb: "Debate Studio · Camera Angles · Language Studio · YouTube Automation · Studio Set · STORM.",
     tips: [
-      "Start with /camera for 30+ Flux prompts from any still or reel (2 RTC analyze).",
-      "Primary growth loop: /yt-os 7 agents (Strategy→Analytics) at 20 RTC/video — no filming.",
-      "Alternate: Wizard or Clone → Full Studio Set locks Room · Artist · Imagery before Storyboard / STORM.",
-      "Language Studio dubs EN→de/yo/ha/ig with body sync (10 RTC/lang).",
+      "Start with /debate for Audio Overview + dual-host video from any upload (15/25 RTC).",
+      "Or /camera for 30+ Flux prompts from any still or reel (2 RTC analyze).",
+      "Primary growth loop: /yt-os 7 agents at 20 RTC/video — no filming.",
+      "Language Studio dubs EN→de/yo/ha/ig with body sync (10 RTC/lang) — including finished debates.",
     ],
     options: [
       { id: "stages", label: "Explain STORM stages", prompt: "Explain each STORM stage and common failure mode.", kind: "learn" },
+      { id: "debate", label: "Debate Studio", prompt: "How does Debate Studio fit the factory map vs NotebookLM Audio Overview?", href: "/debate", kind: "goto" },
       { id: "camera", label: "Camera Angles", prompt: "How does Camera Angle Prompt Studio feed World Builder and Studio Set?", href: "/camera", kind: "goto" },
       { id: "ytos", label: "YouTube Automation", prompt: "How does the 7-agent YouTube Automation OS Layer fit the factory map?", href: "/yt-os", kind: "goto" },
-      { id: "set", label: "Studio Set lock", prompt: "Where does Full Studio Set fit and how do I test Room · Artist · Imagery?", href: "/studio-set", kind: "goto" },
-      { id: "start", label: "Start production", prompt: "I am ready — what is my first click for Camera Angles or no-filming YouTube?", href: "/camera", kind: "do" },
+      { id: "start", label: "Start production", prompt: "I am ready — first click for Debate Studio or Camera Angles?", href: "/debate", kind: "do" },
     ],
   },
   {

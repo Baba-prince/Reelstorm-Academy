@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/I18nProvider";
 export default function LandingPage() {
   const t = useT();
   const cameraLayer = OS_LAYERS.find((l) => l.slug === "camera-angles");
+  const debateLayer = OS_LAYERS.find((l) => l.slug === "debate-studio");
 
   return (
     <div className="min-h-screen bg-[#080808] text-white">
@@ -53,39 +54,61 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Camera Angles — separate below-fold card (not in hero banner) */}
-      {cameraLayer && (
-        <section className="relative px-5 md:px-8 py-12 md:py-16 border-t border-white/[0.06]">
-          <div className="mx-auto max-w-[1280px]">
+      {/* Featured OS cards — below hero (not in banner) */}
+      <section className="relative px-5 md:px-8 py-12 md:py-16 border-t border-white/[0.06]">
+        <div className="mx-auto max-w-[1280px] grid md:grid-cols-2 gap-4">
+          {debateLayer && (
+            <Link
+              href={`/os/${debateLayer.slug}`}
+              className="group relative block rounded-rs-xl border border-orange/40 bg-[#0A0A0A] overflow-hidden hover:border-orange/70 transition-all"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange/12 via-transparent to-[#00f0ff]/10 pointer-events-none" />
+              <div className="relative p-6 md:p-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="mono text-[10px] text-orange tracking-[0.16em]">
+                    {t("marketing.heroDebateEyebrow")}
+                  </span>
+                  <span className="mono text-[9px] px-2 py-1 rounded-full bg-[#00f0ff] text-black font-bold">
+                    NEW
+                  </span>
+                </div>
+                <div className="display text-[clamp(1.6rem,3vw,2.2rem)] leading-none">
+                  {t("marketing.heroDebateTitle")}
+                </div>
+                <p className="mt-3 text-[13px] text-white/60 leading-relaxed">
+                  {t("marketing.heroDebateBody")}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <span className="inline-flex h-10 px-4 items-center rounded-rs bg-orange text-black text-[12px] font-bold group-hover:brightness-110">
+                    {t("marketing.heroDebateCta")} →
+                  </span>
+                  <span className="mono text-[10px] text-white/35">{t("marketing.heroDebateMeta")}</span>
+                </div>
+              </div>
+            </Link>
+          )}
+          {cameraLayer && (
             <Link
               href={`/os/${cameraLayer.slug}`}
               className="group relative block rounded-rs-xl border border-[#00f0ff]/40 bg-[#0A0A0A] overflow-hidden hover:border-[#00f0ff]/70 transition-all"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/12 via-transparent to-[#ff7a00]/12 pointer-events-none" />
-              <div className="relative p-6 md:p-8 grid md:grid-cols-[1.2fr_0.8fr] gap-8 items-center">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="mono text-[10px] text-[#00f0ff] tracking-[0.16em]">
-                      {t("marketing.heroCameraEyebrow")}
-                    </span>
-                    <span className="mono text-[9px] px-2 py-1 rounded-full bg-[#ff7a00] text-black font-bold">
-                      OS LAYER
-                    </span>
-                  </div>
-                  <div className="display text-[clamp(1.8rem,4vw,2.6rem)] leading-none">
-                    {t("marketing.heroCameraTitle")}
-                  </div>
-                  <p className="mt-3 text-[14px] text-white/60 leading-relaxed max-w-[36rem]">
-                    {t("marketing.heroCameraBody")}
-                  </p>
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <span className="inline-flex h-11 px-5 items-center rounded-rs bg-[#00f0ff] text-black text-[13px] font-bold group-hover:brightness-110">
-                      View marketing demo →
-                    </span>
-                    <span className="mono text-[10px] text-white/35">{t("marketing.heroCameraMeta")}</span>
-                  </div>
+              <div className="relative p-6 md:p-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="mono text-[10px] text-[#00f0ff] tracking-[0.16em]">
+                    {t("marketing.heroCameraEyebrow")}
+                  </span>
+                  <span className="mono text-[9px] px-2 py-1 rounded-full bg-[#ff7a00] text-black font-bold">
+                    OS LAYER
+                  </span>
                 </div>
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="display text-[clamp(1.6rem,3vw,2.2rem)] leading-none">
+                  {t("marketing.heroCameraTitle")}
+                </div>
+                <p className="mt-3 text-[13px] text-white/60 leading-relaxed">
+                  {t("marketing.heroCameraBody")}
+                </p>
+                <div className="mt-5 grid grid-cols-5 gap-1.5">
                   {[
                     { code: "/BTS", c: "#ff7a00" },
                     { code: "/Ad", c: "#ff7a00" },
@@ -95,7 +118,7 @@ export default function LandingPage() {
                   ].map((l) => (
                     <div
                       key={l.code}
-                      className="rounded-md border py-3 text-center mono text-[10px] font-bold group-hover:scale-[1.03] transition-transform"
+                      className="rounded-md border py-2 text-center mono text-[9px] font-bold"
                       style={{ borderColor: `${l.c}66`, color: l.c }}
                     >
                       {l.code}
@@ -104,9 +127,9 @@ export default function LandingPage() {
                 </div>
               </div>
             </Link>
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+      </section>
 
       {/* Pipeline */}
       <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06]">
@@ -211,6 +234,78 @@ export default function LandingPage() {
               </text>
               <text x="32" y="330" fill="rgba(255,255,255,0.28)" fontSize="10" fontFamily="monospace">
                 WORLD BUILDER = QUICK SOUL/ROOM STUB
+              </text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* Debate Studio OS Layer */}
+      <section className="relative px-5 md:px-8 py-20 md:py-28 border-t border-white/[0.06] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-orange/14 via-transparent to-[#00f0ff]/12" />
+        <div className="relative mx-auto max-w-[1280px] grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div>
+            <div className="mono text-[11px] text-orange mb-3">{t("marketing.debateEyebrow")}</div>
+            <h2 className="display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95]">
+              {t("marketing.debateTitle")}
+              <br />
+              <span className="text-white/40">{t("marketing.debateTitleMuted")}</span>
+            </h2>
+            <p className="mt-4 text-white/55 text-[15px] leading-relaxed max-w-[420px]">
+              {t("marketing.debateBody")}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Link
+                href="/os/debate-studio"
+                className="inline-flex h-12 px-6 items-center rounded-rs bg-orange text-black font-bold text-[14px]"
+              >
+                Marketing demo
+              </Link>
+              <Link
+                href="/debate"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-orange/40 text-orange font-medium text-[14px] hover:bg-orange/10"
+              >
+                {t("marketing.debateCta")}
+              </Link>
+              <Link
+                href="/training"
+                className="inline-flex h-12 px-6 items-center rounded-rs border border-white/20 text-white/80 font-medium text-[14px] hover:bg-white/[0.05]"
+              >
+                {t("marketing.ctaTraining")}
+              </Link>
+            </div>
+          </div>
+          <div className="relative aspect-[4/3] rounded-rs-xl border border-white/[0.08] bg-[#0A0A0A] overflow-hidden">
+            <svg viewBox="0 0 480 360" className="w-full h-full" aria-hidden>
+              <rect width="480" height="360" fill="#0A0A0A" />
+              <text x="28" y="36" fill="#FF7A00" fontSize="11" fontFamily="monospace" letterSpacing="2">
+                DEBATE STUDIO · AUDIO OVERVIEW + VIDEO AVATARS
+              </text>
+              {[
+                { y: 56, label: "01 UPLOAD — PDF · DOCX · YT/IG · topic", w: 400, c: "#FF7A00" },
+                { y: 96, label: "02 ANALYZE — ideas · arguments · opposing", w: 390, c: "#00f0ff" },
+                { y: 136, label: "03 SCRIPT — Host A optimist · Host B skeptic", w: 410, c: "#8b5cf6" },
+                { y: 176, label: "04 AUDIO — two Sound Studio voices → R2", w: 400, c: "#FF7A00" },
+                { y: 216, label: "05 VIDEO — Avatar twins · /OverShoulder", w: 400, c: "#00f0ff" },
+                { y: 256, label: "06 SHIP — debate/{id}_audio.mp3 · _video.mp4", w: 410, c: "#8b5cf6" },
+              ].map((row) => (
+                <g key={row.label}>
+                  <rect
+                    x="24"
+                    y={row.y}
+                    width={row.w}
+                    height="32"
+                    rx="6"
+                    fill="#12121a"
+                    stroke={`${row.c}66`}
+                  />
+                  <text x="40" y={row.y + 21} fill="rgba(255,255,255,0.8)" fontSize="11" fontFamily="monospace">
+                    {row.label}
+                  </text>
+                </g>
+              ))}
+              <text x="28" y="330" fill="rgba(255,255,255,0.35)" fontSize="10" fontFamily="monospace">
+                15 RTC AUDIO · 25 RTC VIDEO · app.reelstorm.uk/debate
               </text>
             </svg>
           </div>
@@ -683,6 +778,9 @@ export default function LandingPage() {
             </Link>
             <Link href="/how-it-works" className="hover:text-white">
               {t("nav.howItWorks")}
+            </Link>
+            <Link href="/os/debate-studio" className="hover:text-white">
+              Debate Studio
             </Link>
             <Link href="/os/camera-angles" className="hover:text-white">
               Camera Angles

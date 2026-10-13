@@ -69,7 +69,7 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
         <div className="relative z-10 flex items-end justify-between gap-4">
           <p className="text-[12px] text-white/55 max-w-[220px] leading-relaxed">
-            Flip each page. Match the screen — Camera Angles · YouTube Automation · Avatar · Wizard.
+            Flip each page. Match the screen — Debate Studio · Camera Angles · YouTube · Avatar · Wizard.
           </p>
           <div className="mono text-[9px] text-orange tracking-[0.16em]">24 PAGES</div>
         </div>
@@ -494,6 +494,39 @@ export function SystemMock({ kind }: { kind: MockKind }) {
         </div>
       </div>,
       "#00f0ff",
+    );
+  }
+
+  if (kind === "debate") {
+    return shell(
+      ["Debate", "Audio", "Video"],
+      <div className="space-y-2">
+        <div className="flex justify-between text-[8px]">
+          <span className="text-[#ff7a00] font-bold">AUDIO OVERVIEW</span>
+          <span className="text-[#00f0ff]">15 / 25 RTC</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <div className="rounded-md border border-[#00f0ff]/35 bg-[#0a1214] p-2">
+            <div className="mono text-[7px] text-[#00f0ff]">HOST A · OPTIMIST</div>
+            <div className="text-[8px] text-white/70 mt-1 leading-snug">Explains the research…</div>
+          </div>
+          <div className="rounded-md border border-[#ff7a00]/35 bg-[#140a0a] p-2">
+            <div className="mono text-[7px] text-[#ff7a00]">HOST B · SKEPTIC</div>
+            <div className="text-[8px] text-white/70 mt-1 leading-snug">Pressure-tests every claim…</div>
+          </div>
+        </div>
+        <div className="rounded-md border border-white/10 p-2 mono text-[7px] text-white/45">
+          EXTRACT → ANALYZE → SCRIPT → AUDIO → VIDEO → R2
+        </div>
+        <div className="flex gap-1">
+          {["/OverShoulder", "/Medium", "/CloseUp"].map((a) => (
+            <div key={a} className="flex-1 rounded border border-[#8b5cf6]/40 text-[#c4b5fd] text-[7px] text-center py-1">
+              {a}
+            </div>
+          ))}
+        </div>
+      </div>,
+      "#FF7A00",
     );
   }
 

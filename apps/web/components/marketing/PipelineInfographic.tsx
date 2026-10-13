@@ -2,10 +2,10 @@
 
 const STEPS = [
   { n: "01", name: "CAMERA", sub: "Dario 5 → 30+ · Flux prompts", color: "#00f0ff" },
-  { n: "02", name: "LANGUAGE", sub: "EN → DE · YO · HA · IG · body sync", color: "#C4B5FD" },
-  { n: "03", name: "YT AUTOMATION", sub: "7 agents · Avatar twin · no filming", color: "#7C3AED" },
-  { n: "04", name: "STUDIO SET", sub: "Room · Artist · Imagery lock", color: "#00D9FF" },
-  { n: "05", name: "STORM", sub: "Render · Sound · Pixabay intros $0", color: "#FF7A00" },
+  { n: "02", name: "DEBATE", sub: "Audio Overview · dual hosts · video", color: "#FF7A00" },
+  { n: "03", name: "LANGUAGE", sub: "EN → DE · YO · HA · IG · body sync", color: "#C4B5FD" },
+  { n: "04", name: "YT AUTOMATION", sub: "7 agents · Avatar twin · no filming", color: "#7C3AED" },
+  { n: "05", name: "STUDIO SET", sub: "Room · Artist · Imagery lock", color: "#00D9FF" },
   { n: "06", name: "ARCHIVE5", sub: "Vault + Merge bankable master", color: "#FF7A00" },
 ];
 
@@ -78,12 +78,12 @@ export function PipelineInfographic() {
         {[
           { k: "BLOCK", v: "5 MIN" },
           { k: "MASTER", v: "30 MIN" },
-          { k: "SET", v: "R · A · I" },
-          { k: "ENGINES", v: "3 VIDEO" },
-        ].map((m) => (
-          <div key={m.k} className="bg-[#0A0A0A] px-5 py-5 text-center">
-            <div className="mono text-[9px] text-white/35">{m.k}</div>
-            <div className="display text-[22px] mt-2 text-white">{m.v}</div>
+          { k: "DEBATE", v: "15–25 RTC" },
+          { k: "FACTORY", v: "18 OS" },
+        ].map((x) => (
+          <div key={x.k} className="bg-[#0A0A0A] px-4 py-4 text-center">
+            <div className="mono text-[9px] text-white/35 tracking-[0.14em]">{x.k}</div>
+            <div className="display text-[18px] mt-1 text-white/90">{x.v}</div>
           </div>
         ))}
       </div>
