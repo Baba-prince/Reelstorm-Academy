@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { getApiBase } from "@/lib/api";
+import { getApiBase, readJson } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { PodStatusIndicator } from "@/components/PodStatusIndicator";
 
@@ -106,7 +106,7 @@ export default function AvatarStudioPage() {
   const load = useCallback(async () => {
     try {
       const tRes = await fetch(`${getApiBase()}/api/avatar/templates`);
-      const tJson = await tRes.json();
+      const tJson = await readJson<{ templates?: Template[] }>(tRes);
       setTemplates(tJson.templates || []);
       if (tJson.templates?.[0]?.slug) setTemplateSlug(tJson.templates[0].slug);
     } catch {
@@ -115,8 +115,7 @@ export default function AvatarStudioPage() {
     if (!token) return;
     try {
       const res = await fetch(`${getApiBase()}/api/avatar/list`, { headers: authHeaders });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || "list failed");
+      const j = await readJson<{ avatars?: Avatar[]; stock?: Avatar[]; error?: string }>(res);
       setAvatars(j.avatars || []);
       setStock(j.stock || []);
       if (j.avatars?.[0] && !selectedAvatar) {
@@ -134,7 +133,8 @@ export default function AvatarStudioPage() {
   }, [load]);
 
   async function selectAvatarById(avatarId: string) {
-    const list = await fetch(`${getApiBase()}/api/avatar/list`, { headers: authHeaders }).then((r) => r.json());
+    const res = await fetch(`${getApiBase()}/api/avatar/list`, { headers: authHeaders });
+    const list = await readJson<{ avatars?: Avatar[] }>(res);
     const found = (list.avatars || []).find((a: Avatar) => a.id === avatarId);
     if (found) {
       setSelectedAvatar(found);
@@ -156,8 +156,12 @@ export default function AvatarStudioPage() {
         headers: authHeaders,
         body: fd,
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || res.statusText);
+      const j = await readJson<{
+        frames?: ExtractFrame[];
+        sourceUrl?: string;
+        outfitVariants?: OutfitVariant[];
+        avatarId?: string;
+      }>(res);
       if (Array.isArray(j.frames) && j.frames.length) {
         setExtractFrames(j.frames);
         setExtractMeta({
@@ -194,8 +198,13 @@ export default function AvatarStudioPage() {
         headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ url: linkUrl.trim(), name, count: 8 }),
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || res.statusText);
+      const j = await readJson<{
+        frames?: ExtractFrame[];
+        title?: string;
+        sourceLabel?: string;
+        sourceVideoUrl?: string;
+        suggestedName?: string;
+      }>(res);
       const frames = (j.frames || []) as ExtractFrame[];
       setExtractFrames(frames);
       setExtractMeta({
@@ -232,8 +241,7 @@ export default function AvatarStudioPage() {
           sourceVideoUrl: extractMeta?.sourceVideoUrl,
         }),
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || res.statusText);
+      const j = await readJson<{ outfitVariants?: OutfitVariant[]; avatarId?: string }>(res);
       setMsg(`Avatar rebuilt from still · ${j.outfitVariants?.length || 0} outfit slots`);
       setTab("mine");
       setGuideIdx(1);
@@ -256,8 +264,7 @@ export default function AvatarStudioPage() {
         headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ niche, templateSlug, localNews, customScript: script || undefined }),
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || res.statusText);
+      const j = await readJson<{ script?: string }>(res);
       setScript(j.script || "");
       setGuideIdx(2);
       setMsg("Script ready — edit if needed, then Generate");
@@ -271,7 +278,7 @@ export default function AvatarStudioPage() {
   async function onGenerate() {
     if (!token) return setMsg("Sign in required");
     if (!selectedAvatar) return setMsg("Pick an avatar first");
-    setBusy("Generating → R2…");
+    setBusy("Generating → R2 (photo+TTS if GPU host is full)…");
     setMsg("");
     setResultUrl(null);
     try {
@@ -288,12 +295,20 @@ export default function AvatarStudioPage() {
           fingerprint: webFingerprint(),
         }),
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || res.statusText);
-      setResultUrl(j.r2_url);
+      const j = await readJson<{
+        r2_url?: string;
+        prompt?: string;
+        real_r2?: boolean;
+        engine?: string;
+        rtcSpent?: number;
+        note?: string;
+      }>(res);
+      setResultUrl(j.r2_url || null);
       setScript(j.prompt || script);
       setGuideIdx(3);
-      setMsg(`real_r2=${j.real_r2} · ${j.engine} · spent ${j.rtcSpent} RTC`);
+      setMsg(
+        `real_r2=${j.real_r2} · ${j.engine} · spent ${j.rtcSpent} RTC${j.note ? ` · ${j.note}` : ""}`,
+      );
       await load();
     } catch (e) {
       setMsg((e as Error).message);

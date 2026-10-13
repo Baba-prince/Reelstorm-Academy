@@ -31,6 +31,7 @@ let wakingUntil = 0;
 let lastGpuJobAt = 0;
 /** Last wake/resume error (for API responses) */
 let lastWakeError: string | null = null;
+let lastHostFullAt = 0;
 
 export function markGpuJobActivity() {
   lastGpuJobAt = Date.now();
@@ -234,8 +235,9 @@ export async function wakePod(): Promise<boolean> {
   wakingUntil = Date.now() + Number(process.env.POD_WAKE_TIMEOUT_MS || 90_000);
   lastWakeError = null;
 
-  // Host capacity can free up within a minute — retry resume a few times
-  const resumeAttempts = Number(process.env.POD_WAKE_RETRIES || 4);
+  // Fail fast on host-full so callers (Avatar) can fall back before nginx 504s.
+  // Optional retries only when POD_WAKE_RETRIES > 1.
+  const resumeAttempts = Math.max(1, Number(process.env.POD_WAKE_RETRIES || 1));
   let resumed = false;
   for (let attempt = 1; attempt <= resumeAttempts; attempt++) {
     try {
@@ -250,11 +252,10 @@ export async function wakePod(): Promise<boolean> {
       console.error(`[podManager] podResume failed (${attempt}/${resumeAttempts})`, msg);
       lastWakeError = msg;
       const hostFull = /not enough free GPUs/i.test(msg);
-      if (hostFull && attempt < resumeAttempts) {
-        await new Promise((r) => setTimeout(r, 12_000));
-        continue;
+      if (hostFull) break; // don't burn 60s+ — UI/nginx will time out
+      if (attempt < resumeAttempts) {
+        await new Promise((r) => setTimeout(r, 5_000));
       }
-      if (!hostFull) break;
     }
   }
 
@@ -312,6 +313,16 @@ export async function ensurePodAliveOrFallback(): Promise<PodEngine> {
 
   const status = await getPodStatus();
   if (status === "RUNNING") return "pod";
+
+  // Skip wake storms when host was just reported full (Avatar falls back immediately)
+  if (
+    lastHostFullAt &&
+    Date.now() - lastHostFullAt < 90_000 &&
+    /not enough free GPUs/i.test(lastWakeError || "")
+  ) {
+    if (process.env.HEYGEN_API_KEY) return "heygen";
+    return "failed";
+  }
 
   if (isAutoStartEnabled()) {
     const woke = await wakePod();

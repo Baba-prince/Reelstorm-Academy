@@ -33,6 +33,34 @@ export const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
   (API_URL.startsWith("https") ? API_URL.replace("https", "wss") : API_URL.replace("http", "ws"));
 
+/** Parse fetch body as JSON; turn nginx HTML 502/504 into a clear Error. */
+export async function readJson<T = unknown>(res: Response): Promise<T> {
+  const text = await res.text();
+  const trimmed = text.trim();
+  if (!trimmed) {
+    if (!res.ok) throw new Error(res.statusText || `HTTP ${res.status}`);
+    return undefined as T;
+  }
+  if (trimmed.startsWith("<!") || trimmed.startsWith("<html")) {
+    if (res.status === 504 || /Gateway Time-out/i.test(trimmed)) {
+      throw new Error(
+        "Request timed out (gateway). GPU wake may be slow — retry Generate; photo+TTS fallback should finish under 2 minutes.",
+      );
+    }
+    throw new Error(`Server returned HTML instead of JSON (HTTP ${res.status}). Retry in a moment.`);
+  }
+  let data: T & { error?: string; message?: string };
+  try {
+    data = JSON.parse(trimmed) as T & { error?: string; message?: string };
+  } catch {
+    throw new Error(trimmed.slice(0, 240) || res.statusText || `HTTP ${res.status}`);
+  }
+  if (!res.ok) {
+    throw new Error(data?.error || data?.message || trimmed.slice(0, 240) || res.statusText);
+  }
+  return data;
+}
+
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const base = getApiBase();
   const token =
@@ -45,10 +73,6 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
       ...init?.headers,
     },
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
-  }
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  return readJson<T>(res);
 }
