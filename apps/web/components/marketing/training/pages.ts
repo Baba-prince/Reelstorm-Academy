@@ -41,7 +41,7 @@ export const TRAINING_PAGES: TrainingPage[] = [
     id: 0,
     section: "COVER",
     title: "REELSTORM — Training Manual",
-    lead: "Flip-over operator guide — Debate Studio, Camera Angles, Language Studio, YouTube Automation OS, Avatar, BOT Director.",
+    lead: "Flip-over operator guide v1.7 — new Debate Studio OS layer, Camera Angles, Language Studio, YouTube Automation OS, Avatar, BOT Director.",
     steps: [],
     mock: "cover",
   },

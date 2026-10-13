@@ -60,7 +60,7 @@ export function SystemMock({ kind }: { kind: MockKind }) {
           </svg>
         </div>
         <div className="relative z-10">
-          <div className="mono text-[10px] text-cyan tracking-[0.2em]">ACADEMY OS · v1.5</div>
+          <div className="mono text-[10px] text-cyan tracking-[0.2em]">ACADEMY OS · v1.7 · DEBATE</div>
           <div className="display text-[42px] md:text-[56px] leading-[0.9] mt-3">
             TRAINING
             <br />

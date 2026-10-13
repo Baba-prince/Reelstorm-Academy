@@ -12,7 +12,7 @@ export default function TrainingGuidePage() {
       <section className="px-5 md:px-8 pt-14 md:pt-20 pb-8">
         <div className="mx-auto max-w-[980px]">
           <div className="mono text-[11px] text-cyan mb-3">
-            FLIP ARTIFACT · OPERATOR GUIDE · v1.6 · YOUTUBE AUTOMATION
+            FLIP ARTIFACT · OPERATOR GUIDE · v1.7 · DEBATE STUDIO OS LAYER
           </div>
           <h1 className="display text-[clamp(2.4rem,7vw,4.75rem)] leading-[0.9]">
             Training
@@ -20,8 +20,8 @@ export default function TrainingGuidePage() {
             <span className="text-white/40">manual.</span>
           </h1>
           <p className="mt-5 text-white/55 text-[15px] max-w-[520px] leading-relaxed">
-            Step-by-step with system images — YouTube Automation OS (7 agents), Avatar Studio, Wizard,
-            Sound Studio, scorecard — then run the factory.
+            Step-by-step with system images — new Debate Studio (Audio Overview + dual hosts), Camera
+            Angles, YouTube Automation, Avatar, Wizard, scorecard — then run the factory.
           </p>
         </div>
       </section>
@@ -34,16 +34,22 @@ export default function TrainingGuidePage() {
         <p className="text-white/50 text-[14px] mb-6">Ready to operate?</p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link
-            href="/yt-os"
+            href="/debate"
             className="h-12 px-6 inline-flex items-center rounded-rs bg-orange text-black font-bold text-[14px]"
           >
-            Open YouTube Automation
+            Open Debate Studio
           </Link>
           <Link
-            href="/wizard"
+            href="/os/debate-studio"
+            className="h-12 px-6 inline-flex items-center rounded-rs border border-cyan/40 text-cyan text-[14px]"
+          >
+            Debate OS layer
+          </Link>
+          <Link
+            href="/yt-os"
             className="h-12 px-6 inline-flex items-center rounded-rs border border-white/15 text-[14px]"
           >
-            BOT Director
+            YouTube Automation
           </Link>
           <Link
             href="/how-it-works"

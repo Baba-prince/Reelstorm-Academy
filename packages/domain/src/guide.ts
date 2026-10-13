@@ -99,11 +99,11 @@ export const GUIDE_LAYERS: GuideLayer[] = [
     path: "/training",
     layer: "marketing",
     title: "Training Manual",
-    blurb: "Flip-over artifact — Debate Studio, Camera Angles, YouTube Automation, Avatar, Language Studio.",
+    blurb: "Flip-over artifact v1.7 — new Debate Studio OS layer, Camera Angles, YouTube Automation, Avatar, Language Studio.",
     tips: [
       "Use arrow keys or Flip to advance; Index jumps to any chapter.",
-      "Flip to Debate Studio (page 20), Camera Angles (page 19), YouTube Automation (page 17), Avatar (page 18).",
-      "Match each system image to the live OS screen before moving on.",
+      "Start with the new Debate Studio OS layer (page 20) — then Camera Angles (19), YouTube Automation (17), Avatar (18).",
+      "Match each system image to the live OS screen; open /os/debate-studio for the marketing demo.",
     ],
     options: [
       { id: "rules", label: "System rules first", prompt: "Summarize Section A system rules I must not break.", kind: "learn" },

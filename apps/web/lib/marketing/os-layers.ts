@@ -23,6 +23,28 @@ export type OsLayer = {
 
 export const OS_LAYERS: OsLayer[] = [
   {
+    slug: "debate-studio",
+    title: "Debate Studio",
+    eyebrow: "OS LAYER · AI PODCAST · DUAL HOST · NEW",
+    headline: "Two hosts.",
+    headlineMuted: "One upload.",
+    body: "Audio Overview / multi-agent debate from PDF, reel, or topic. Two voices + optional Avatar Studio video with /OverShoulder angles. 15 RTC audio · 25 RTC video.",
+    accent: "#00f0ff",
+    accentSoft: "#FF7A00",
+    appHref: "/debate",
+    cta: "Open Debate Studio",
+    rtc: "15 / 25 RTC",
+    steps: [
+      { n: "01", label: "Upload", detail: "PDF · YT · topic" },
+      { n: "02", label: "Analyze", detail: "Ideas · opposing" },
+      { n: "03", label: "Script", detail: "Host A vs B" },
+      { n: "04", label: "Audio", detail: "Two TTS voices" },
+      { n: "05", label: "Video", detail: "Avatars · angles" },
+      { n: "06", label: "Ship", detail: "R2 debate/" },
+    ],
+    demoNote: "Static demo · live app /debate",
+  },
+  {
     slug: "bot-director",
     title: "BOT Director",
     eyebrow: "OS LAYER · WIZARD · 7 STAGES",
@@ -363,28 +385,6 @@ export const OS_LAYERS: OsLayer[] = [
       { n: "06", label: "Send", detail: "World · Shot · Set" },
     ],
     demoNote: "Static demo · live app /camera",
-  },
-  {
-    slug: "debate-studio",
-    title: "Debate Studio",
-    eyebrow: "OS LAYER · AI PODCAST · DUAL HOST",
-    headline: "Two hosts.",
-    headlineMuted: "One upload.",
-    body: "Audio Overview / multi-agent debate from PDF, reel, or topic. Two voices + optional Avatar Studio video with /OverShoulder angles. 15 RTC audio · 25 RTC video.",
-    accent: "#00f0ff",
-    accentSoft: "#FF7A00",
-    appHref: "/debate",
-    cta: "Open Debate Studio",
-    rtc: "15 / 25 RTC",
-    steps: [
-      { n: "01", label: "Upload", detail: "PDF · YT · topic" },
-      { n: "02", label: "Analyze", detail: "Ideas · opposing" },
-      { n: "03", label: "Script", detail: "Host A vs B" },
-      { n: "04", label: "Audio", detail: "Two TTS voices" },
-      { n: "05", label: "Video", detail: "Avatars · angles" },
-      { n: "06", label: "Ship", detail: "R2 debate/" },
-    ],
-    demoNote: "Static demo · live app /debate",
   },
 ];
 
