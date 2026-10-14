@@ -26,10 +26,10 @@ const DOT: Record<string, string> = {
 
 const LABEL: Record<string, string> = {
   RUNNING: "RUNNING",
-  WAKING: "WAKING…",
+  WAKING: "STARTING…",
   SLEEPING: "SLEEPING",
   FAILED: "FAILED",
-  UNKNOWN: "UNKNOWN",
+  UNKNOWN: "CHECKING…",
 };
 
 export function PodStatusIndicator({ compact }: { compact?: boolean }) {
@@ -92,15 +92,20 @@ export function PodStatusIndicator({ compact }: { compact?: boolean }) {
         {pod?.isServerless ? " · SERVERLESS" : ""}
         {pod?.status === "RUNNING" && pod.r2_ok ? " · R2 OK" : ""}
       </span>
-      {(status === "SLEEPING" || status === "WAKING" || status === "FAILED") && (
+      {(status === "SLEEPING" || status === "WAKING" || status === "FAILED" || status === "UNKNOWN") && (
         <button
           type="button"
           disabled={busy || status === "WAKING"}
           onClick={wake}
           className="mono text-[9px] px-2 py-0.5 rounded-full border border-cyan/40 text-cyan hover:bg-cyan/10 disabled:opacity-40"
         >
-          {busy || status === "WAKING" ? "Waking…" : "Wake Pod"}
+          {busy || status === "WAKING" ? "Starting…" : "Wake Pod"}
         </button>
+      )}
+      {!compact && status === "WAKING" && (
+        <span className="mono text-[8px] text-amber-300/90 max-w-[260px] leading-snug">
+          GPU machine up — waiting for saver /health
+        </span>
       )}
       {!compact && pod?.heygenFallback && status !== "RUNNING" && (
         <span className="mono text-[8px] text-white/35">HeyGen fallback ready</span>

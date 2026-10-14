@@ -81,6 +81,21 @@ function apiKey() {
   ).trim();
 }
 
+async function graphqlDesiredStatus(): Promise<"RUNNING" | "EXITED" | "UNKNOWN"> {
+  if (!apiKey()) return "UNKNOWN";
+  try {
+    const data = (await runpodGraphql(
+      `{ pod(input:{podId:"${podId()}"}) { desiredStatus } }`,
+    )) as { pod?: { desiredStatus?: string } };
+    const d = (data?.pod?.desiredStatus || "").toUpperCase();
+    if (d === "RUNNING") return "RUNNING";
+    if (d === "EXITED" || d === "STOPPED" || d === "TERMINATED") return "EXITED";
+    return "UNKNOWN";
+  } catch {
+    return "UNKNOWN";
+  }
+}
+
 export async function getPodStatus(): Promise<PodStatus> {
   if (isServerlessConfigured()) {
     // Serverless scales from zero — treat as always available for routing
@@ -92,17 +107,27 @@ export async function getPodStatus(): Promise<PodStatus> {
   const healthUrl = `${podBaseUrl()}/health`;
   try {
     const res = await fetch(healthUrl, { signal: AbortSignal.timeout(4000) });
-    if (!res.ok) return "SLEEPING";
-    const data = (await res.json().catch(() => ({}))) as {
-      ok?: boolean;
-      r2_ok?: boolean;
-      status?: string;
-    };
-    if (data.ok || data.r2_ok || data.status === "ok") return "RUNNING";
-    return "UNKNOWN";
+    if (res.ok) {
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        r2_ok?: boolean;
+        status?: string;
+      };
+      if (data.ok || data.r2_ok || data.status === "ok") return "RUNNING";
+    }
+    // RunPod proxy 502/503 = machine up, saver still booting
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      return "WAKING";
+    }
+    if (res.status === 404) return "SLEEPING";
   } catch {
-    return "SLEEPING";
+    /* fall through to GraphQL */
   }
+
+  const desired = await graphqlDesiredStatus();
+  if (desired === "RUNNING") return "WAKING";
+  if (desired === "EXITED") return "SLEEPING";
+  return "SLEEPING";
 }
 
 export async function probePodHealth(): Promise<PodStatusPayload> {
@@ -144,12 +169,13 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
     const res = await fetch(`${podBaseUrl()}/health`, {
       signal: AbortSignal.timeout(4000),
     });
-    const data = (await res.json().catch(() => ({}))) as {
-      ok?: boolean;
-      r2_ok?: boolean;
-      mode?: string;
-      engine?: string;
-    };
+    const raw = await res.text();
+    let data: { ok?: boolean; r2_ok?: boolean; mode?: string; engine?: string } = {};
+    try {
+      data = JSON.parse(raw) as typeof data;
+    } catch {
+      /* RunPod often returns HTML "Waiting for service…" on 502 */
+    }
     if (res.ok && (data.ok || data.r2_ok)) {
       return {
         ...base,
@@ -160,16 +186,46 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
         engine: data.engine || "saver",
       };
     }
-    return {
-      ...base,
-      status: res.status === 404 ? "SLEEPING" : "UNKNOWN",
-      ok: false,
-      r2_ok: false,
-      mode: data.mode || null,
-      engine: data.engine || null,
-      error: lastWakeError || `health ${res.status}`,
-    };
+
+    // Proxy up / container booting
+    if (res.status === 502 || res.status === 503 || res.status === 504 || /Waiting for service/i.test(raw)) {
+      return {
+        ...base,
+        status: "WAKING",
+        ok: false,
+        r2_ok: false,
+        mode: null,
+        engine: null,
+        waking: true,
+        error: lastWakeError || `health ${res.status} — GPU machine up, saver still starting`,
+      };
+    }
+
+    if (res.status === 404) {
+      return {
+        ...base,
+        status: "SLEEPING",
+        ok: false,
+        r2_ok: false,
+        mode: null,
+        engine: null,
+        error: lastWakeError || "health 404",
+      };
+    }
   } catch (e) {
+    const desired = await graphqlDesiredStatus();
+    if (desired === "RUNNING") {
+      return {
+        ...base,
+        status: "WAKING",
+        ok: false,
+        r2_ok: false,
+        mode: null,
+        engine: null,
+        waking: true,
+        error: lastWakeError || "Pod desired RUNNING — waiting for /health",
+      };
+    }
     return {
       ...base,
       status: "SLEEPING",
@@ -180,6 +236,18 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
       error: lastWakeError || (e as Error).message,
     };
   }
+
+  const desired = await graphqlDesiredStatus();
+  return {
+    ...base,
+    status: desired === "RUNNING" ? "WAKING" : "SLEEPING",
+    ok: false,
+    r2_ok: false,
+    mode: null,
+    engine: null,
+    waking: desired === "RUNNING",
+    error: lastWakeError || (desired === "RUNNING" ? "Saver starting…" : undefined),
+  };
 }
 
 async function runpodGraphql(query: string) {
@@ -262,6 +330,7 @@ export async function wakePod(): Promise<boolean> {
   if (!resumed) {
     wakingUntil = 0;
     if (/not enough free GPUs/i.test(lastWakeError || "")) {
+      lastHostFullAt = Date.now();
       lastWakeError =
         (lastWakeError || "Host full") +
         " — Avatar Studio will use photo+TTS fallback until a GPU frees up. Or create a new pod on another host in RunPod (same image), set RUNPOD_POD_ID / RUNPOD_POD_URL, or add RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY.";
