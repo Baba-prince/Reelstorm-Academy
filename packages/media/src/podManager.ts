@@ -25,6 +25,10 @@ export type PodStatusPayload = {
   heygenFallback: boolean;
   waking?: boolean;
   error?: string;
+  hint?: string;
+  uptimeSec?: number;
+  gpuCount?: number;
+  desiredStatus?: string;
 };
 
 let wakingUntil = 0;
@@ -81,19 +85,72 @@ function apiKey() {
   ).trim();
 }
 
-async function graphqlDesiredStatus(): Promise<"RUNNING" | "EXITED" | "UNKNOWN"> {
-  if (!apiKey()) return "UNKNOWN";
+type GraphqlPodRuntime = {
+  desired: "RUNNING" | "EXITED" | "UNKNOWN";
+  uptimeSec: number;
+  gpuCount: number;
+};
+
+async function graphqlPodRuntime(): Promise<GraphqlPodRuntime> {
+  if (!apiKey()) return { desired: "UNKNOWN", uptimeSec: 0, gpuCount: 0 };
   try {
     const data = (await runpodGraphql(
-      `{ pod(input:{podId:"${podId()}"}) { desiredStatus } }`,
-    )) as { pod?: { desiredStatus?: string } };
+      `{ pod(input:{podId:"${podId()}"}) { desiredStatus runtime { uptimeInSeconds gpus { id } } } }`,
+    )) as {
+      pod?: {
+        desiredStatus?: string;
+        runtime?: { uptimeInSeconds?: number; gpus?: Array<{ id?: string }> };
+      };
+    };
     const d = (data?.pod?.desiredStatus || "").toUpperCase();
-    if (d === "RUNNING") return "RUNNING";
-    if (d === "EXITED" || d === "STOPPED" || d === "TERMINATED") return "EXITED";
-    return "UNKNOWN";
+    const desired =
+      d === "RUNNING"
+        ? "RUNNING"
+        : d === "EXITED" || d === "STOPPED" || d === "TERMINATED"
+          ? "EXITED"
+          : "UNKNOWN";
+    return {
+      desired,
+      uptimeSec: Number(data?.pod?.runtime?.uptimeInSeconds || 0),
+      gpuCount: Array.isArray(data?.pod?.runtime?.gpus) ? data!.pod!.runtime!.gpus!.length : 0,
+    };
   } catch {
-    return "UNKNOWN";
+    return { desired: "UNKNOWN", uptimeSec: 0, gpuCount: 0 };
   }
+}
+
+/** RunPod UI "Ready" ≠ saver /health. After ~2m of 502, treat as FAILED (saver down). */
+function statusFromUnhealthyProxy(rt: GraphqlPodRuntime): {
+  status: PodStatus;
+  error: string;
+  hint: string;
+} {
+  if (rt.desired === "EXITED") {
+    return {
+      status: "SLEEPING",
+      error: "Pod EXITED",
+      hint: "Click Wake Pod — or Start in RunPod console",
+    };
+  }
+  if (rt.desired === "RUNNING" && rt.gpuCount === 0 && rt.uptimeSec > 45) {
+    return {
+      status: "FAILED",
+      error: "Pod RUNNING but no GPU attached (gpus=[])",
+      hint: "Stop pod → Start again with a GPU selected. RunPod green ports ≠ GPU/saver ready.",
+    };
+  }
+  if (rt.desired === "RUNNING" && rt.uptimeSec >= 120) {
+    return {
+      status: "FAILED",
+      error: "Pod up but saver not answering on :8000 (/health 502)",
+      hint: "In RunPod → Connect → Enable web terminal → run: bash /workspace/api/start.sh  (or start ComfyUI + uvicorn). Avatar Generate can still use photo+TTS.",
+    };
+  }
+  return {
+    status: "WAKING",
+    error: "GPU machine up, saver still starting",
+    hint: "Wait ~1–2 min for ComfyUI/saver, or open Web Terminal and start /workspace/api/start.sh",
+  };
 }
 
 export async function getPodStatus(): Promise<PodStatus> {
@@ -115,18 +172,17 @@ export async function getPodStatus(): Promise<PodStatus> {
       };
       if (data.ok || data.r2_ok || data.status === "ok") return "RUNNING";
     }
-    // RunPod proxy 502/503 = machine up, saver still booting
-    if (res.status === 502 || res.status === 503 || res.status === 504) {
-      return "WAKING";
-    }
     if (res.status === 404) return "SLEEPING";
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      return statusFromUnhealthyProxy(await graphqlPodRuntime()).status;
+    }
   } catch {
     /* fall through to GraphQL */
   }
 
-  const desired = await graphqlDesiredStatus();
-  if (desired === "RUNNING") return "WAKING";
-  if (desired === "EXITED") return "SLEEPING";
+  const rt = await graphqlPodRuntime();
+  if (rt.desired === "EXITED") return "SLEEPING";
+  if (rt.desired === "RUNNING") return statusFromUnhealthyProxy(rt).status;
   return "SLEEPING";
 }
 
@@ -187,17 +243,23 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
       };
     }
 
-    // Proxy up / container booting
+    // Proxy up but app not serving — RunPod UI can still show ports "Ready"
     if (res.status === 502 || res.status === 503 || res.status === 504 || /Waiting for service/i.test(raw)) {
+      const rt = await graphqlPodRuntime();
+      const mapped = statusFromUnhealthyProxy(rt);
       return {
         ...base,
-        status: "WAKING",
+        status: mapped.status,
         ok: false,
         r2_ok: false,
         mode: null,
         engine: null,
-        waking: true,
-        error: lastWakeError || `health ${res.status} — GPU machine up, saver still starting`,
+        waking: mapped.status === "WAKING",
+        uptimeSec: rt.uptimeSec,
+        gpuCount: rt.gpuCount,
+        desiredStatus: rt.desired,
+        error: lastWakeError || mapped.error,
+        hint: mapped.hint,
       };
     }
 
@@ -213,17 +275,22 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
       };
     }
   } catch (e) {
-    const desired = await graphqlDesiredStatus();
-    if (desired === "RUNNING") {
+    const rt = await graphqlPodRuntime();
+    if (rt.desired === "RUNNING") {
+      const mapped = statusFromUnhealthyProxy(rt);
       return {
         ...base,
-        status: "WAKING",
+        status: mapped.status,
         ok: false,
         r2_ok: false,
         mode: null,
         engine: null,
-        waking: true,
-        error: lastWakeError || "Pod desired RUNNING — waiting for /health",
+        waking: mapped.status === "WAKING",
+        uptimeSec: rt.uptimeSec,
+        gpuCount: rt.gpuCount,
+        desiredStatus: rt.desired,
+        error: lastWakeError || mapped.error,
+        hint: mapped.hint,
       };
     }
     return {
@@ -237,16 +304,21 @@ export async function probePodHealth(): Promise<PodStatusPayload> {
     };
   }
 
-  const desired = await graphqlDesiredStatus();
+  const rt = await graphqlPodRuntime();
+  const mapped = statusFromUnhealthyProxy(rt);
   return {
     ...base,
-    status: desired === "RUNNING" ? "WAKING" : "SLEEPING",
+    status: mapped.status,
     ok: false,
     r2_ok: false,
     mode: null,
     engine: null,
-    waking: desired === "RUNNING",
-    error: lastWakeError || (desired === "RUNNING" ? "Saver starting…" : undefined),
+    waking: mapped.status === "WAKING",
+    uptimeSec: rt.uptimeSec,
+    gpuCount: rt.gpuCount,
+    desiredStatus: rt.desired,
+    error: lastWakeError || mapped.error,
+    hint: mapped.hint,
   };
 }
 

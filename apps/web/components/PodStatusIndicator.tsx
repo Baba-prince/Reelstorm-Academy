@@ -14,13 +14,15 @@ type PodPayload = {
   heygenFallback: boolean;
   error?: string;
   hint?: string;
+  uptimeSec?: number;
+  gpuCount?: number;
 };
 
 const DOT: Record<string, string> = {
   RUNNING: "bg-emerald-400",
   WAKING: "bg-amber-400 animate-pulse",
   SLEEPING: "bg-rose-500",
-  FAILED: "bg-white/30",
+  FAILED: "bg-orange-400",
   UNKNOWN: "bg-white/30",
 };
 
@@ -28,7 +30,7 @@ const LABEL: Record<string, string> = {
   RUNNING: "RUNNING",
   WAKING: "STARTING…",
   SLEEPING: "SLEEPING",
-  FAILED: "FAILED",
+  FAILED: "SAVER DOWN",
   UNKNOWN: "CHECKING…",
 };
 
@@ -103,8 +105,14 @@ export function PodStatusIndicator({ compact }: { compact?: boolean }) {
         </button>
       )}
       {!compact && status === "WAKING" && (
-        <span className="mono text-[8px] text-amber-300/90 max-w-[260px] leading-snug">
-          GPU machine up — waiting for saver /health
+        <span className="mono text-[8px] text-amber-300/90 max-w-[280px] leading-snug">
+          Machine up — waiting for saver /health (RunPod “Ready” ≠ app ready)
+        </span>
+      )}
+      {!compact && status === "FAILED" && (
+        <span className="mono text-[8px] text-orange/90 max-w-[320px] leading-snug">
+          {pod?.hint ||
+            "Pod green but /health 502 — start saver in Web Terminal: bash /workspace/api/start.sh"}
         </span>
       )}
       {!compact && pod?.heygenFallback && status !== "RUNNING" && (
