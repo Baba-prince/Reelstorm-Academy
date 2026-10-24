@@ -370,40 +370,149 @@ async function renderViaSaver(prompt: string, duration = 30) {
   };
 }
 
+async function pickHeygenVoice(key: string): Promise<string> {
+  const explicit = (process.env.HEYGEN_VOICE_ID || "").trim();
+  if (explicit) return explicit;
+  try {
+    const res = await fetch("https://api.heygen.com/v2/voices", {
+      headers: { "X-Api-Key": key, "x-api-key": key },
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        data?: { voices?: Array<{ language?: string; voice_id?: string }> };
+      };
+      const voices = data.data?.voices || [];
+      const en = voices.find((v) => (v.language || "").toLowerCase().startsWith("en"));
+      if (en?.voice_id) return en.voice_id;
+      if (voices[0]?.voice_id) return voices[0].voice_id;
+    }
+  } catch {
+    /* default below */
+  }
+  return "1bd001e7e50f421d891986aad5e3e5d2";
+}
+
+/** HeyGen v3 image→video: upload face asset → create → poll → land MP4 on R2 */
 async function renderViaHeygen(opts: {
   script: string;
   avatarName: string;
-  background: unknown;
-}) {
-  const key = process.env.HEYGEN_API_KEY;
+  imageUrl: string;
+  userId: string;
+  avatarId: string;
+}): Promise<{
+  r2_url: string;
+  engine: string;
+  mock: boolean;
+  real_r2: boolean;
+  note?: string;
+  remote_url?: string;
+}> {
+  const key = (process.env.HEYGEN_API_KEY || "").trim();
   if (!key) throw new Error("HEYGEN_API_KEY not set");
-  // Phase-1 bridge: call HeyGen when configured; fall back handled by caller.
-  const res = await fetch("https://api.heygen.com/v2/video/generate", {
+  if (!opts.imageUrl) throw new Error("HeyGen requires a face imageUrl");
+
+  const imgRes = await fetch(opts.imageUrl, { signal: AbortSignal.timeout(60_000) });
+  if (!imgRes.ok) throw new Error(`Face image fetch failed ${imgRes.status}`);
+  const imgBuf = Buffer.from(await imgRes.arrayBuffer());
+  const ctype = (imgRes.headers.get("content-type") || "image/jpeg").split(";")[0].trim();
+  const ext = ctype.includes("png") ? "png" : "jpg";
+  const boundary = `----ReelStorm${Date.now()}`;
+  const filename = `face.${ext}`;
+  const parts: Buffer[] = [
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${ctype}\r\n\r\n`,
+    ),
+    imgBuf,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ];
+  const body = Buffer.concat(parts);
+
+  const uploadRes = await fetch("https://api.heygen.com/v3/assets", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "x-api-key": key,
       "X-Api-Key": key,
+      "Content-Type": `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
+    signal: AbortSignal.timeout(180_000),
+  });
+  if (!uploadRes.ok) {
+    throw new Error(`HeyGen asset upload ${uploadRes.status}: ${(await uploadRes.text()).slice(0, 300)}`);
+  }
+  const uploadData = (await uploadRes.json()) as {
+    data?: { asset_id?: string; id?: string };
+    asset_id?: string;
+  };
+  const assetId = uploadData.data?.asset_id || uploadData.data?.id || uploadData.asset_id;
+  if (!assetId) throw new Error(`HeyGen asset missing id: ${JSON.stringify(uploadData).slice(0, 300)}`);
+
+  const voiceId = await pickHeygenVoice(key);
+  const createRes = await fetch("https://api.heygen.com/v3/videos", {
+    method: "POST",
+    headers: {
+      "x-api-key": key,
+      "X-Api-Key": key,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      video_inputs: [
-        {
-          character: { type: "avatar", avatar_id: "default", avatar_style: "normal" },
-          voice: { type: "text", input_text: opts.script },
-          background: { type: "color", value: "#0a0a0a" },
-        },
-      ],
-      dimension: { width: 720, height: 1280 },
-      test: true,
-      title: opts.avatarName,
-      callback_id: String(opts.background || ""),
+      type: "image",
+      image: { type: "asset_id", asset_id: assetId },
+      script: opts.script.slice(0, 2500),
+      voice_id: voiceId,
+      title: (opts.avatarName || "ReelStorm Avatar").slice(0, 80),
+      resolution: process.env.HEYGEN_RESOLUTION || "720p",
+      aspect_ratio: process.env.HEYGEN_ASPECT || "auto",
     }),
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(120_000),
   });
-  if (!res.ok) {
-    throw new Error(`HeyGen error ${res.status}: ${(await res.text()).slice(0, 240)}`);
+  if (!createRes.ok) {
+    throw new Error(`HeyGen create ${createRes.status}: ${(await createRes.text()).slice(0, 300)}`);
   }
-  // HeyGen is async; for production ship we still land on R2 via saver until webhook poll lands.
-  throw new Error("HeyGen accepted — use AVATAR_ENGINE=liveportrait/saver for sync R2 until webhook poll ships");
+  const created = (await createRes.json()) as {
+    data?: { video_id?: string };
+    video_id?: string;
+  };
+  const videoId = created.data?.video_id || created.video_id;
+  if (!videoId) throw new Error(`HeyGen create missing video_id: ${JSON.stringify(created).slice(0, 300)}`);
+
+  const deadline = Date.now() + Number(process.env.HEYGEN_POLL_MS || 420_000);
+  let remoteUrl = "";
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 8000));
+    const stRes = await fetch(`https://api.heygen.com/v3/videos/${videoId}`, {
+      headers: { "x-api-key": key, "X-Api-Key": key },
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!stRes.ok) continue;
+    const st = (await stRes.json()) as Record<string, unknown>;
+    const nested = (st.data && typeof st.data === "object" ? st.data : st) as Record<string, unknown>;
+    const status = String(nested.status || "").toLowerCase();
+    if (status === "completed") {
+      remoteUrl = String(nested.video_url || nested.url || "");
+      if (!remoteUrl) throw new Error("HeyGen completed without video_url");
+      break;
+    }
+    if (status === "failed") {
+      throw new Error(String(nested.failure_message || "HeyGen video failed"));
+    }
+  }
+  if (!remoteUrl) throw new Error(`HeyGen timed out waiting for ${videoId}`);
+
+  const vidRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(300_000) });
+  if (!vidRes.ok) throw new Error(`HeyGen download ${vidRes.status}`);
+  const vidBuf = Buffer.from(await vidRes.arrayBuffer());
+  const r2Key = `avatars/videos/${opts.userId}/${opts.avatarId}_heygen_${Date.now()}.mp4`;
+  await uploadBuffer(r2Key, vidBuf, "video/mp4");
+  return {
+    r2_url: publicUrl(r2Key),
+    engine: "heygen",
+    mock: false,
+    real_r2: true,
+    note: "Realistic talking video via HeyGen v3 → R2",
+    remote_url: remoteUrl,
+  };
 }
 
 export async function avatarRoutes(app: FastifyInstance) {
@@ -416,6 +525,54 @@ export async function avatarRoutes(app: FastifyInstance) {
       });
     }
     return { templates };
+  });
+
+  /** Last AI talking renders with engine badge (heygen | liveportrait | seedance only). */
+  app.get("/api/avatar/recent-ai", async (req, reply) => {
+    const user = await requireUser(req);
+    if (!user) return reply.code(401).send({ error: "Sign in required" });
+    const mine = await prisma.avatar.findMany({
+      where: { userId: user.id, lastVideoUrl: { not: null } },
+      orderBy: { updatedAt: "desc" },
+      take: 20,
+    });
+    const items: Array<{
+      avatarId: string;
+      name: string;
+      videoUrl: string;
+      engine: string;
+      aiSuccess: boolean;
+      updatedAt: string;
+      scriptPreview?: string;
+    }> = [];
+    for (const a of mine) {
+      const variants = (a.outfitVariants as OutfitVariant[]) || [];
+      const withVid = [...variants].reverse().find((v) => v.videoUrl) || variants[0];
+      const engineRaw =
+        (withVid as OutfitVariant & { engine?: string })?.engine ||
+        (a.lastScript || "").match(/\[engine:([^\]]+)\]/)?.[1] ||
+        (a.lastVideoUrl?.includes("_heygen_") ? "heygen" : "unknown");
+      const eng = engineRaw.toLowerCase();
+      const aiSuccess = /heygen|liveportrait|seedance|wav2lip/.test(eng);
+      if (!aiSuccess) continue;
+      items.push({
+        avatarId: a.id,
+        name: a.name,
+        videoUrl: a.lastVideoUrl || withVid?.videoUrl || "",
+        engine: eng.includes("heygen")
+          ? "heygen"
+          : eng.includes("seedance")
+            ? "seedance"
+            : eng.includes("liveportrait") || eng.includes("wav2lip")
+              ? "liveportrait"
+              : eng,
+        aiSuccess: true,
+        updatedAt: a.updatedAt.toISOString(),
+        scriptPreview: (a.lastScript || "").replace(/^\[engine:[^\]]+\]\s*/, "").slice(0, 120),
+      });
+      if (items.length >= 5) break;
+    }
+    return { ok: true, items, count: items.length };
   });
 
   app.get("/api/avatar/list", async (req, reply) => {
@@ -690,6 +847,7 @@ export async function avatarRoutes(app: FastifyInstance) {
       localNews?: string;
       fingerprint?: string;
       projectId?: string;
+      draftPreview?: boolean;
     };
 
     const fp = fingerprintFrom(req, body);
@@ -752,46 +910,75 @@ export async function avatarRoutes(app: FastifyInstance) {
     };
 
     const mode = engineMode();
+    const imageUrl = variant.r2Url || variant.thumbUrl || avatar.sourceUrl;
+    const allowDraft =
+      body.draftPreview === true || process.env.AVATAR_ALLOW_STILL_FALLBACK === "1";
     try {
-      // Auto-wake pod (or serverless). HeyGen only if AVATAR_ENGINE=heygen + key set.
-      if (mode === "heygen" && process.env.HEYGEN_API_KEY) {
+      // Academy spine: HeyGen-first (default AVATAR_ENGINE=heygen), then LivePortrait pod.
+      if ((mode === "heygen" || mode === "auto") && process.env.HEYGEN_API_KEY && imageUrl) {
         try {
-          await renderViaHeygen({
+          rendered = await renderViaHeygen({
             script,
             avatarName: avatar.name,
-            background: template.backgroundJson,
+            imageUrl,
+            userId: user.id,
+            avatarId: avatar.id,
           });
-        } catch {
-          /* expected until HeyGen poll/webhook — fall through to autonomous saver */
+        } catch (heyErr) {
+          if (mode === "heygen") throw heyErr;
+          // auto: try owned pod next
+          rendered = await renderViaSaver(prompt, template.duration);
+          rendered.note = `${rendered.note || ""} · heygen: ${(heyErr as Error).message}`.trim();
+        }
+      } else if (mode === "liveportrait" || mode === "auto" || mode === "saver") {
+        rendered = await renderViaSaver(prompt, template.duration);
+        if (mode === "liveportrait") {
+          rendered.engine = `liveportrait→${rendered.engine}`;
+        }
+      } else {
+        throw new Error(`Unknown AVATAR_ENGINE=${mode}`);
+      }
+      const eng = (rendered.engine || "").toLowerCase();
+      if (!eng.includes("heygen") && !eng.includes("liveportrait") && !eng.includes("pod") && !eng.includes("serverless")) {
+        if (!allowDraft) {
+          return reply.code(503).send({
+            ok: false,
+            error: `Refusing non-AI engine as success: ${rendered.engine}`,
+            engine: rendered.engine,
+            hint: "Set draftPreview=true for photo+TTS, or fix HeyGen / wake RunPod.",
+          });
         }
       }
-      rendered = await renderViaSaver(prompt, template.duration);
-      if (mode === "heygen" && process.env.HEYGEN_API_KEY) {
-        rendered.engine = `heygen→${rendered.engine}`;
-      } else if (mode === "liveportrait") {
-        rendered.engine = `liveportrait→${rendered.engine}`;
-      }
     } catch (e) {
-      // Host full / no HeyGen — still ship a real R2 video from photo + TTS
-      try {
-        const imageUrl = variant.r2Url || variant.thumbUrl || avatar.sourceUrl;
-        if (!imageUrl) throw e;
-        rendered = await renderStillTalkingFromImage({
-          imageUrl,
-          script,
-          duration: template.duration,
-          userId: user.id,
-          avatarId: avatar.id,
-        });
-        rendered.note = `${rendered.note || ""} · prior GPU error: ${(e as Error).message}`.trim();
-      } catch {
+      if (allowDraft && imageUrl) {
+        try {
+          rendered = await renderStillTalkingFromImage({
+            imageUrl,
+            script,
+            duration: template.duration,
+            userId: user.id,
+            avatarId: avatar.id,
+          });
+          rendered.note = `DRAFT PREVIEW · ${(e as Error).message}`.trim();
+        } catch {
+          const pod = await probePodHealth().catch(() => null);
+          return reply.code(503).send({
+            ok: false,
+            error: (e as Error).message,
+            podStatus: pod?.status || (await getPodStatus().catch(() => "UNKNOWN")),
+            hint:
+              "HeyGen/LivePortrait failed. Retry, or set draftPreview=true for photo+TTS draft only.",
+          });
+        }
+      } else {
         const pod = await probePodHealth().catch(() => null);
         return reply.code(503).send({
           ok: false,
           error: (e as Error).message,
+          engine: mode,
           podStatus: pod?.status || (await getPodStatus().catch(() => "UNKNOWN")),
           hint:
-            "RunPod host has no free GPUs right now. Retry Wake Pod later, deploy a new pod on another host, or set RUNPOD_SERVERLESS_URL / HEYGEN_API_KEY.",
+            "AI talking video hard-failed. Fix HEYGEN_API_KEY / wake RunPod, or pass draftPreview=true.",
         });
       }
     }
@@ -806,7 +993,15 @@ export async function avatarRoutes(app: FastifyInstance) {
     });
 
     const nextVariants = variants.map((v) =>
-      v.id === variant.id ? { ...v, videoUrl: rendered!.r2_url, r2Url: rendered!.r2_url } : v,
+      v.id === variant.id
+        ? {
+            ...v,
+            videoUrl: rendered!.r2_url,
+            r2Url: rendered!.r2_url,
+            engine: rendered!.engine,
+            aiSuccess: /heygen|liveportrait|seedance|wav2lip/i.test(rendered!.engine || ""),
+          }
+        : v,
     );
 
     await prisma.avatar.update({
@@ -814,7 +1009,7 @@ export async function avatarRoutes(app: FastifyInstance) {
       data: {
         outfitVariants: nextVariants,
         lastVideoUrl: rendered.r2_url,
-        lastScript: script,
+        lastScript: `[engine:${rendered.engine}] ${script}`.slice(0, 4000),
       },
     });
 

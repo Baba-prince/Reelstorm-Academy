@@ -15,13 +15,20 @@ type Project = {
 };
 
 const PIPELINE = [
-  { step: "01", name: "SCRIPT / UPLOAD", href: "/template-forge", color: "text-violet-soft" },
-  { step: "02", name: "WORLD BUILDER", href: "/world-builder", color: "text-violet" },
-  { step: "03", name: "STORYBOARD", href: "/storyboard", color: "text-cyan" },
-  { step: "04", name: "STORM ENGINE", href: "/studio", color: "text-cyan" },
-  { step: "05", name: "ARCHIVE VAULT", href: "/archive-vault", color: "text-orange" },
-  { step: "06", name: "MERGE STUDIO", href: "/merge-studio", color: "text-orange" },
+  { step: "01", name: "AGENT", href: "/realstorm", color: "text-cyan" },
+  { step: "02", name: "AVATAR", href: "/model-center/avatar", color: "text-cyan" },
+  { step: "03", name: "STUDIO PAD", href: "/studio-pad", color: "text-violet-soft" },
 ];
+
+type AiRender = {
+  avatarId: string;
+  name: string;
+  videoUrl: string;
+  engine: string;
+  aiSuccess: boolean;
+  updatedAt: string;
+  scriptPreview?: string;
+};
 
 const CLEARABLE = new Set(["DRAFT", "FAILED", "WORLD_BUILDING", "STORYBOARD", "GENERATING"]);
 
@@ -49,6 +56,7 @@ function DashboardInner() {
   const [clearing, setClearing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  const [aiRenders, setAiRenders] = useState<AiRender[]>([]);
 
   const displayName = useMemo(() => firstNameFrom(user), [user]);
   const clearableCount = useMemo(
@@ -77,6 +85,9 @@ function DashboardInner() {
 
   useEffect(() => {
     void reload();
+    api<{ items: AiRender[] }>("/api/avatar/recent-ai")
+      .then((d) => setAiRenders(d.items || []))
+      .catch(() => setAiRenders([]));
   }, [reload]);
 
   async function createProject() {
@@ -139,7 +150,7 @@ function DashboardInner() {
   }
 
   return (
-    <div className="space-y-8 forge-in max-w-[1200px]">
+    <div className="space-y-8 forge-in w-full max-w-none">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="mono text-[11px] text-cyan mb-2">STORM OS // FACTORY FLOOR</div>
@@ -156,24 +167,24 @@ function DashboardInner() {
               </>
             )}
           </h1>
-          <p className="mt-3 text-white/60 max-w-xl text-[15px] leading-relaxed">
+          <p className="mt-3 text-white/60 max-w-2xl text-[15px] leading-relaxed">
             {justOnboarded
-              ? "Onboarding locked. Your factory floor is live — pick a lane and ship your first ARCHIVE5."
-              : "Not a course. A factory. Upload reference video → extract template → rebuild in that style → ARCHIVE5 → merge to legend."}
+              ? "Academy MVP: lock a face in Agent, write a script, ship one AI talking video."
+              : "One path: Agent → face + script → HeyGen AI video → Studio Pad to trim. Factories live under Advanced."}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
-            href="/wizard"
-            className="h-11 px-5 rounded-rs bg-violet text-white font-bold text-[13px] flex items-center"
+            href="/realstorm"
+            className="h-11 px-5 rounded-rs bg-cyan text-black font-bold text-[13px] flex items-center"
           >
-            BOT Director
+            Open Agent
           </Link>
           <Link
-            href="/template-forge"
-            className="h-11 px-5 rounded-rs bg-orange text-black font-bold text-[13px] flex items-center"
+            href="/model-center/avatar"
+            className="h-11 px-5 rounded-rs bg-violet text-white font-bold text-[13px] flex items-center"
           >
-            Upload Video
+            Avatar
           </Link>
           <button
             type="button"
@@ -186,7 +197,7 @@ function DashboardInner() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid md:grid-cols-3 gap-3">
         {PIPELINE.map((p) => (
           <Link
             key={p.step}
@@ -198,6 +209,43 @@ function DashboardInner() {
           </Link>
         ))}
       </div>
+
+      <section className="rounded-rs-xl border border-cyan/25 bg-deep overflow-hidden">
+        <div className="h-12 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel">
+          <span className="mono text-[11px] tracking-[0.14em]">LAST AI RENDERS</span>
+          <span className="mono text-[9px] text-white/40">heygen · liveportrait · seedance only</span>
+        </div>
+        <div className="p-4 space-y-2">
+          {aiRenders.length === 0 ? (
+            <p className="text-[13px] text-white/45">
+              No AI talking clips yet. Open Agent, lock a face, confirm a script — composites do not count.
+            </p>
+          ) : (
+            aiRenders.map((r) => (
+              <div
+                key={`${r.avatarId}-${r.updatedAt}`}
+                className="flex items-center justify-between gap-3 rounded-rs border border-white/[0.06] bg-panel/60 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium truncate">{r.name}</div>
+                  <div className="mono text-[10px] text-white/40 truncate">{r.scriptPreview || r.videoUrl}</div>
+                </div>
+                <span className="shrink-0 mono text-[9px] px-2 py-1 rounded-full bg-cyan/20 text-cyan border border-cyan/30 font-bold uppercase">
+                  {r.engine}
+                </span>
+                <a
+                  href={r.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-[11px] text-violet-soft hover:underline"
+                >
+                  Open
+                </a>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
 
       <section className="rounded-rs-xl border border-white/[0.08] bg-deep overflow-hidden">
         <div className="h-12 px-5 flex items-center justify-between border-b border-white/[0.06] bg-panel gap-3">

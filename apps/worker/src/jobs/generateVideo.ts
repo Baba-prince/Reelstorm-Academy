@@ -109,12 +109,25 @@ export async function generateVideoJob(job: Job<GenerateVideoPayload>) {
   const lockedRoom =
     studioSet?.rooms[0]?.roomPlateId || project.rooms[0]?.id;
 
+  // Prefer approved storyboard still as I2V first frame (Cinema / Saga path)
+  const { publicUrl } = await import("@reelstorm/media");
+  const approvedFrame =
+    project.storyboards.find((f) => f.approved && f.imageKey) ||
+    project.storyboards.find((f) => f.imageKey);
+  const approvedStill = approvedFrame?.imageKey
+    ? approvedFrame.imageKey.startsWith("http")
+      ? approvedFrame.imageKey
+      : publicUrl(approvedFrame.imageKey)
+    : undefined;
+
   const result = await generateVideoRouted({
     prompt: promptPlan,
     templateId: template?.id,
     soulIdRef: lockedSoul,
     roomRef: lockedRoom,
     durationSec: 5,
+    firstFrameUrl: approvedStill,
+    aspectRatio: "9:16",
   });
 
   // Create a placeholder block for the generation

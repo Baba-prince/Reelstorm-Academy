@@ -27,6 +27,8 @@ export const ig: MessageTree = {
     api: "API",
     dashboard: "Dashboard",
     templatesRoom: "Ime Ụlọ Atụmatụ",
+    templatesStudio: "Templates Studio",
+    studioPad: "Studio Pad",
     templateForge: "Ebe A Na-emepụta Atụmatụ",
     studioSet: "Studio Set",
     worldBuilder: "Onye Na-ewu Ụwa",

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>REELSTORM CINEMA — Hybrid Architecture (Saga × Factory)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0a0b0f;
+      --bg1: #11131a;
+      --panel: #161922;
+      --lift: #1c2030;
+      --ink: #f2efe8;
+      --mist: rgba(242,239,232,0.68);
+      --dim: rgba(242,239,232,0.4);
+      --line: rgba(242,239,232,0.1);
+      --cast: #ff5a3d;
+      --world: #3ecf8e;
+      --voice: #5b8cff;
+      --cut: #f0c14a;
+      --saga: #c084fc;
+      --have: #3ecf8e;
+      --partial: #f0c14a;
+      --missing: #ff5a5a;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      background:
+        radial-gradient(1100px 560px at 0% -10%, rgba(255,90,61,0.2), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(91,140,255,0.16), transparent 50%),
+        radial-gradient(700px 400px at 50% 100%, rgba(192,132,252,0.1), transparent 55%),
+        var(--bg0);
+      min-height: 100vh;
+    }
+    .wrap { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 4rem; }
+    .mono { font-family: "JetBrains Mono", monospace; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.68rem; }
+    h1, h2, h3 { font-family: "Bebas Neue", sans-serif; letter-spacing: 0.02em; margin: 0; font-weight: 400; }
+    h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); line-height: 0.95; }
+    h2 { font-size: 1.65rem; margin-bottom: 0.85rem; color: var(--ink); }
+    h3 { font-size: 1.2rem; margin-bottom: 0.45rem; }
+    p { color: var(--mist); line-height: 1.55; margin: 0.35rem 0 0; }
+    .hero { display: grid; gap: 0.85rem; padding-bottom: 1.4rem; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
+    .eyebrow { color: var(--saga); display: inline-flex; gap: 0.5rem; align-items: center; font-weight: 700; }
+    .eyebrow i { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--saga); }
+    .verdict {
+      background: linear-gradient(135deg, rgba(192,132,252,0.14), rgba(255,90,61,0.08));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem;
+    }
+    .verdict strong { color: var(--ink); }
+    .section { margin: 1.85rem 0; }
+    .grid { display: grid; gap: 0.9rem; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 900px) {
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 701px) and (max-width: 900px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+    .card.lift { background: var(--lift); }
+    .tag {
+      display: inline-block;
+      padding: 0.16rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .have { background: rgba(62,207,142,0.15); color: var(--have); }
+    .partial { background: rgba(240,193,74,0.15); color: var(--partial); }
+    .missing { background: rgba(255,90,90,0.15); color: var(--missing); }
+    .fold { background: rgba(91,140,255,0.15); color: #8eb0ff; }
+    .kill { background: rgba(255,90,61,0.15); color: var(--cast); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--dim); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    ul { margin: 0.4rem 0 0; padding-left: 1.1rem; color: var(--mist); }
+    li { margin: 0.22rem 0; }
+    code { font-family: "JetBrains Mono", monospace; font-size: 0.76rem; color: #9ecbff; }
+    .pillar { border-top: 3px solid; }
+    .pillar.cast { border-color: var(--cast); }
+    .pillar.world { border-color: var(--world); }
+    .pillar.voice { border-color: var(--voice); }
+    .pillar.cut { border-color: var(--cut); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.4rem;
+      align-items: stretch;
+    }
+    @media (max-width: 900px) { .flow { grid-template-columns: 1fr 1fr; } }
+    .flow .step {
+      background: var(--bg1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.7rem 0.55rem;
+      text-align: center;
+      min-height: 88px;
+    }
+    .flow .step .n { font-family: "JetBrains Mono", monospace; font-size: 0.62rem; color: var(--dim); }
+    .flow .step .t { font-family: "Bebas Neue", sans-serif; font-size: 1.05rem; margin-top: 0.25rem; }
+    .flow .step .d { font-size: 0.72rem; color: var(--mist); margin-top: 0.2rem; line-height: 1.3; }
+    .callout {
+      border-left: 3px solid var(--saga);
+      padding: 0.15rem 0 0.15rem 0.9rem;
+      margin-top: 0.75rem;
+    }
+    .arch {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.74rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      color: var(--mist);
+      margin: 0;
+      background: var(--bg1);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+    }
+    .phase-num {
+      display: inline-flex;
+      width: 1.7rem; height: 1.7rem;
+      border-radius: 50%;
+      align-items: center; justify-content: center;
+      background: rgba(192,132,252,0.2);
+      color: var(--saga);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.45rem;
+    }
+    footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--dim); font-size: 0.8rem; }
+    .decision { display: grid; gap: 0.55rem; margin-top: 0.7rem; }
+    .decision .row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      background: var(--bg1);
+      border-radius: 10px;
+      border: 1px solid var(--line);
+    }
+    @media (max-width: 700px) { .decision .row { grid-template-columns: 1fr; } }
+    .decision .k { font-family: "JetBrains Mono", monospace; font-size: 0.68rem; text-transform: uppercase; color: var(--saga); padding-top: 0.15rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow mono"><i></i> Artifact v2 · Hybrid Architecture · 24 Oct 2026</div>
+      <h1>REELSTORM CINEMA</h1>
+      <p>New phase design: merge Saga’s showrunner clarity with ReelStorm’s factory assets — without making users walk 18 developing angles.</p>
+      <div class="verdict">
+        <strong>Captain’s call:</strong> Do <em>not</em> delete BOT Director as a dead-end. <strong>Absorb it into Showrunner</strong> (the conductor). Ship a new primary product surface — <strong>Cinema Mode</strong> — with exactly <strong>four studios</strong> you named (Cast · World · Voice · Cut). Everything else becomes <strong>Factory Mode</strong> (power tools / distribution), not the default path to realistic AI movies.
+      </div>
+    </header>
+
+    <!-- DECISION -->
+    <section class="section">
+      <h2>1 · Decision: new phase, not more rooms</h2>
+      <div class="decision">
+        <div class="row">
+          <div class="k">Problem</div>
+          <div>Current product feels “almost complete” in every direction at once — Debate, YT-OS, Clone, Camera, Wizard, World Builder, Studio Set, Merge, Archive… Users cannot find the movie path.</div>
+        </div>
+        <div class="row">
+          <div class="k">Wrong move</div>
+          <div>Add Saga as a 19th room beside BOT Director. Complexity doubles; realism still fails.</div>
+        </div>
+        <div class="row">
+          <div class="k">Right move</div>
+          <div><strong>Phase: Cinema OS</strong> — one spine, four studios, Saga-class locks. Keep existing rooms as Advanced Factory behind a toggle / producers menu.</div>
+        </div>
+        <div class="row">
+          <div class="k">BOT Director</div>
+          <div><span class="tag kill">Retire as primary UI</span> · <span class="tag fold">Keep as engine</span> — its 7 stages (Idea→Cast→World→Beats→Voice→Render→Ship) become the invisible Showrunner pipeline that drives the four studios. Route <code>/wizard</code> → <code>/cinema</code>.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HYBRID FLOW -->
+    <section class="section">
+      <h2>2 · Hybrid spine (Saga clarity × ReelStorm muscle)</h2>
+      <div class="flow">
+        <div class="step"><div class="n">01</div><div class="t">IDEA</div><div class="d">Logline / spine / trend</div></div>
+        <div class="step" style="border-color:rgba(255,90,61,0.45)"><div class="n">02</div><div class="t" style="color:var(--cast)">CAST</div><div class="d">Avatar Studio</div></div>
+        <div class="step" style="border-color:rgba(62,207,142,0.45)"><div class="n">03</div><div class="t" style="color:var(--world)">WORLD</div><div class="d">Scene Studio</div></div>
+        <div class="step" style="border-color:rgba(91,140,255,0.45)"><div class="n">04</div><div class="t" style="color:var(--voice)">VOICE</div><div class="d">Clone + bind</div></div>
+        <div class="step"><div class="n">05</div><div class="t" style="color:var(--saga)">BOARD</div><div class="d">Approve stills</div></div>
+        <div class="step"><div class="n">06</div><div class="t">SHOOT</div><div class="d">I2V + continuity</div></div>
+        <div class="step" style="border-color:rgba(240,193,74,0.45)"><div class="n">07</div><div class="t" style="color:var(--cut)">CUT</div><div class="d">Video Editor</div></div>
+      </div>
+      <div class="callout">
+        <p><strong>Saga contribution:</strong> season bible, face/voice lock, approve-before-spend, cliffhangers, continuity QC.</p>
+        <p><strong>ReelStorm contribution:</strong> Avatar/HeyGen, Studio Set DNA, Sound Studio TTS, R2 CDN, ARCHIVE5/Merge ffmpeg, RTC metering, translate/debate as post-ship distribution.</p>
+      </div>
+    </section>
+
+    <!-- FOUR PILLARS -->
+    <section class="section">
+      <h2>3 · The four studios (only UX users need for movies)</h2>
+      <div class="grid grid-4">
+        <div class="card pillar cast">
+          <h3>1 · Avatar Studio</h3>
+          <p class="mono" style="color:var(--cast);margin:0.2rem 0">CAST · CHARACTER LOCK</p>
+          <ul>
+            <li>Create / import lead + supporting cast</li>
+            <li>Multi-angle plates (front / 3Q / side)</li>
+            <li>Lock face → Character Bible ID</li>
+            <li>Outfit slots by story-day</li>
+            <li>Absorbs: Model Center Avatar, Soul ID, artist plates</li>
+          </ul>
+        </div>
+        <div class="card pillar world">
+          <h3>2 · Scene Studio</h3>
+          <p class="mono" style="color:var(--world);margin:0.2rem 0">WORLD · STUDIO SET</p>
+          <ul>
+            <li>Generate / lock locations</li>
+            <li>Multi-angle room plates (real stills, not SVG)</li>
+            <li>Imagery DNA shared with board + shoot</li>
+            <li>Absorbs: Studio Set, World Builder, Camera angle prompts (as helpers)</li>
+          </ul>
+        </div>
+        <div class="card pillar voice">
+          <h3>3 · Voice Studio</h3>
+          <p class="mono" style="color:var(--voice);margin:0.2rem 0">CLONE · BIND · SYNC</p>
+          <ul>
+            <li>Clone or pick voice per character</li>
+            <li>Bind voiceId ↔ Character Bible</li>
+            <li>Lip / body sync on dialogue shots</li>
+            <li>Absorbs: Sound Studio, translate lipsync hooks</li>
+          </ul>
+        </div>
+        <div class="card pillar cut">
+          <h3>4 · Video Studio</h3>
+          <p class="mono" style="color:var(--cut);margin:0.2rem 0">EDITOR · ASSEMBLE · SHIP</p>
+          <ul>
+            <li>Storyboard → approve → shoot</li>
+            <li>Timeline: trim, order, cliffhanger cut</li>
+            <li>Music / SFX beds + export master</li>
+            <li>Absorbs: Storyboard, Generate, Archive, Merge, Studio chat</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE DIAGRAM -->
+    <section class="section">
+      <h2>4 · Proposed architecture (hybrid)</h2>
+      <pre class="arch">REELSTORM CINEMA  (default product)
+│
+├─ /cinema                     ← single home (replaces dashboard sprawl for movie makers)
+│   ├─ Showrunner Agent        ← BOT Director brain + Saga season/cliffhanger logic
+│   │     SeasonBible · EpisodeBeat · CharacterLock · WardrobeDay
+│   │
+│   ├─ 01 CAST   /cinema/cast     ← Avatar Studio (character avatars)
+│   ├─ 02 WORLD  /cinema/world    ← Scene Studio (Studio Set generator)
+│   ├─ 03 VOICE  /cinema/voice    ← Voice clone + character sync
+│   ├─ 04 BOARD  /cinema/board    ← stills approve gate (RTC hard lock)
+│   ├─ 05 SHOOT  /cinema/shoot    ← Seedance/Kling/Veo I2V + continuity QC
+│   └─ 06 CUT    /cinema/cut      ← Video Studio Editor → R2 master
+│
+├─ Shared locks (DB)
+│   CharacterBible { faceRefs[], voiceId, wardrobeCalendar }
+│   WorldBible     { roomPlates[], imageryDNA }
+│   Episode        { beats[], approvedStills[], clips[], hookOut }
+│
+└─ FACTORY MODE  (advanced · not default nav)
+    Debate · Language · YT-OS · Clone · Camera Coach · Template Forge
+    → consume finished Cinema masters for distribution / localization</pre>
+    </section>
+
+    <!-- EVALUATE CURRENT -->
+    <section class="section">
+      <h2>5 · Evaluate what we have → where it goes</h2>
+      <div class="card" style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>Current surface</th><th>Status today</th><th>Hybrid fate</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/wizard</code> BOT Director</td>
+              <td><span class="tag partial">Planning UI + heuristics</span></td>
+              <td><span class="tag fold">Fold → Showrunner</span> invisible conductor; redirect to <code>/cinema</code></td>
+            </tr>
+            <tr>
+              <td><code>/model-center/avatar</code></td>
+              <td><span class="tag have">HeyGen + templates</span></td>
+              <td><span class="tag fold">Become CAST</span> primary character factory</td>
+            </tr>
+            <tr>
+              <td><code>/studio-set</code></td>
+              <td><span class="tag partial">Lock flow; SVG plates</span></td>
+              <td><span class="tag fold">Become WORLD</span> Scene Studio; wire real still gen</td>
+            </tr>
+            <tr>
+              <td><code>/world-builder</code></td>
+              <td><span class="tag partial">Quick Soul/Room stub</span></td>
+              <td><span class="tag kill">Merge into WORLD</span> deprecate route</td>
+            </tr>
+            <tr>
+              <td><code>/sound-studio</code></td>
+              <td><span class="tag have">TTS / beds</span></td>
+              <td><span class="tag fold">Become VOICE</span> + character bind + sync</td>
+            </tr>
+            <tr>
+              <td><code>/storyboard</code> · <code>/generate</code> · <code>/studio</code></td>
+              <td><span class="tag partial">Text boards; T2V</span></td>
+              <td><span class="tag fold">BOARD + SHOOT</span> inside Video Studio</td>
+            </tr>
+            <tr>
+              <td><code>/archive-vault</code> · <code>/merge-studio</code></td>
+              <td><span class="tag partial">Split/concat when local</span></td>
+              <td><span class="tag fold">Become CUT</span> editor backend (ARCHIVE5 under hood)</td>
+            </tr>
+            <tr>
+              <td>Debate · Translate · YT-OS · Clone · Camera</td>
+              <td><span class="tag have">Useful OS products</span></td>
+              <td><span class="tag fold">Factory Mode</span> after Cinema ships episodes</td>
+            </tr>
+            <tr>
+              <td>Template Forge / Templates Room</td>
+              <td><span class="tag partial">Stock DNA</span></td>
+              <td><span class="tag fold">Factory + B-roll helper</span> inside CUT, not main nav</td>
+            </tr>
+            <tr>
+              <td>Seedance / Kling / Veo / RunPod saver</td>
+              <td><span class="tag partial">T2V + placeholder</span></td>
+              <td><span class="tag missing">Upgrade path</span> I2V + real Comfy; kill placeholder default</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- WHY NOT REMOVE BOT DIRECTOR -->
+    <section class="section">
+      <h2>6 · Why absorb BOT Director (not delete)</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Keep the brain</h3>
+          <ul>
+            <li>Idea → Cast → World → Beats → Voice → Render → Ship already matches Saga’s order</li>
+            <li>Blueprint JSON + project feed already exist</li>
+            <li>Deleting it throws away orchestration you already paid for</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Kill the brand as “another room”</h3>
+          <ul>
+            <li>Users should not choose Wizard <em>or</em> Studio Set <em>or</em> Saga</li>
+            <li>Showrunner = one button: “Make this season”</li>
+            <li>Studios open only when the spine needs input / approval</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- UX SIMPLIFICATION -->
+    <section class="section">
+      <h2>7 · Navigation redesign (stop the angle explosion)</h2>
+      <div class="grid grid-2">
+        <div class="card lift">
+          <h3>Default · Cinema Mode</h3>
+          <ul>
+            <li>Home: current season + next episode</li>
+            <li>4 studio tabs only: Cast · World · Voice · Cut</li>
+            <li>Showrunner progress rail (locks + approvals)</li>
+            <li>One CTA: Continue / Approve / Shoot / Export</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Optional · Factory Mode</h3>
+          <ul>
+            <li>Hidden under “Producers / Factory”</li>
+            <li>Debate, Language, YT-OS, Clone, Camera, Templates</li>
+            <li>Same RTC wallet · same R2 CDN</li>
+            <li>Marketing can still sell OS layers — product default is Cinema</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUILD PHASES -->
+    <section class="section">
+      <h2>8 · Build phases (after you approve this artifact)</h2>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="phase-num">A</span> Cinema shell + Showrunner absorb</h3>
+          <p>Routes <code>/cinema/*</code>, redirect <code>/wizard</code>, season/episode domain models, progress rail UI. No new pixel quality yet — product clarity first.</p>
+        </div>
+        <div class="card">
+          <h3><span class="phase-num">B</span> Four studios wired to locks</h3>
+          <p>CAST←Avatar · WORLD←Studio Set · VOICE←Sound bind · CUT←storyboard/merge. Hard gate: no shoot RTC until board approved.</p>
+        </div>
+        <div class="card">
+          <h3><span class="phase-num">C</span> Realism path (Saga parity)</h3>
+          <p>Flux/Comfy stills · I2V first-frame · face continuity QC · 60–90s assemble · cliffhanger trim · kill <code>r2-upload-placeholder</code> as REAL.</p>
+        </div>
+        <div class="card">
+          <h3><span class="phase-num">D</span> Factory demotion + distribution</h3>
+          <p>Debate/Translate/YT consume Cinema masters. Marketing OS pages stay; app default nav is Cinema.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUCCESS -->
+    <section class="section">
+      <h2>9 · Done looks like</h2>
+      <div class="card">
+        <ul>
+          <li>New user path: <strong>Idea → 4 studios → episode</strong> (≤7 screens), not 18 rooms</li>
+          <li>Same face + voice from episode 1 → episode N</li>
+          <li>Storyboard stills approved before any video spend</li>
+          <li>60–90s vertical episode ending on a hook</li>
+          <li>BOT Director gone from primary nav; still powers Showrunner under the hood</li>
+          <li>Debate/YT/Clone still available — as Factory, not the movie pitch</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- OPEN QUESTIONS -->
+    <section class="section">
+      <h2>10 · Confirm before we build</h2>
+      <div class="card">
+        <ol style="color:var(--mist);margin:0.4rem 0 0;padding-left:1.2rem">
+          <li>Approve <strong>Cinema Mode</strong> as the new primary product phase?</li>
+          <li>OK to <strong>absorb</strong> BOT Director (redirect) rather than hard-delete code?</li>
+          <li>Four studios naming: Cast / World / Voice / Cut — or your labels (Avatar / Scene / Voice / Video Editor)?</li>
+          <li>Factory Mode stays paid/pro, or free side-door for existing debate/YT users?</li>
+        </ol>
+      </div>
+    </section>
+
+    
+    <section class="section">
+      <h2>11 · Shipped · first drama pilot</h2>
+      <div class="card">
+        <p><strong>Season:</strong> Night of Proof (revenge) · Ep1 The Envelope</p>
+        <p><strong>Master (CDN):</strong> <a style="color:#2ec4b6" href="https://videos.reelstorm.uk/cinema/cmvmr97yb0000lge4bc6jp2gs/cmvmr988b0004lge49iutwpul/ep1_master_0e955479.mp4">ep1_master_0e955479.mp4</a> (~2.0 MB · 4 Ken Burns shots · cliffhanger cut)</p>
+        <p><strong>UI:</strong> <code>/cinema</code> · <code>/wizard</code> redirects here · Shell primary nav = Cinema</p>
+        <p><strong>Note:</strong> HeyGen key currently 401 Unauthorized — shoot falls back to Ken Burns on locked cast faces. Replace key for photoreal talking drama; Seedance I2V when DashScope key is set.</p>
+      </div>
+    </section>
+
+    
+    <section class="section">
+      <h2>12 · Gaps closed (this build)</h2>
+      <div class="card">
+        <ul>
+          <li>Approve-before-spend + RTC metering (shoot 2 · cut 1)</li>
+          <li>Continuity QC on every clip · Soul / Room / Voice persisted to project</li>
+          <li>HeyGen circuit breaker (CINEMA_SKIP_HEYGEN) · Ken Burns / Seedance fallback</li>
+          <li>StoryboardFrame sync · factory nav demoted · /wizard → /cinema</li>
+          <li>GET /api/cinema/readiness lists closed vs optional-open gaps</li>
+        </ul>
+        <p><strong>Still optional (need vendor wallets):</strong> valid HeyGen API credits · DashScope/Seedance for I2V.</p>
+        <p><strong>Latest master:</strong> <a style="color:#2ec4b6" href="https://videos.reelstorm.uk/cinema/cmvmr97yb0000lge4bc6jp2gs/cmvmrgmhk0004lgyxbii35prd/ep1_master_0e955479.mp4">Ep1 · 4/4 QC pass · 100%</a></p>
+      </div>
+    </section>
+
+    <footer>
+      Artifact updated in place · <code>reelstorm-os/artifacts/saga-vs-reelstorm-realistic-movies-plan.html</code><br />
+      Prior gap analysis retained in spirit; this revision is the hybrid architecture proposal pending your go.
+    </footer>
+  </div>
+</body>
+</html>

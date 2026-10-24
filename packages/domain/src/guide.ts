@@ -58,6 +58,7 @@ Mission:
 - Always offer 2–4 actionable options when helpful (as plain text like "→ Option: …").
 - Never invent API keys or claim jobs finished unless the user said so.
 - Prefer factory order: Debate Studio (/debate) or Camera Angles (/camera) or Language Studio (/translate) or YouTube Automation (/yt-os) or BOT Director Wizard (or /tools/clone / Avatar Studio) → Templates Room / Template Forge → Full Studio Set (/studio-set: Room · Artist · Imagery) → Storyboard → Studio → Sound Studio → Archive Vault → Merge Studio.
+- Deploy process (teach conversationally when asked): chat → plan → confirm → deploy. Nothing ships until confirm. Stormy / BOT Director routes rooms; operator can ask “how does deploy work?” at any time.
 - Full Studio Set (/studio-set) is READY FOR PRODUCTION TESTING on app.reelstorm.uk: Seed Courtroom → Generate room/artist plates → Imagery upsert (refreshes all rooms) → Apply to Director when readiness is green (or Force soft launch ≥60%). Soft-launch plates are SVG/URL stamps until real still gen — coach the lock flow, not photoreal claims.
 - World Builder (/world-builder) is legacy quick Soul + Room lock — also READY FOR PRODUCTION TESTING; always prefer / deep-link into Full Studio Set for multi-angle cast + imagery.
 - Storyboard / Studio / Sound / Archive / Merge are READY FOR PRODUCTION TESTING for soft-launch queues. Real GPU /generate needs green RunPod saver-health; Archive split needs uploadId; Merge needs vault blockIds; Sound clone/TTS needs ElevenLabs only when testing voice forge.
@@ -253,6 +254,36 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       { id: "clone-tab", label: "Clone Viral Link", prompt: "How do I use the Clone Viral Link tab vs idea generate?", href: "/tools/clone", kind: "goto" },
       { id: "generate", label: "Generate blueprint", prompt: "How do I generate a blueprint and know it succeeded?", kind: "do" },
       { id: "set", label: "Next: Studio Set", prompt: "After Feed Factory, how do I lock Room · Artist · Imagery before Storyboard?", href: "/studio-set", kind: "goto" },
+    ],
+  },
+  {
+    path: "/realstorm",
+    layer: "os",
+    title: "RealStorm Agent",
+    blurb: "Stormy full-OS agent — Model · Scene · Avatar · Product · Design · Render · YouTube · Publish.",
+    tips: [
+      "Open /realstorm → pick a tool chip or write a product prompt → Run Full Pipeline.",
+      "Blender supplies camera control video; RealStorm paints the final clip (mock → model).",
+      "YouTube Automation pad: script → voice → timeline → thumbnail → upload (queued).",
+      "Published clips land at https://reelstorm.uk/realstorm/{name}.mp4",
+    ],
+    startHere: {
+      goal: "Run Stormy end-to-end and publish a RealStorm clip.",
+      steps: [
+        "Open RealStorm Agent from the system menu.",
+        "Choose vibe A/B/C or type a Bookish POD prompt.",
+        "Hit Run Full Pipeline — watch tools execute → preview the published mp4.",
+      ],
+      primaryLabel: "Open RealStorm Agent",
+      primaryHref: "/realstorm",
+      nextLabel: "YouTube Automation",
+      nextHref: "/yt-os",
+    },
+    options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start on RealStorm Agent right now?", kind: "improve" },
+      { id: "run", label: "Run Full Pipeline", prompt: "Walk me through Stormy’s 8 tools and Run Full Pipeline.", kind: "do" },
+      { id: "editor", label: "Standalone editor", prompt: "How do I use /agent/editor/ vs the OS menu page?", href: "/agent/editor/", kind: "goto" },
+      { id: "ytos", label: "YouTube OS", prompt: "How does RealStorm hand off to YouTube Automation?", href: "/yt-os", kind: "goto" },
     ],
   },
   {
@@ -463,6 +494,66 @@ export const GUIDE_LAYERS: GuideLayer[] = [
       { id: "nollywood", label: "Nollywood pick", prompt: "Which Nollywood template fits a Lagos family drama short?", kind: "improve" },
       { id: "asia", label: "Asia cinema pick", prompt: "Recommend an Asia template — K-drama, Bollywood, anime, or SEA food.", kind: "improve" },
       { id: "forge", label: "Extract my own", prompt: "When should I leave Templates Room for Template Forge?", href: "/template-forge", kind: "goto" },
+      { id: "studio", label: "Templates Studio", prompt: "How do I use Templates Studio packs for podcast / product / presentation?", href: "/templates-studio", kind: "goto" },
+    ],
+  },
+  {
+    path: "/templates-studio",
+    layer: "os",
+    title: "Templates Studio",
+    blurb: "Fillable studio packs — podcast, product, presentation, explanatory. Script → beats → Export 9:16.",
+    tips: [
+      "Pick a pack (Hot Takes, Educational Sections, ON AIR Desk, Monitor Showcase…).",
+      "Edit the sample script + badge/color → Create project → Export 9:16 or open Studio Pad.",
+      "Custom scripts push into beat captions automatically.",
+    ],
+    startHere: {
+      goal: "Ship a 9:16 studio clip from a pack without scrubbing a timeline.",
+      steps: [
+        "Open Templates Studio from the system menu.",
+        "Pick a pack → customize the script → Create project.",
+        "Export 9:16 (or open Studio Pad for beats/captions).",
+      ],
+      primaryLabel: "Open Templates Studio",
+      primaryHref: "/templates-studio",
+      nextLabel: "Studio Pad",
+      nextHref: "/studio-pad",
+    },
+    options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Templates Studio?", kind: "improve" },
+      { id: "packs", label: "Which pack?", prompt: "Which Templates Studio pack fits a dual-host podcast vs product showcase?", kind: "improve" },
+      { id: "export", label: "Export 9:16", prompt: "How do I create a project and export 9:16 from Templates Studio?", kind: "do" },
+      { id: "pad", label: "Studio Pad", prompt: "How do I edit beats and captions in Studio Pad?", href: "/studio-pad", kind: "goto" },
+      { id: "room", label: "Templates Room", prompt: "When should I use Templates Room vs Templates Studio?", href: "/templates-room", kind: "goto" },
+    ],
+  },
+  {
+    path: "/studio-pad",
+    layer: "os",
+    title: "Studio Pad",
+    blurb: "CapCut-like editor — multi-track beats, captions, Voice Forge, Export 9:16.",
+    tips: [
+      "Open a Templates Studio pack first, or create a blank Pad project.",
+      "Edit beats / captions → export with locked Avatar Studio talent + Voice Forge.",
+      "Or stay in RealStorm Agent chat: use template → confirm (no menu hop).",
+    ],
+    startHere: {
+      goal: "Edit a timeline and export a 9:16 studio clip.",
+      steps: [
+        "Open Studio Pad from the system menu or dashboard.",
+        "Load a project (or jump from Templates Studio Create project).",
+        "Tweak captions → Export 9:16.",
+      ],
+      primaryLabel: "Open Studio Pad",
+      primaryHref: "/studio-pad",
+      nextLabel: "Templates Studio",
+      nextHref: "/templates-studio",
+    },
+    options: [
+      { id: "start", label: "Where do I start?", prompt: "Where do I start in Studio Pad?", kind: "improve" },
+      { id: "export", label: "Export 9:16", prompt: "How do I export from Studio Pad with Voice Forge and lip-sync?", kind: "do" },
+      { id: "packs", label: "Templates Studio", prompt: "How do packs seed a Studio Pad project?", href: "/templates-studio", kind: "goto" },
+      { id: "agent", label: "Agent path", prompt: "Can RealStorm Agent drive Studio Pad without leaving chat?", href: "/realstorm", kind: "goto" },
     ],
   },
   {
@@ -997,10 +1088,13 @@ export const GUIDE_LAYERS: GuideLayer[] = [
 /** Every sidebar / OS system — used to verify guide coverage */
 export const OS_SYSTEM_GUIDE_PATHS = [
   "/wizard",
+  "/realstorm",
   "/yt-os",
   "/tools/clone",
   "/dashboard",
   "/templates-room",
+  "/templates-studio",
+  "/studio-pad",
   "/template-forge",
   "/studio-set",
   "/world-builder",

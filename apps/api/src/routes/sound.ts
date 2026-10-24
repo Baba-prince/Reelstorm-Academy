@@ -227,7 +227,7 @@ export async function soundRoutes(app: FastifyInstance) {
     return reply.code(202).send({ soundId, jobId: job.id, status: "queued" });
   });
 
-  /** GET /api/sound/voices — library + local VoiceProfiles */
+  /** GET /api/sound/voices — library + Voice Forge (self-hosted, no ElevenLabs) */
   app.get("/api/sound/voices", async (_req, reply) => {
     const [profiles, remote] = await Promise.all([
       prisma.voiceProfile.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
@@ -235,8 +235,13 @@ export async function soundRoutes(app: FastifyInstance) {
     ]);
     return reply.send({
       profiles,
-      elevenlabs: remote.voices,
-      elevenlabsError: remote.error || null,
+      forge: remote.voices,
+      forgeError: remote.error || null,
+      engine: "voice-forge",
+      external_saas: false,
+      // legacy key kept empty so old clients don't call ElevenLabs
+      elevenlabs: [],
+      elevenlabsError: "disabled — use Voice Forge",
     });
   });
 

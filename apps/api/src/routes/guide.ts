@@ -215,7 +215,10 @@ export async function guideRoutes(app: FastifyInstance) {
 
     const history = (body.history || []).slice(-8);
 
-    const hasLlm = Boolean(process.env.DASHSCOPE_API_KEY) || process.env.GUIDE_USE_OLLAMA === "1";
+    const hasLlm =
+      Boolean((process.env.ANTHROPIC_API_KEY || "").trim()) ||
+      Boolean(process.env.DASHSCOPE_API_KEY) ||
+      process.env.GUIDE_USE_OLLAMA === "1";
 
     if (hasLlm) {
       try {
@@ -234,14 +237,23 @@ export async function guideRoutes(app: FastifyInstance) {
                 : message,
             },
           ],
-          { model: process.env.GUIDE_MODEL, timeoutMs: Number(process.env.GUIDE_TIMEOUT_MS || 4500) },
+          {
+            model: process.env.ANTHROPIC_MODEL || process.env.GUIDE_MODEL,
+            timeoutMs: Number(process.env.GUIDE_TIMEOUT_MS || 12000),
+          },
         );
 
         if (raw?.trim()) {
+          // Prefer labeling by what likely answered (Claude may have failed on empty credits)
+          let source = "ollama";
+          if ((process.env.ANTHROPIC_API_KEY || "").trim()) source = "claude→fallback";
+          if (process.env.DASHSCOPE_API_KEY) source = (process.env.ANTHROPIC_API_KEY || "").trim()
+            ? "claude→dashscope"
+            : "dashscope";
           return reply.send({
             reply: raw.trim(),
             options: startHereOptions(layer),
-            source: process.env.DASHSCOPE_API_KEY ? "dashscope" : "ollama",
+            source,
             layer: { title: layer.title, path: pathname },
             startHere: getStartHere(layer),
           });

@@ -41,6 +41,7 @@ import { translateRoutes } from "./routes/translate.js";
 import { cameraRoutes } from "./routes/camera.js";
 import { debateRoutes } from "./routes/debate.js";
 import { podRoutes } from "./routes/pod.js";
+import { cinemaRoutes } from "./routes/cinema.js";
 
 const PORT = Number(process.env.API_PORT || 4000);
 const HOST = process.env.API_HOST || "0.0.0.0";
@@ -144,6 +145,7 @@ async function main() {
   await cameraRoutes(app);
   await debateRoutes(app);
   await podRoutes(app);
+  await cinemaRoutes(app);
 
   await app.listen({ port: PORT, host: HOST });
   app.log.info(`REELSTORM API on http://${HOST}:${PORT}`);

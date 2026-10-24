@@ -10,32 +10,65 @@ import { useT } from "@/lib/i18n/I18nProvider";
 import { useAuth } from "@/lib/auth";
 import { isAdminEmail, resolveGuideLayer } from "@reelstorm/domain";
 
-const NAV = [
-  { href: "/wizard", key: "nav.wizard" },
-  { href: "/yt-os", key: "nav.ytos" },
-  { href: "/tools/clone", key: "nav.clone" },
-  { href: "/dashboard", key: "nav.dashboard" },
-  { href: "/templates-room", key: "nav.templatesRoom" },
-  { href: "/template-forge", key: "nav.templateForge" },
-  { href: "/studio-set", key: "nav.studioSet" },
-  { href: "/world-builder", key: "nav.worldBuilder" },
-  { href: "/storyboard", key: "nav.storyboard" },
-  { href: "/studio", key: "nav.studio" },
-  { href: "/sound-studio", key: "nav.soundStudio" },
-  { href: "/archive-vault", key: "nav.archiveVault" },
-  { href: "/merge-studio", key: "nav.mergeStudio" },
-  { href: "/model-center", key: "nav.modelCenter" },
-  { href: "/model-center/avatar", key: "nav.avatarStudio" },
-  { href: "/translate", key: "nav.translate" },
-  { href: "/camera", key: "nav.camera" },
-  { href: "/debate", key: "nav.debate" },
-  { href: "/team", key: "nav.team" },
-  { href: "/brand", key: "nav.brand" },
-  { href: "/wallet", key: "nav.wallet" },
-  { href: "/billing", key: "nav.billing" },
-  { href: "/account", key: "nav.account" },
-  { href: "/scorecard", key: "nav.scorecard" },
-] as const;
+type NavItem = { href: string; key: string };
+
+/**
+ * Left system menu — Academy MVP diet.
+ * Primary: Agent (create) · Avatar (talent) · Studio Pad (edit).
+ * Factories demoted to Advanced until 10 real AI clips exist.
+ */
+const NAV_SECTIONS: { label?: string; items: NavItem[] }[] = [
+  {
+    items: [
+      { href: "/cinema", key: "nav.cinema" },
+      { href: "/dashboard", key: "nav.dashboard" },
+      { href: "/model-center/avatar", key: "nav.avatarStudio" },
+      { href: "/studio-pad", key: "nav.studioPad" },
+    ],
+  },
+  {
+    label: "FACTORY",
+    items: [
+      { href: "/realstorm", key: "nav.realstorm" },
+      { href: "/templates-studio", key: "nav.templatesStudio" },
+      { href: "/templates-room", key: "nav.templatesRoom" },
+      { href: "/sound-studio", key: "nav.soundStudio" },
+      { href: "/yt-os", key: "nav.ytos" },
+      { href: "/tools/clone", key: "nav.clone" },
+      { href: "/template-forge", key: "nav.templateForge" },
+      { href: "/studio-set", key: "nav.studioSet" },
+      { href: "/world-builder", key: "nav.worldBuilder" },
+      { href: "/storyboard", key: "nav.storyboard" },
+      { href: "/studio", key: "nav.studio" },
+      { href: "/archive-vault", key: "nav.archiveVault" },
+      { href: "/merge-studio", key: "nav.mergeStudio" },
+      { href: "/model-center", key: "nav.modelCenter" },
+      { href: "/translate", key: "nav.translate" },
+      { href: "/camera", key: "nav.camera" },
+      { href: "/debate", key: "nav.debate" },
+    ],
+  },
+  {
+    label: "ACCOUNT",
+    items: [
+      { href: "/team", key: "nav.team" },
+      { href: "/brand", key: "nav.brand" },
+      { href: "/wallet", key: "nav.wallet" },
+      { href: "/billing", key: "nav.billing" },
+      { href: "/account", key: "nav.account" },
+      { href: "/scorecard", key: "nav.scorecard" },
+    ],
+  },
+];
+
+function navActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  // Avoid /model-center lighting up for /model-center/avatar
+  if (href === "/model-center") {
+    return pathname === "/model-center";
+  }
+  return pathname.startsWith(href + "/");
+}
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -45,7 +78,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex">
-      <aside className="hidden lg:flex w-[240px] shrink-0 flex-col border-r border-white/[0.06] bg-deep/80 backdrop-blur-xl">
+      <aside className="hidden lg:flex w-[248px] shrink-0 flex-col border-r border-white/[0.06] bg-deep/80 backdrop-blur-xl">
         <div className="h-grid px-5 flex items-center gap-3 border-b border-white/[0.06]">
           <div className="w-9 h-9 rounded-[10px] bg-white text-black flex items-center justify-center font-black text-[15px] tracking-[-0.05em]">
             RS
@@ -55,29 +88,45 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="mono text-[9px] text-cyan mt-1">ACADEMY OS</div>
           </div>
         </div>
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "block px-3 py-2.5 rounded-rs text-[13px] font-medium transition-colors",
-                  active
-                    ? "bg-violet/20 text-white border border-violet/30"
-                    : "text-white/60 hover:text-white hover:bg-white/[0.04]",
-                )}
-              >
-                {t(item.key)}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-3 overflow-y-auto">
+          {NAV_SECTIONS.map((section, si) => (
+            <div key={section.label || `sec-${si}`} className={clsx(si > 0 && "mt-4")}>
+              {section.label ? (
+                <div className="mono text-[8px] tracking-[0.16em] text-white/35 px-3 mb-1.5">
+                  {section.label}
+                </div>
+              ) : null}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = navActive(pathname || "/", item.href);
+                  const primary =
+                    !section.label &&
+                    ["/cinema", "/model-center/avatar", "/studio-pad"].includes(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={clsx(
+                        "block px-3 py-2.5 rounded-rs text-[13px] font-medium transition-colors",
+                        active
+                          ? primary
+                            ? "bg-cyan/15 text-white border border-cyan/35"
+                            : "bg-violet/20 text-white border border-violet/30"
+                          : "text-white/60 hover:text-white hover:bg-white/[0.04] border border-transparent",
+                      )}
+                    >
+                      {t(item.key)}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           {showAdmin ? (
             <Link
               href="/admin"
               className={clsx(
-                "block px-3 py-2.5 rounded-rs text-[13px] font-medium transition-colors mt-2",
+                "block px-3 py-2.5 rounded-rs text-[13px] font-medium transition-colors mt-4",
                 pathname === "/admin" || pathname.startsWith("/admin/")
                   ? "bg-orange/20 text-orange border border-orange/40"
                   : "text-orange/80 hover:text-orange hover:bg-orange/10",

@@ -18,44 +18,78 @@ export type VideoGenResult = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const dashBase = () =>
+  (process.env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com/api/v1").replace(/\/$/, "");
+
+/** Create + poll DashScope Seedance until video URL or failure (Phase 2 B-roll). */
 export async function generateWithSeedance(req: VideoGenRequest): Promise<VideoGenResult> {
-  const key = process.env.SEEDANCE_API_KEY || process.env.DASHSCOPE_API_KEY;
+  const key = (process.env.SEEDANCE_API_KEY || process.env.DASHSCOPE_API_KEY || "").trim();
   if (!key) {
     return mockResult("seedance", req);
   }
-  // DashScope Seedance-compatible task create (adapter)
-  const res = await fetch(
+  const createUrl =
     process.env.SEEDANCE_API_URL ||
-      "https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        "X-DashScope-Async": "enable",
-      },
-      body: JSON.stringify({
-        model: process.env.SEEDANCE_MODEL || "seedance-v1",
-        input: {
-          prompt: req.prompt,
-          img_url: req.firstFrameUrl,
-        },
-        parameters: {
-          duration: req.durationSec || 5,
-          aspect_ratio: req.aspectRatio || "16:9",
-        },
-      }),
+    `${dashBase()}/services/aigc/video-generation/video-synthesis`;
+  const res = await fetch(createUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "X-DashScope-Async": "enable",
     },
-  );
+    body: JSON.stringify({
+      model: process.env.SEEDANCE_MODEL || "wan2.1-t2v-turbo",
+      input: {
+        prompt: req.prompt,
+        ...(req.firstFrameUrl ? { img_url: req.firstFrameUrl } : {}),
+      },
+      parameters: {
+        duration: req.durationSec || 5,
+        aspect_ratio: req.aspectRatio || "9:16",
+      },
+    }),
+  });
   if (!res.ok) {
     return { provider: "seedance", jobId: "err", status: "failed", error: await res.text() };
   }
   const data = (await res.json()) as { output?: { task_id?: string }; request_id?: string };
-  return {
-    provider: "seedance",
-    jobId: data.output?.task_id || data.request_id || "unknown",
-    status: "queued",
-  };
+  const jobId = data.output?.task_id || data.request_id || "unknown";
+  if (!jobId || jobId === "unknown") {
+    return { provider: "seedance", jobId: "err", status: "failed", error: "missing task_id" };
+  }
+
+  const pollMs = Number(process.env.SEEDANCE_POLL_MS || 300_000);
+  const deadline = Date.now() + pollMs;
+  while (Date.now() < deadline) {
+    await sleep(6000);
+    const stRes = await fetch(`${dashBase()}/tasks/${jobId}`, {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!stRes.ok) continue;
+    const st = (await stRes.json()) as {
+      output?: {
+        task_status?: string;
+        status?: string;
+        video_url?: string;
+        url?: string;
+        results?: Array<{ url?: string }>;
+        message?: string;
+      };
+    };
+    const out = st.output || {};
+    const status = (out.task_status || out.status || "").toUpperCase();
+    if (["SUCCEEDED", "SUCCESS", "COMPLETED"].includes(status)) {
+      const videoUrl = out.video_url || out.url || out.results?.[0]?.url;
+      if (!videoUrl) {
+        return { provider: "seedance", jobId, status: "failed", error: "succeeded without url" };
+      }
+      return { provider: "seedance", jobId, status: "succeeded", videoUrl };
+    }
+    if (["FAILED", "CANCELED", "CANCELLED"].includes(status)) {
+      return { provider: "seedance", jobId, status: "failed", error: out.message || status };
+    }
+  }
+  return { provider: "seedance", jobId, status: "failed", error: "Seedance poll timed out" };
 }
 
 export async function generateWithKling(req: VideoGenRequest): Promise<VideoGenResult> {

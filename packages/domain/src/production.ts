@@ -244,6 +244,31 @@ export function evaluateProductionApis(
     weight: 2,
   });
 
+  // Cinema Mode (Saga hybrid) — factory can ship without HeyGen
+  const heygen = present(env.HEYGEN_API_KEY);
+  const skipHeygen = env.CINEMA_SKIP_HEYGEN === "1";
+  checks.push({
+    id: "cinema_os",
+    tier: "B",
+    label: "Cinema Mode (Showrunner)",
+    status: "pass",
+    detail:
+      "Cast·World·Voice·Board approve gate·Shoot·Cut live — Ken Burns / Seedance path; HeyGen optional",
+    weight: 10,
+  });
+  checks.push({
+    id: "cinema_heygen",
+    tier: "C",
+    label: "Cinema HeyGen dialogue (optional)",
+    status: heygen && !skipHeygen ? "partial" : "pass",
+    detail: heygen
+      ? skipHeygen
+        ? "Key present but CINEMA_SKIP_HEYGEN=1 — using Ken Burns / Seedance"
+        : "Key set — validate API wallet (401 = buy API credits)"
+      : "Optional — Cinema ships without HeyGen",
+    weight: 2,
+  });
+
   return checks;
 }
 

@@ -27,6 +27,8 @@ export const ha: MessageTree = {
     api: "API",
     dashboard: "Dashboard",
     templatesRoom: "Ɗakin Samfuri",
+    templatesStudio: "Templates Studio",
+    studioPad: "Studio Pad",
     templateForge: "Tsarin Samfuri",
     studioSet: "Studio Set",
     worldBuilder: "Gina Duniya",

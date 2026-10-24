@@ -62,24 +62,54 @@ async function callOllama(
   return data.message?.content || "";
 }
 
-/** DashScope primary; always fall through to local Ollama on timeout/error */
+function isClaudeModel(model?: string): boolean {
+  return Boolean(model && /^claude/i.test(model));
+}
+
+/** Claude primary (BOT Director) → DashScope → Ollama */
 export async function orchestrate(
   messages: OrchestratorMessage[],
   opts?: { model?: string; json?: boolean; timeoutMs?: number },
 ): Promise<string> {
   const timeoutMs = opts?.timeoutMs ?? 25_000;
-  const callOpts = { model: opts?.model, json: opts?.json };
+  const requested = opts?.model;
+  const json = opts?.json;
+
+  if ((process.env.ANTHROPIC_API_KEY || "").trim()) {
+    try {
+      const { callAnthropic } = await import("./anthropic.js");
+      const claudeOpts = {
+        json,
+        model:
+          process.env.ANTHROPIC_MODEL ||
+          (isClaudeModel(requested) ? requested : undefined),
+      };
+      const text = await withTimeout(timeoutMs, (signal) =>
+        callAnthropic(messages, claudeOpts, signal),
+      );
+      if (text.trim()) return text;
+    } catch (err) {
+      console.warn("[orchestrate] Claude failed, trying DashScope:", (err as Error).message);
+    }
+  }
+
+  // Never pass Claude model ids into DashScope / Ollama
+  const legacyModel = isClaudeModel(requested) ? undefined : requested;
 
   if (process.env.DASHSCOPE_API_KEY) {
     try {
-      const text = await withTimeout(timeoutMs, (signal) => callDashScope(messages, callOpts, signal));
+      const text = await withTimeout(timeoutMs, (signal) =>
+        callDashScope(messages, { model: legacyModel, json }, signal),
+      );
       if (text.trim()) return text;
     } catch (err) {
       console.warn("[orchestrate] DashScope failed, trying Ollama:", (err as Error).message);
     }
   }
 
-  return withTimeout(Math.min(timeoutMs, 45_000), (signal) => callOllama(messages, callOpts, signal));
+  return withTimeout(Math.min(timeoutMs, 45_000), (signal) =>
+    callOllama(messages, { model: legacyModel, json }, signal),
+  );
 }
 
 export async function breakScriptIntoShots(script: string): Promise<unknown> {

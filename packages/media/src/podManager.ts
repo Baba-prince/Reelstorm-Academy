@@ -448,6 +448,15 @@ export async function ensurePodAliveOrFallback(): Promise<PodEngine> {
     return process.env.HEYGEN_API_KEY ? "heygen" : "failed";
   }
 
+  // Academy spine: HeyGen primary; owned GPU only when explicitly liveportrait/saver
+  if (
+    (process.env.POD_OVERFLOW_UNDER_HEYGEN || "1").trim() !== "0" &&
+    enginePref === "auto" &&
+    process.env.HEYGEN_API_KEY
+  ) {
+    return "heygen";
+  }
+
   if (isServerlessConfigured()) {
     return "serverless";
   }

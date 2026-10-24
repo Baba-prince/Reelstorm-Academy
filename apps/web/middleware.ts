@@ -26,6 +26,8 @@ const APP_ONLY_PREFIXES = [
   "/onboarding",
   "/auth",
   "/templates-room",
+  "/templates-studio",
+  "/studio-pad",
   "/template-forge",
   "/world-builder",
   "/storyboard",

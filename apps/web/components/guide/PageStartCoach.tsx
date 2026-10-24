@@ -10,10 +10,13 @@ const DISMISS_KEY = "rs_page_coach_dismissed";
 
 const CHIP_LABELS: Record<string, string> = {
   "/wizard": "Wizard",
+  "/realstorm": "RealStorm Agent",
   "/yt-os": "YouTube Automation",
   "/tools/clone": "Clone",
   "/dashboard": "Dashboard",
   "/templates-room": "Templates",
+  "/templates-studio": "Templates Studio",
+  "/studio-pad": "Studio Pad",
   "/template-forge": "Forge",
   "/studio-set": "Studio Set",
   "/world-builder": "World",

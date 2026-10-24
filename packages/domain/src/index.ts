@@ -233,3 +233,4 @@ export * from "./clone.js";
 
 export * from "./studio.js";
 export * from "./studio-set.js";
+export * from "./cinema.js";
